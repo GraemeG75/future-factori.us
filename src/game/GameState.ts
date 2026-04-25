@@ -1,0 +1,92 @@
+/** Central game state types used by all systems. */
+
+export interface GameState {
+  /** Save format version for migration. */
+  version: number;
+  /** Game tick counter (incremented at TICK_RATE per second). */
+  tick: number;
+  cash: number;
+  researchPoints: number;
+  /** resourceId -> current amount held in global inventory. */
+  inventory: Record<string, number>;
+  buildings: BuildingInstance[];
+  routes: RouteInstance[];
+  activeResearch: ActiveResearch | null;
+  /** Technology ids that have been fully researched. */
+  completedResearch: string[];
+  tradeHistory: TradeRecord[];
+  alerts: GameAlert[];
+  settings: GameSettings;
+  locale: string;
+  worldSeed: number;
+  /** Trade partner demand: partnerId -> resourceId -> 0-1 factor. */
+  demand: Record<string, Record<string, number>>;
+}
+
+export interface BuildingInstance {
+  /** Unique uuid. */
+  id: string;
+  /** References BuildingType.id. */
+  typeId: string;
+  level: number;
+  position: { x: number; y: number; z: number };
+  rotation: number;
+  health: number;
+  activeRecipeId: string | null;
+  /** Production cycle progress 0-1. */
+  productionProgress: number;
+  inputBuffer: Record<string, number>;
+  outputBuffer: Record<string, number>;
+  isPowered: boolean;
+  assignedRouteIds: string[];
+}
+
+export interface RouteInstance {
+  id: string;
+  fromBuildingId: string;
+  toBuildingId: string;
+  resourceId: string;
+  /** Max amount per trip. */
+  capacity: number;
+  /** World units per second travel speed. */
+  speed: number;
+  currentLoad: number;
+  /** Trip progress 0-1. */
+  progress: number;
+  isActive: boolean;
+  costPerTrip: number;
+}
+
+export interface ActiveResearch {
+  technologyId: string;
+  /** Accumulated research points toward the technology cost. */
+  progress: number;
+  /** Tick when research was started. */
+  startedAt: number;
+}
+
+export interface TradeRecord {
+  tick: number;
+  partnerId: string;
+  resourceId: string;
+  amount: number;
+  price: number;
+  totalValue: number;
+}
+
+export interface GameAlert {
+  id: string;
+  tick: number;
+  type: 'info' | 'warning' | 'success' | 'error';
+  messageKey: string;
+  params?: string[];
+}
+
+export interface GameSettings {
+  soundEnabled: boolean;
+  musicEnabled: boolean;
+  gamePaused: boolean;
+  gameSpeed: 1 | 2 | 4;
+  autosaveEnabled: boolean;
+  autosaveIntervalMinutes: number;
+}
