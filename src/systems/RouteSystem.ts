@@ -57,11 +57,14 @@ export function removeRoute(state: GameState, routeId: string): void {
  * (falling back to global inventory).
  */
 export function tick(state: GameState, deltaSeconds: number): void {
+  // Build a lookup map once per tick to avoid O(routes × buildings) linear scans.
+  const buildingMap = new Map(state.buildings.map((b) => [b.id, b]));
+
   for (const route of state.routes) {
     if (!route.isActive) continue;
 
-    const from = state.buildings.find((b) => b.id === route.fromBuildingId);
-    const to = state.buildings.find((b) => b.id === route.toBuildingId);
+    const from = buildingMap.get(route.fromBuildingId);
+    const to = buildingMap.get(route.toBuildingId);
     if (!from || !to) continue;
 
     if (route.currentLoad > 0) {

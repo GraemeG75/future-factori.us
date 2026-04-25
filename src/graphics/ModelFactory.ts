@@ -218,7 +218,7 @@ export class ModelFactory {
           group.add(side);
         }
         const sphere = new THREE.Mesh(new THREE.SphereGeometry(0.2, 12, 12), RetroMaterials.glowing(0xff00ff, 2.0));
-        sphere.name = 'fan_blade';
+        sphere.name = 'spinning_orb';
         sphere.position.y = 0.85;
         group.add(base, sphere);
         break;

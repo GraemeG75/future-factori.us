@@ -159,30 +159,6 @@ export function autosave(state: GameState): void {
   save(state);
 }
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function makeBuilding(
-  typeId: string,
-  position: { x: number; y: number; z: number },
-): BuildingInstance {
-  return {
-    id: crypto.randomUUID(),
-    typeId,
-    level: 1,
-    position,
-    rotation: 0,
-    health: 100,
-    activeRecipeId: null,
-    productionProgress: 0,
-    inputBuffer: {},
-    outputBuffer: {},
-    isPowered: true,
-    assignedRouteIds: [],
-  };
-}
-
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }

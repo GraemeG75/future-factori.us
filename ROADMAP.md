@@ -41,7 +41,7 @@
 - **Better route cargo visualization**: Three evenly-spaced cargo capsules per route instead of one
 - **Building level visual upgrades**: Glowing base ring at level 2+, status beacon at level 3+, increased emissive intensity per level, 15% larger scale per level (up from 10%)
 - **Improved terrain**: Layered sine-wave height map for smooth biome-like hills; vertex-colored biomes (industrial centre, earthy mid-ring, rocky outer rim)
-- **Day/night cycle**: Dynamic ambient and directional light animation over a 5-minute cycle; warm dawn/dusk hues, cool noon light, deep-indigo night; sky/fog colour updates in sync
+- **Day/night cycle**: Dynamic ambient and directional light animation over a 5-minute cycle; warm dawn/dusk hues, cool noon light, deep-indigo night; sky/fog color updates in sync
 - **Shadows**: PCFSoftShadowMap enabled; all building meshes cast & receive shadows; terrain receives shadows; 2048×2048 shadow map with properly sized frustum
 
 ---

@@ -269,11 +269,15 @@ export class Game {
     this.tickAccumulator += scaledDelta;
     const ticks = Math.min(Math.floor(this.tickAccumulator / TICK_INTERVAL), 5);
     this.tickAccumulator -= ticks * TICK_INTERVAL;
+    let didTick = false;
     for (let i = 0; i < ticks; i++) {
       this.tick();
+      didTick = true;
     }
     this.render();
-    if (this.onStateChange) this.onStateChange(this.state);
+    // Only notify the UI when the simulation state actually advanced —
+    // avoids 60fps DOM rebuilds when no tick ran this frame.
+    if (didTick && this.onStateChange) this.onStateChange(this.state);
     this.animFrameId = requestAnimationFrame((ts) => this.gameLoop(ts));
   }
 

@@ -46,7 +46,7 @@ export class BuildingAnimations {
     const anim: BuildingAnim = { fans: [], blinks: [], smokeEmitters: [] };
 
     group.traverse((child) => {
-      if (child.name === 'fan_blade') {
+      if (child.name === 'fan_blade' || child.name === 'spinning_orb') {
         anim.fans.push({ object: child, speed: 3.0 + Math.random() * 2.0 });
       } else if (child.name === 'blink_light' && child instanceof THREE.Mesh) {
         const mat = (child as THREE.Mesh).material as THREE.MeshStandardMaterial;

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-/** Duration in seconds of one full day/night cycle. */
+/** Duration in seconds of one full day/night cycle (5 minutes). */
 const CYCLE_DURATION = 300;
 
 /**
