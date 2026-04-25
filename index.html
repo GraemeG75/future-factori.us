@@ -1,55 +1,167 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Future Factorius</title>
-    <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-      body {
-        background: #0a0a0f;
-        overflow: hidden;
-        width: 100vw;
-        height: 100vh;
-      }
-      #game-canvas {
-        display: block;
-        width: 100%;
-        height: 100%;
-      }
-      #ui-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        pointer-events: none;
-      }
-      #ui-hud {
-        position: absolute;
-        top: 16px;
-        left: 16px;
-        pointer-events: auto;
-      }
-      #ui-menu {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        pointer-events: auto;
-      }
-    </style>
-  </head>
-  <body>
-    <canvas id="game-canvas"></canvas>
-    <div id="ui-overlay">
-      <div id="ui-hud"></div>
-      <div id="ui-menu"></div>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Future Factorius</title>
+  <link rel="stylesheet" href="/src/styles/main.less" />
+</head>
+<body>
+  <!-- Game canvas (3D world) -->
+  <canvas id="game-canvas"></canvas>
+
+  <!-- UI Overlay -->
+  <div id="ui-root">
+    <!-- Top bar: resource inventory + cash -->
+    <div id="top-bar">
+      <div id="game-title">FUTURE FACTORIUS</div>
+      <div id="resource-bar"></div>
+      <div id="cash-display">
+        <span id="cash-value">$ 0</span>
+        <span id="profit-indicator"></span>
+      </div>
+      <div id="speed-controls">
+        <button id="btn-pause" class="ctrl-btn" title="Pause">⏸</button>
+        <button id="btn-speed-1" class="ctrl-btn active" title="Normal speed">1x</button>
+        <button id="btn-speed-2" class="ctrl-btn" title="Fast">2x</button>
+        <button id="btn-speed-4" class="ctrl-btn" title="Very fast">4x</button>
+      </div>
     </div>
-    <script type="module" src="/src/main.ts"></script>
-  </body>
+
+    <!-- Left side: Build menu (collapsible) -->
+    <div id="build-panel">
+      <div id="build-panel-header">
+        <span>BUILD</span>
+        <button id="btn-build-toggle" class="panel-toggle">&#9664;</button>
+      </div>
+      <div id="build-panel-content">
+        <div class="build-category" id="cat-harvesters">
+          <div class="category-label">HARVESTERS</div>
+          <div class="build-buttons" id="harvester-buttons"></div>
+        </div>
+        <div class="build-category" id="cat-factories">
+          <div class="category-label">FACTORIES</div>
+          <div class="build-buttons" id="factory-buttons"></div>
+        </div>
+        <div class="build-category" id="cat-infrastructure">
+          <div class="category-label">INFRASTRUCTURE</div>
+          <div class="build-buttons" id="infra-buttons"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right side: Selected building panel -->
+    <div id="info-panel" class="hidden">
+      <div id="info-panel-header">
+        <span id="info-building-name">Building</span>
+        <button id="btn-info-close" class="panel-close">&#10005;</button>
+      </div>
+      <div id="info-panel-content">
+        <div id="info-level">Level: 1</div>
+        <div id="info-status">Status: Active</div>
+        <div id="info-recipe-section" class="hidden">
+          <div class="panel-section-label">RECIPE</div>
+          <select id="recipe-select"></select>
+        </div>
+        <div id="info-production-section" class="hidden">
+          <div class="panel-section-label">PRODUCTION</div>
+          <div id="production-progress-bar"><div id="production-fill"></div></div>
+          <div id="production-info"></div>
+        </div>
+        <div id="info-buffers">
+          <div class="panel-section-label">INVENTORY</div>
+          <div id="input-buffer"></div>
+          <div id="output-buffer"></div>
+        </div>
+        <div id="info-routes-section">
+          <div class="panel-section-label">ROUTES</div>
+          <div id="building-routes"></div>
+          <button id="btn-create-route" class="action-btn">+ New Route</button>
+        </div>
+        <div id="info-actions">
+          <button id="btn-upgrade" class="action-btn upgrade">&#11014; Upgrade</button>
+          <button id="btn-demolish" class="action-btn danger">&#128465; Demolish</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom: Alerts feed -->
+    <div id="alerts-panel">
+      <div id="alerts-list"></div>
+    </div>
+
+    <!-- Research screen -->
+    <div id="research-screen" class="screen hidden">
+      <div class="screen-header">
+        <span>RESEARCH TREE</span>
+        <button class="screen-close">&#10005;</button>
+      </div>
+      <div id="research-content">
+        <div id="research-tree"></div>
+        <div id="active-research-panel">
+          <div id="active-research-info">No active research</div>
+          <div id="research-progress-bar"><div id="research-fill"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Trade screen -->
+    <div id="trade-screen" class="screen hidden">
+      <div class="screen-header">
+        <span>TRADING</span>
+        <button class="screen-close">&#10005;</button>
+      </div>
+      <div id="trade-content">
+        <div id="partner-list"></div>
+        <div id="trade-panel">
+          <div id="selected-partner-info"></div>
+          <div id="trade-resources"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Routes screen -->
+    <div id="routes-screen" class="screen hidden">
+      <div class="screen-header">
+        <span>ROUTE MANAGEMENT</span>
+        <button class="screen-close">&#10005;</button>
+      </div>
+      <div id="routes-content">
+        <div id="routes-list"></div>
+        <div id="create-route-panel">
+          <div class="panel-section-label">NEW ROUTE</div>
+          <div>From: <select id="route-from"></select></div>
+          <div>Resource: <select id="route-resource"></select></div>
+          <div>To: <select id="route-to"></select></div>
+          <button id="btn-confirm-route" class="action-btn">Create Route</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Save/Load screen -->
+    <div id="save-screen" class="screen hidden">
+      <div class="screen-header">
+        <span>GAME MENU</span>
+        <button class="screen-close">&#10005;</button>
+      </div>
+      <div id="save-content">
+        <button id="btn-new-game" class="menu-btn">New Game</button>
+        <button id="btn-save-game" class="menu-btn">Save Game</button>
+        <button id="btn-load-game" class="menu-btn">Load Game</button>
+        <button id="btn-delete-save" class="menu-btn danger">Delete Save</button>
+        <div id="save-status"></div>
+      </div>
+    </div>
+
+    <!-- Bottom nav buttons -->
+    <div id="bottom-nav">
+      <button id="btn-research" class="nav-btn" title="Research Tree">&#128300; Research</button>
+      <button id="btn-trade" class="nav-btn" title="Trading">&#8652; Trade</button>
+      <button id="btn-routes" class="nav-btn" title="Routes">&#128644; Routes</button>
+      <button id="btn-menu" class="nav-btn" title="Menu">&#9776; Menu</button>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
 </html>

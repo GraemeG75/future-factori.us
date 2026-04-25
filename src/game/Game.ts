@@ -12,6 +12,7 @@ import * as ResearchSystem from '../systems/ResearchSystem';
 import * as BuildingSystem from '../systems/BuildingSystem';
 import * as SaveSystem from '../systems/SaveSystem';
 import { TICK_RATE, AUTOSAVE_TICKS } from '../systems/EconomySystem';
+import { BUILDINGS_MAP } from '../data/buildings';
 
 const TICK_INTERVAL = 1 / TICK_RATE;
 
@@ -30,6 +31,7 @@ export class Game {
   private running: boolean = false;
   private speed: 1 | 2 | 4 = 1;
   private onStateChange: ((state: GameState) => void) | null = null;
+  private clickOverride: ((e: MouseEvent) => void) | null = null;
   private animFrameId: number = 0;
   private deltaTime: number = 0;
 
@@ -78,7 +80,13 @@ export class Game {
 
     const canvas = this.renderer.domElement;
     canvas.addEventListener('mousemove', (e) => this.selectionManager.onMouseMove(e, canvas));
-    canvas.addEventListener('click', (e) => this.selectionManager.onClick(e, canvas));
+    canvas.addEventListener('click', (e) => {
+      if (this.clickOverride) {
+        this.clickOverride(e);
+      } else {
+        this.selectionManager.onClick(e, canvas);
+      }
+    });
 
     this.running = true;
     this.animFrameId = requestAnimationFrame((ts) => this.gameLoop(ts));
@@ -168,6 +176,73 @@ export class Game {
 
   setOnStateChange(cb: (state: GameState) => void): void {
     this.onStateChange = cb;
+  }
+
+  setClickOverride(handler: ((e: MouseEvent) => void) | null): void {
+    this.clickOverride = handler;
+  }
+
+  setOnSelect(cb: (buildingId: string | null) => void): void {
+    this.selectionManager.setOnSelect(cb);
+  }
+
+  getWorldPositionFromEvent(e: MouseEvent): { x: number; z: number } | null {
+    const canvas = this.renderer.domElement;
+    const rect = canvas.getBoundingClientRect();
+    const mx = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+    const my = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(new THREE.Vector2(mx, my), this.camera);
+    const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    const target = new THREE.Vector3();
+    const hit = raycaster.ray.intersectPlane(groundPlane, target);
+    if (!hit) return null;
+    return { x: Math.round(target.x), z: Math.round(target.z) };
+  }
+
+  upgradeBuilding(buildingId: string): boolean {
+    const result = BuildingSystem.upgradeBuilding(this.state, buildingId);
+    if (result) {
+      const building = BuildingSystem.getBuildingById(this.state, buildingId);
+      if (building) this.world.updateBuildingMesh(building);
+      if (this.onStateChange) this.onStateChange(this.state);
+    }
+    return result;
+  }
+
+  demolishBuilding(buildingId: string): void {
+    this.world.removeBuildingMesh(buildingId);
+    this.selectionManager.unregisterBuilding(buildingId);
+    BuildingSystem.removeBuilding(this.state, buildingId);
+    if (this.onStateChange) this.onStateChange(this.state);
+  }
+
+  setRecipe(buildingId: string, recipeId: string | null): void {
+    const building = BuildingSystem.getBuildingById(this.state, buildingId);
+    if (building) {
+      building.activeRecipeId = recipeId;
+      building.productionProgress = 0;
+      if (this.onStateChange) this.onStateChange(this.state);
+    }
+  }
+
+  removeRoute(routeId: string): void {
+    this.world.removeRouteLine(routeId);
+    RouteSystem.removeRoute(this.state, routeId);
+    if (this.onStateChange) this.onStateChange(this.state);
+  }
+
+  cancelResearch(): void {
+    ResearchSystem.cancelResearch(this.state);
+    if (this.onStateChange) this.onStateChange(this.state);
+  }
+
+  getUpgradeCost(buildingId: string): number {
+    const building = BuildingSystem.getBuildingById(this.state, buildingId);
+    if (!building) return 0;
+    const bt = BUILDINGS_MAP[building.typeId];
+    if (!bt) return 0;
+    return bt.baseCost * Math.pow(bt.upgradeCostMultiplier, building.level);
   }
 
   private gameLoop(timestamp: number): void {
