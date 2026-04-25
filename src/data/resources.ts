@@ -185,6 +185,18 @@ export const RESOURCES: ResourceType[] = [
     icon: '🔧',
   },
 
+  {
+    id: 'antimatter_core',
+    nameKey: 'resources.antimatter_core.name',
+    descriptionKey: 'resources.antimatter_core.description',
+    tier: 'exotic',
+    basePrice: 8000,
+    storageSize: 1,
+    unlockRequirement: 'antimatter_containment',
+    color: '#FF69B4',
+    icon: '🌀',
+  },
+
   // Exotic
   {
     id: 'exotic_cores',

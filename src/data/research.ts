@@ -129,6 +129,7 @@ export const TECHNOLOGIES: Technology[] = [
     prerequisites: ['dark_matter_research', 'quantum_physics'],
     unlocks: [
       { type: 'resource', id: 'antimatter_particles' },
+      { type: 'resource', id: 'antimatter_core' },
       { type: 'recipe', id: 'antimatter_core' },
     ],
     duration: 600,

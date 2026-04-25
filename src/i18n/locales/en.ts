@@ -60,6 +60,10 @@ export const en = {
       name: 'Antimatter Particles',
       description: 'Magnetically contained antimatter. The most energetic substance known.',
     },
+    antimatter_core: {
+      name: 'Antimatter Core',
+      description: 'A stabilised antimatter core — the most powerful energy source ever created.',
+    },
     exotic_cores: {
       name: 'Exotic Cores',
       description: 'Ultra-dense energy cores formed from plasma crystals and quantum foam.',

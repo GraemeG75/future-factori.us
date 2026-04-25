@@ -137,7 +137,7 @@ export const RECIPES: Recipe[] = [
       { resourceId: 'antimatter_particles', amount: 1 },
       { resourceId: 'exotic_cores', amount: 1 },
     ],
-    outputs: [{ resourceId: 'antimatter_particles', amount: 1 }],
+    outputs: [{ resourceId: 'antimatter_core', amount: 1 }],
     processingTimeSeconds: 120,
     unlockRequirement: 'antimatter_containment',
   },
