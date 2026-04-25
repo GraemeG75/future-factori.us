@@ -308,15 +308,22 @@ export class ModelFactory {
 
         // Biome vertex colours based on distance from centre
         const dist = Math.sqrt(x * x + z * z) / (Math.max(width, depth) * 0.5);
+        const ci = i * 3;
         if (dist > 0.72) {
           // Outer rim: rocky grey
-          colors[i * 3] = 0.22; colors[i * 3 + 1] = 0.20; colors[i * 3 + 2] = 0.17;
+          colors[ci] = 0.22;
+          colors[ci + 1] = 0.20;
+          colors[ci + 2] = 0.17;
         } else if (dist > 0.42) {
           // Mid ring: earthy dark green
-          colors[i * 3] = 0.09; colors[i * 3 + 1] = 0.16; colors[i * 3 + 2] = 0.09;
+          colors[ci] = 0.09;
+          colors[ci + 1] = 0.16;
+          colors[ci + 2] = 0.09;
         } else {
           // Central industrial zone: very dark with a slight teal tint
-          colors[i * 3] = 0.06; colors[i * 3 + 1] = 0.10; colors[i * 3 + 2] = 0.09;
+          colors[ci] = 0.06;
+          colors[ci + 1] = 0.10;
+          colors[ci + 2] = 0.09;
         }
       }
 

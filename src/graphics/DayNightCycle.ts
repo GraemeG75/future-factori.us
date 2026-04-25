@@ -68,11 +68,13 @@ export class DayNightCycle {
 
     this.scene.background = new THREE.Color(skyR, skyG, skyB);
     const fog = this.scene.fog as THREE.FogExp2 | null;
-    if (fog && (fog as unknown as { color: THREE.Color }).color) {
-      const fogColor = (fog as unknown as { color: THREE.Color }).color;
-      fogColor.r = skyR;
-      fogColor.g = skyG;
-      fogColor.b = skyB;
+    if (fog) {
+      const fogWithColor = fog as unknown as { color: THREE.Color };
+      if (fogWithColor.color) {
+        fogWithColor.color.r = skyR;
+        fogWithColor.color.g = skyG;
+        fogWithColor.color.b = skyB;
+      }
     }
   }
 }

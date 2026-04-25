@@ -173,7 +173,7 @@ export class AudioSystem {
       { freq: 277.18, start: 1.2 },  // C#4
       { freq: 329.63, start: 2.4 },  // E4
       { freq: 220, start: 3.6 },     // A3
-      { freq: 415.30, start: 4.8 },  // Ab4
+      { freq: 415.30, start: 4.8 },  // G#4
     ];
     const padDuration = 1.8; // each pad note lasts 1.8 s
 
