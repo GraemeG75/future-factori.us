@@ -158,20 +158,54 @@ export class AudioSystem {
     if (!ctx || !this.masterGain) return;
     if (this.ambientNode) return;
 
+    // Richer ambient: drone layer + pad notes + high shimmer
     const sampleRate = ctx.sampleRate;
-    const duration = 2;
+    const duration = 6; // 6-second loop
     const frameCount = sampleRate * duration;
     const buffer = ctx.createBuffer(1, frameCount, sampleRate);
     const data = buffer.getChannelData(0);
-    const dronFreqs = [60, 120, 240];
+
+    // Pentatonic-inspired frequencies (A minor pentatonic sub-octaves)
+    const droneFreqs = [55, 82.5, 110, 165]; // A1, E2, A2, E3
+    // Pad notes staggered across the loop
+    const padNotes = [
+      { freq: 220, start: 0.0 },     // A3
+      { freq: 277.18, start: 1.2 },  // C#4
+      { freq: 329.63, start: 2.4 },  // E4
+      { freq: 220, start: 3.6 },     // A3
+      { freq: 415.30, start: 4.8 },  // Ab4
+    ];
+    const padDuration = 1.8; // each pad note lasts 1.8 s
+
     for (let i = 0; i < frameCount; i++) {
       const t = i / sampleRate;
-      const lfo = 0.7 + 0.3 * Math.sin(2 * Math.PI * 0.2 * t);
       let sample = 0;
-      for (const f of dronFreqs) {
-        sample += Math.sin(2 * Math.PI * f * t) / dronFreqs.length;
+
+      // Drone layer with slow LFO modulation
+      for (const f of droneFreqs) {
+        const lfo = 0.78 + 0.22 * Math.sin(2 * Math.PI * 0.11 * t);
+        sample += (Math.sin(2 * Math.PI * f * t) * 0.07 * lfo) / droneFreqs.length;
       }
-      data[i] = sample * lfo * 0.15;
+
+      // Pad notes with slow attack/release envelope
+      for (const pad of padNotes) {
+        const relT = t - pad.start;
+        if (relT >= 0 && relT < padDuration) {
+          const u = relT / padDuration;
+          const env = u < 0.12 ? u / 0.12 : u > 0.75 ? (1 - u) / 0.25 : 1.0;
+          // Main voice + slight detune for chorus depth
+          sample += Math.sin(2 * Math.PI * pad.freq * t) * 0.055 * env;
+          sample += Math.sin(2 * Math.PI * (pad.freq * 1.006) * t) * 0.025 * env;
+        }
+      }
+
+      // Subtle high shimmer
+      sample +=
+        Math.sin(2 * Math.PI * 880 * t) *
+        0.008 *
+        (0.5 + 0.5 * Math.sin(2 * Math.PI * 0.22 * t));
+
+      data[i] = Math.max(-0.9, Math.min(0.9, sample));
     }
 
     const source = ctx.createBufferSource();

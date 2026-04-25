@@ -2,15 +2,21 @@ import * as THREE from 'three';
 import type { GameState, BuildingInstance, RouteInstance } from './GameState';
 import { ModelFactory } from '../graphics/ModelFactory';
 import { RetroMaterials } from '../graphics/RetroMaterials';
+import { BuildingAnimations } from '../graphics/BuildingAnimations';
+
+/** Number of cargo capsules spread across each route. */
+const CARGO_COUNT = 3;
 
 export class World {
   private scene: THREE.Scene;
   private buildingMeshes: Map<string, THREE.Group> = new Map();
   private routeLines: Map<string, THREE.Line> = new Map();
-  private cargoMeshes: Map<string, THREE.Mesh> = new Map();
+  private cargoMeshes: Map<string, THREE.Mesh[]> = new Map();
+  private buildingAnimations: BuildingAnimations;
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
+    this.buildingAnimations = new BuildingAnimations(scene);
   }
 
   init(gameState: GameState): void {
@@ -39,10 +45,12 @@ export class World {
     group.rotation.y = instance.rotation;
     this.scene.add(group);
     this.buildingMeshes.set(instance.id, group);
+    this.buildingAnimations.register(instance.id, group);
     return group;
   }
 
   removeBuildingMesh(buildingId: string): void {
+    this.buildingAnimations.unregister(buildingId);
     const mesh = this.buildingMeshes.get(buildingId);
     if (mesh) {
       this.scene.remove(mesh);
@@ -68,11 +76,17 @@ export class World {
     this.scene.add(line);
     this.routeLines.set(route.id, line);
 
-    const cargo = ModelFactory.createCargoCapsule(route.resourceId);
-    cargo.position.copy(fromPos);
-    cargo.position.y += 0.2;
-    this.scene.add(cargo);
-    this.cargoMeshes.set(route.id, cargo);
+    // Spawn multiple capsules spread evenly along the route
+    const capsules: THREE.Mesh[] = [];
+    for (let i = 0; i < CARGO_COUNT; i++) {
+      const cargo = ModelFactory.createCargoCapsule(route.resourceId);
+      const progress = (route.progress + i / CARGO_COUNT) % 1;
+      cargo.position.lerpVectors(fromPos, toPos, progress);
+      cargo.position.y += 0.2;
+      this.scene.add(cargo);
+      capsules.push(cargo);
+    }
+    this.cargoMeshes.set(route.id, capsules);
   }
 
   removeRouteLine(routeId: string): void {
@@ -83,30 +97,36 @@ export class World {
       (line.material as THREE.Material).dispose();
       this.routeLines.delete(routeId);
     }
-    const cargo = this.cargoMeshes.get(routeId);
-    if (cargo) {
-      this.scene.remove(cargo);
-      cargo.geometry.dispose();
-      (cargo.material as THREE.Material).dispose();
+    const capsules = this.cargoMeshes.get(routeId);
+    if (capsules) {
+      for (const cargo of capsules) {
+        this.scene.remove(cargo);
+        cargo.geometry.dispose();
+        (cargo.material as THREE.Material).dispose();
+      }
       this.cargoMeshes.delete(routeId);
     }
   }
 
   updateCargoPosition(route: RouteInstance): void {
-    const cargo = this.cargoMeshes.get(route.id);
-    if (!cargo) return;
+    const capsules = this.cargoMeshes.get(route.id);
+    if (!capsules) return;
     const from = this.getBuildingPosition(route.fromBuildingId);
     const to = this.getBuildingPosition(route.toBuildingId);
     if (from && to) {
-      cargo.position.lerpVectors(from, to, route.progress);
-      cargo.position.y += 0.2;
+      for (let i = 0; i < capsules.length; i++) {
+        const progress = (route.progress + i / CARGO_COUNT) % 1;
+        capsules[i]!.position.lerpVectors(from, to, progress);
+        capsules[i]!.position.y += 0.2;
+      }
     }
   }
 
-  update(gameState: GameState, _deltaTime: number): void {
+  update(gameState: GameState, deltaTime: number): void {
     for (const route of gameState.routes) {
       this.updateCargoPosition(route);
     }
+    this.buildingAnimations.update(deltaTime);
   }
 
   getBuildingMesh(buildingId: string): THREE.Group | undefined {
@@ -121,5 +141,9 @@ export class World {
 
   getScene(): THREE.Scene {
     return this.scene;
+  }
+
+  dispose(): void {
+    this.buildingAnimations.dispose();
   }
 }
