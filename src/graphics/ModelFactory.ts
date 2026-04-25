@@ -206,7 +206,12 @@ export class ModelFactory {
         const base = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.3, 0.8), mat);
         base.position.y = 0.15;
         const sideMat = RetroMaterials.neonGlow(0xff44ff);
-        const offsets = [[-0.4, 0, 0], [0.4, 0, 0], [0, 0, -0.4], [0, 0, 0.4]] as [number, number, number][];
+        const offsets = [
+          [-0.4, 0, 0],
+          [0.4, 0, 0],
+          [0, 0, -0.4],
+          [0, 0, 0.4]
+        ] as [number, number, number][];
         for (const [ox, oy, oz] of offsets) {
           const side = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.4, 0.15), sideMat);
           side.position.set(ox, 0.5 + oy, oz);
@@ -264,6 +269,31 @@ export class ModelFactory {
     });
 
     group.scale.setScalar(scaleFactor);
+    return group;
+  }
+
+  static createResourceSpot(buildingTypeId: string): THREE.Group {
+    const colorMap: Record<string, number> = {
+      wood_harvester: 0x33cc55,
+      coal_mine: 0x888888,
+      iron_mine: 0xcc5533,
+      water_pump: 0x3399ff
+    };
+    const color = colorMap[buildingTypeId] ?? 0xffffff;
+    const group = new THREE.Group();
+
+    // Glowing ground ring
+    const ringMat = RetroMaterials.neonGlow(color);
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(1.2, 0.1, 8, 24), ringMat);
+    ring.rotation.x = Math.PI / 2;
+    ring.position.y = 0.05;
+
+    // Small floating indicator above the ring
+    const indicatorMat = RetroMaterials.neonGlow(color);
+    const indicator = new THREE.Mesh(new THREE.OctahedronGeometry(0.22, 0), indicatorMat);
+    indicator.position.y = 1.0;
+
+    group.add(ring, indicator);
     return group;
   }
 

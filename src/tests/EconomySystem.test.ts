@@ -1,10 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import {
-  sellResource,
-  getSellPrice,
-  getTotalOperatingCost,
-  tick,
-} from '../systems/EconomySystem';
+import { sellResource, getSellPrice, getTotalOperatingCost, tick } from '../systems/EconomySystem';
 import { createTestGameState } from './testHelpers';
 import type { GameState } from '../game/GameState';
 
@@ -55,5 +50,11 @@ describe('EconomySystem', () => {
     const cashBefore = state.cash;
     tick(state, 1); // 1 second
     expect(state.cash).toBeLessThan(cashBefore);
+  });
+
+  it('cash does not go below zero from maintenance', () => {
+    state.cash = 0;
+    tick(state, 1000); // huge delta that would normally cause massive debt
+    expect(state.cash).toBe(0);
   });
 });

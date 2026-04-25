@@ -23,7 +23,7 @@ const DEMAND_MAX = 1.0;
  */
 export function tick(state: GameState, deltaSeconds: number): void {
   const maintenancePerTick = getBuildingMaintenance(state);
-  state.cash -= maintenancePerTick * deltaSeconds * TICK_RATE;
+  state.cash = Math.max(0, state.cash - maintenancePerTick * deltaSeconds * TICK_RATE);
 
   // Fluctuate demand roughly every MAINTENANCE_INTERVAL ticks
   if (state.tick % MAINTENANCE_INTERVAL === 0) {
@@ -37,12 +37,7 @@ export function tick(state: GameState, deltaSeconds: number): void {
  * Returns false if the player does not have enough of the resource or the
  * partner / resource is not valid.
  */
-export function sellResource(
-  state: GameState,
-  resourceId: string,
-  amount: number,
-  partnerId: string,
-): boolean {
+export function sellResource(state: GameState, resourceId: string, amount: number, partnerId: string): boolean {
   const current = state.inventory[resourceId] ?? 0;
   if (current < amount) return false;
 
@@ -64,7 +59,7 @@ export function sellResource(
     resourceId,
     amount,
     price,
-    totalValue,
+    totalValue
   });
 
   return true;
@@ -74,11 +69,7 @@ export function sellResource(
  * Returns the effective sell price for a resource with a given partner,
  * factoring in the partner's price modifier and current demand.
  */
-export function getSellPrice(
-  state: GameState,
-  resourceId: string,
-  partnerId: string,
-): number {
+export function getSellPrice(state: GameState, resourceId: string, partnerId: string): number {
   const resource = RESOURCES_MAP[resourceId];
   const partner = TRADE_PARTNERS_MAP[partnerId];
   if (!resource || !partner) return 0;
@@ -101,9 +92,7 @@ export function getTotalOperatingCost(state: GameState): number {
  */
 export function getProfitSinceLastTick(state: GameState): number {
   const lastTick = state.tick - 1;
-  const revenue = state.tradeHistory
-    .filter((r) => r.tick === lastTick)
-    .reduce((sum, r) => sum + r.totalValue, 0);
+  const revenue = state.tradeHistory.filter((r) => r.tick === lastTick).reduce((sum, r) => sum + r.totalValue, 0);
   return revenue - getTotalOperatingCost(state);
 }
 
@@ -115,10 +104,7 @@ export function updateDemand(state: GameState): void {
     for (const resourceId of Object.keys(partnerDemand)) {
       const current = partnerDemand[resourceId] ?? 0;
       const delta = (Math.random() * 2 - 1) * DEMAND_DRIFT;
-      state.demand[partnerId][resourceId] = Math.max(
-        DEMAND_MIN,
-        Math.min(DEMAND_MAX, current + delta),
-      );
+      state.demand[partnerId][resourceId] = Math.max(DEMAND_MIN, Math.min(DEMAND_MAX, current + delta));
     }
   }
 }
@@ -127,11 +113,7 @@ export function updateDemand(state: GameState): void {
  * Returns the current demand level (0-1) for a resource from a trade partner.
  * Falls back to the partner's baseDemand (preferred resources get +0.2 bonus).
  */
-export function getTradePartnerDemand(
-  state: GameState,
-  partnerId: string,
-  resourceId: string,
-): number {
+export function getTradePartnerDemand(state: GameState, partnerId: string, resourceId: string): number {
   const storedDemand = state.demand[partnerId]?.[resourceId];
   if (storedDemand !== undefined) return storedDemand;
 
@@ -153,10 +135,7 @@ export function initialiseDemand(state: GameState): void {
     for (const resourceId of Object.keys(RESOURCES_MAP)) {
       if (state.demand[partner.id][resourceId] === undefined) {
         const bonus = partner.preferredResources.includes(resourceId) ? 0.2 : 0;
-        state.demand[partner.id][resourceId] = Math.min(
-          DEMAND_MAX,
-          partner.baseDemand + bonus,
-        );
+        state.demand[partner.id][resourceId] = Math.min(DEMAND_MAX, partner.baseDemand + bonus);
       }
     }
   }

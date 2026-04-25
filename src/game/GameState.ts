@@ -1,5 +1,14 @@
 /** Central game state types used by all systems. */
 
+export interface ResourceSpot {
+  id: string;
+  /** The harvester building type that can be placed here. */
+  buildingTypeId: string;
+  position: { x: number; y: number; z: number };
+  /** null when empty; set to the placed building's id when occupied. */
+  occupiedByBuildingId: string | null;
+}
+
 export interface GameState {
   /** Save format version for migration. */
   version: number;
@@ -21,6 +30,8 @@ export interface GameState {
   worldSeed: number;
   /** Trade partner demand: partnerId -> resourceId -> 0-1 factor. */
   demand: Record<string, Record<string, number>>;
+  /** World spots where harvesters can be built. */
+  resourceSpots: ResourceSpot[];
 }
 
 export interface BuildingInstance {

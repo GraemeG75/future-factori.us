@@ -7,10 +7,7 @@ function nextId(): string {
   return `test-building-${++_idCounter}`;
 }
 
-export function createTestBuilding(
-  typeId: string,
-  overrides: Partial<BuildingInstance> = {},
-): BuildingInstance {
+export function createTestBuilding(typeId: string, overrides: Partial<BuildingInstance> = {}): BuildingInstance {
   return {
     id: nextId(),
     typeId,
@@ -24,7 +21,7 @@ export function createTestBuilding(
     outputBuffer: {},
     isPowered: true,
     assignedRouteIds: [],
-    ...overrides,
+    ...overrides
   };
 }
 
@@ -35,10 +32,7 @@ export function createTestGameState(overrides: Partial<GameState> = {}): GameSta
     cash: 10000,
     researchPoints: 0,
     inventory: { wood: 100, coal: 100, iron_ore: 50 },
-    buildings: [
-      createTestBuilding('wood_harvester'),
-      createTestBuilding('storage_depot'),
-    ],
+    buildings: [createTestBuilding('wood_harvester'), createTestBuilding('storage_depot')],
     routes: [],
     activeResearch: null,
     completedResearch: [],
@@ -50,12 +44,13 @@ export function createTestGameState(overrides: Partial<GameState> = {}): GameSta
       gamePaused: false,
       gameSpeed: 1,
       autosaveEnabled: false,
-      autosaveIntervalMinutes: 1,
+      autosaveIntervalMinutes: 1
     },
     locale: 'en',
     worldSeed: 42,
     demand: {},
-    ...overrides,
+    resourceSpots: [],
+    ...overrides
   };
   initialiseDemand(state);
   return state;

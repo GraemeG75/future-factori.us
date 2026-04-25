@@ -1,24 +1,21 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import {
-  save,
-  load,
-  hasSave,
-  deleteSave,
-  createNewGame,
-  migrate,
-  SAVE_KEY,
-  SAVE_VERSION,
-} from '../systems/SaveSystem';
+import { save, load, hasSave, deleteSave, createNewGame, migrate, SAVE_KEY, SAVE_VERSION } from '../systems/SaveSystem';
 
 // Simple localStorage mock
 function makeLocalStorageMock() {
   const store: Record<string, string> = {};
   return {
     getItem: vi.fn((key: string) => store[key] ?? null),
-    setItem: vi.fn((key: string, value: string) => { store[key] = value; }),
-    removeItem: vi.fn((key: string) => { delete store[key]; }),
-    clear: vi.fn(() => { for (const k of Object.keys(store)) delete store[k]; }),
-    _store: store,
+    setItem: vi.fn((key: string, value: string) => {
+      store[key] = value;
+    }),
+    removeItem: vi.fn((key: string) => {
+      delete store[key];
+    }),
+    clear: vi.fn(() => {
+      for (const k of Object.keys(store)) delete store[k];
+    }),
+    _store: store
   };
 }
 
@@ -41,9 +38,10 @@ describe('SaveSystem', () => {
     expect(state.cash).toBeGreaterThan(0);
   });
 
-  it('createNewGame has initial buildings', () => {
+  it('createNewGame starts with no buildings but has resource spots', () => {
     const state = createNewGame();
-    expect(state.buildings.length).toBeGreaterThan(0);
+    expect(state.buildings.length).toBe(0);
+    expect(state.resourceSpots.length).toBeGreaterThan(0);
   });
 
   it('save serializes state to localStorage', () => {
