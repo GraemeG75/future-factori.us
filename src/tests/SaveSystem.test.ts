@@ -1,0 +1,103 @@
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import {
+  save,
+  load,
+  hasSave,
+  deleteSave,
+  createNewGame,
+  migrate,
+  SAVE_KEY,
+  SAVE_VERSION,
+} from '../systems/SaveSystem';
+
+// Simple localStorage mock
+function makeLocalStorageMock() {
+  const store: Record<string, string> = {};
+  return {
+    getItem: vi.fn((key: string) => store[key] ?? null),
+    setItem: vi.fn((key: string, value: string) => { store[key] = value; }),
+    removeItem: vi.fn((key: string) => { delete store[key]; }),
+    clear: vi.fn(() => { for (const k of Object.keys(store)) delete store[k]; }),
+    _store: store,
+  };
+}
+
+describe('SaveSystem', () => {
+  let mockStorage: ReturnType<typeof makeLocalStorageMock>;
+
+  beforeEach(() => {
+    mockStorage = makeLocalStorageMock();
+    vi.stubGlobal('localStorage', mockStorage);
+  });
+
+  it('createNewGame creates valid game state', () => {
+    const state = createNewGame();
+    expect(state).toBeDefined();
+    expect(state.version).toBe(SAVE_VERSION);
+  });
+
+  it('createNewGame has starting cash', () => {
+    const state = createNewGame();
+    expect(state.cash).toBeGreaterThan(0);
+  });
+
+  it('createNewGame has initial buildings', () => {
+    const state = createNewGame();
+    expect(state.buildings.length).toBeGreaterThan(0);
+  });
+
+  it('save serializes state to localStorage', () => {
+    const state = createNewGame();
+    save(state);
+    expect(mockStorage.setItem).toHaveBeenCalledWith(SAVE_KEY, expect.any(String));
+  });
+
+  it('load deserializes state from localStorage', () => {
+    const state = createNewGame();
+    save(state);
+    const loaded = load();
+    expect(loaded).not.toBeNull();
+    expect(loaded!.cash).toBe(state.cash);
+    expect(loaded!.version).toBe(SAVE_VERSION);
+  });
+
+  it('load returns null when no save exists', () => {
+    const result = load();
+    expect(result).toBeNull();
+  });
+
+  it('load returns null for corrupted data', () => {
+    mockStorage._store[SAVE_KEY] = 'not-valid-json{{{';
+    const result = load();
+    expect(result).toBeNull();
+  });
+
+  it('hasSave returns true after save', () => {
+    expect(hasSave()).toBe(false);
+    save(createNewGame());
+    expect(hasSave()).toBe(true);
+  });
+
+  it('deleteSave removes from localStorage', () => {
+    save(createNewGame());
+    expect(hasSave()).toBe(true);
+    deleteSave();
+    expect(hasSave()).toBe(false);
+  });
+
+  it('migration: saved v0 data (no version field) is migrated to v1 with defaults', () => {
+    const v0Data = { cash: 500, tick: 10 };
+    const migrated = migrate(v0Data, 0);
+    expect(migrated.version).toBe(SAVE_VERSION);
+    expect(migrated.cash).toBe(500);
+    expect(migrated.tick).toBe(10);
+  });
+
+  it('serialized state has correct version number', () => {
+    const state = createNewGame();
+    save(state);
+    const raw = mockStorage._store[SAVE_KEY];
+    const parsed = JSON.parse(raw) as { version: number };
+    expect(parsed.version).toBe(SAVE_VERSION);
+  });
+});
