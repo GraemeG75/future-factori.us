@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import type { GameState, BuildingInstance, RouteInstance } from './GameState';
+import type { GameState, BuildingInstance, RouteInstance, ResourceSpot } from './GameState';
 import { ModelFactory } from '../graphics/ModelFactory';
 import { RetroMaterials } from '../graphics/RetroMaterials';
 
@@ -8,6 +8,7 @@ export class World {
   private buildingMeshes: Map<string, THREE.Group> = new Map();
   private routeLines: Map<string, THREE.Line> = new Map();
   private cargoMeshes: Map<string, THREE.Mesh> = new Map();
+  private spotMarkers: Map<string, THREE.Group> = new Map();
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
@@ -19,6 +20,8 @@ export class World {
 
     const grid = ModelFactory.createGridOverlay(200, 200);
     this.scene.add(grid);
+
+    this.initSpotMarkers(gameState.resourceSpots);
 
     for (const building of gameState.buildings) {
       this.addBuildingMesh(building);
@@ -40,6 +43,27 @@ export class World {
     this.scene.add(group);
     this.buildingMeshes.set(instance.id, group);
     return group;
+  }
+
+  /** Creates and places a marker for every resource spot. */
+  initSpotMarkers(spots: ResourceSpot[]): void {
+    this.spotMarkers.forEach((m) => this.scene.remove(m));
+    this.spotMarkers.clear();
+    for (const spot of spots) {
+      const group = ModelFactory.createResourceSpot(spot.buildingTypeId);
+      group.position.set(spot.position.x, spot.position.y, spot.position.z);
+      group.visible = spot.occupiedByBuildingId === null;
+      this.scene.add(group);
+      this.spotMarkers.set(spot.id, group);
+    }
+  }
+
+  /** Shows/hides spot markers depending on whether each spot is occupied. */
+  syncSpotMarkers(spots: ResourceSpot[]): void {
+    for (const spot of spots) {
+      const marker = this.spotMarkers.get(spot.id);
+      if (marker) marker.visible = spot.occupiedByBuildingId === null;
+    }
   }
 
   removeBuildingMesh(buildingId: string): void {

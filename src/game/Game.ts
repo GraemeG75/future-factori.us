@@ -132,6 +132,7 @@ export class Game {
     if (!building) return false;
     const mesh = this.world.addBuildingMesh(building);
     this.selectionManager.registerBuilding(building.id, mesh);
+    this.world.syncSpotMarkers(this.state.resourceSpots);
     this.audio.playBuild();
     if (this.onStateChange) this.onStateChange(this.state);
     return true;

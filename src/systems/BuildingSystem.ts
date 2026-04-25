@@ -1,23 +1,31 @@
 import { BUILDINGS_MAP } from '../data/buildings';
-import type { BuildingInstance, GameState } from '../game/GameState';
+import type { BuildingInstance, GameState, ResourceSpot } from '../game/GameState';
 
 /** Base harvest rate in units per tick at building level 1. */
 const BASE_HARVEST_RATE = 0.1;
+
+/** Max distance (world units) from a spot to snap a harvester placement. */
+const HARVESTER_SNAP_RADIUS = 8;
 
 /**
  * Attempts to place a building of the given type at the specified position.
  * Deducts the cost from cash. Returns the new BuildingInstance, or null if
  * the player cannot afford it or the type is locked.
  */
-export function placeBuilding(
-  state: GameState,
-  typeId: string,
-  position: { x: number; y: number; z: number },
-): BuildingInstance | null {
+export function placeBuilding(state: GameState, typeId: string, clickPosition: { x: number; y: number; z: number }): BuildingInstance | null {
   const buildingType = BUILDINGS_MAP[typeId];
   if (!buildingType) return null;
   if (!isBuildingTypeUnlocked(state.completedResearch, typeId)) return null;
   if (state.cash < buildingType.baseCost) return null;
+
+  // Harvesters must snap to a matching unoccupied resource spot
+  let buildPosition = clickPosition;
+  let targetSpot: ResourceSpot | undefined;
+  if (buildingType.category === 'harvester') {
+    targetSpot = findNearestUnoccupiedSpot(state, typeId, clickPosition);
+    if (!targetSpot) return null;
+    buildPosition = targetSpot.position;
+  }
 
   state.cash -= buildingType.baseCost;
 
@@ -25,7 +33,7 @@ export function placeBuilding(
     id: crypto.randomUUID(),
     typeId,
     level: 1,
-    position,
+    position: buildPosition,
     rotation: 0,
     health: 100,
     activeRecipeId: null,
@@ -33,10 +41,15 @@ export function placeBuilding(
     inputBuffer: {},
     outputBuffer: {},
     isPowered: true,
-    assignedRouteIds: [],
+    assignedRouteIds: []
   };
 
   state.buildings.push(building);
+
+  if (targetSpot) {
+    targetSpot.occupiedByBuildingId = building.id;
+  }
+
   return building;
 }
 
@@ -65,24 +78,19 @@ export function upgradeBuilding(state: GameState, buildingId: string): boolean {
  */
 export function removeBuilding(state: GameState, buildingId: string): void {
   state.buildings = state.buildings.filter((b) => b.id !== buildingId);
-  state.routes = state.routes.filter(
-    (r) => r.fromBuildingId !== buildingId && r.toBuildingId !== buildingId,
-  );
+  state.routes = state.routes.filter((r) => r.fromBuildingId !== buildingId && r.toBuildingId !== buildingId);
+  // Free any resource spot this building was occupying
+  const spot = state.resourceSpots.find((s) => s.occupiedByBuildingId === buildingId);
+  if (spot) spot.occupiedByBuildingId = null;
 }
 
 /** Returns a BuildingInstance by its unique id, or undefined if not found. */
-export function getBuildingById(
-  state: GameState,
-  id: string,
-): BuildingInstance | undefined {
+export function getBuildingById(state: GameState, id: string): BuildingInstance | undefined {
   return state.buildings.find((b) => b.id === id);
 }
 
 /** Returns all buildings of the given typeId. */
-export function getBuildingsByType(
-  state: GameState,
-  typeId: string,
-): BuildingInstance[] {
+export function getBuildingsByType(state: GameState, typeId: string): BuildingInstance[] {
   return state.buildings.filter((b) => b.typeId === typeId);
 }
 
@@ -113,11 +121,7 @@ export function isBuildingTypeUnlocked(completedResearch: string[], typeId: stri
 export function getHarvestRate(building: BuildingInstance): number {
   const buildingType = BUILDINGS_MAP[building.typeId];
   if (!buildingType || buildingType.category !== 'harvester') return 0;
-  return (
-    BASE_HARVEST_RATE *
-    building.level *
-    Math.pow(buildingType.productionRateMultiplier, building.level - 1)
-  );
+  return BASE_HARVEST_RATE * building.level * Math.pow(buildingType.productionRateMultiplier, building.level - 1);
 }
 
 /**
@@ -164,4 +168,31 @@ export function updatePowerState(state: GameState): void {
       building.isPowered = false;
     }
   }
+}
+
+// ---------------------------------------------------------------------------
+// Internal helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns the nearest unoccupied resource spot of the given type within
+ * HARVESTER_SNAP_RADIUS world units of the click position, or undefined if none.
+ */
+function findNearestUnoccupiedSpot(state: GameState, typeId: string, position: { x: number; y: number; z: number }): ResourceSpot | undefined {
+  let best: ResourceSpot | undefined;
+  let bestDist = HARVESTER_SNAP_RADIUS;
+
+  for (const spot of state.resourceSpots) {
+    if (spot.buildingTypeId !== typeId) continue;
+    if (spot.occupiedByBuildingId !== null) continue;
+    const dx = spot.position.x - position.x;
+    const dz = spot.position.z - position.z;
+    const dist = Math.sqrt(dx * dx + dz * dz);
+    if (dist < bestDist) {
+      bestDist = dist;
+      best = spot;
+    }
+  }
+
+  return best;
 }

@@ -1,8 +1,64 @@
-import type { GameState, BuildingInstance } from '../game/GameState';
+import type { GameState, BuildingInstance, ResourceSpot } from '../game/GameState';
 import { initialiseDemand } from './EconomySystem';
 
 export const SAVE_VERSION = 1;
 export const SAVE_KEY = 'future_factorius_save';
+
+// ---------------------------------------------------------------------------
+// Resource spot generation
+// ---------------------------------------------------------------------------
+
+/** Harvester type -> number of spots to generate in the world. */
+const HARVESTER_SPOT_COUNTS: Record<string, number> = {
+  wood_harvester: 6,
+  coal_mine: 4,
+  iron_mine: 4,
+  water_pump: 3,
+};
+
+/** Minimum world-unit separation between any two spots. */
+const SPOT_MIN_SEPARATION = 12;
+
+/** Simple seeded LCG random number generator returning values in [0, 1). */
+function seededRng(seed: number): () => number {
+  let s = seed | 0;
+  return () => {
+    s = (Math.imul(s, 1664525) + 1013904223) | 0;
+    return (s >>> 0) / 4294967296;
+  };
+}
+
+/** Deterministically generates resource spots from the world seed. */
+export function generateResourceSpots(seed: number): ResourceSpot[] {
+  const rng = seededRng(seed);
+  const spots: ResourceSpot[] = [];
+
+  for (const [typeId, count] of Object.entries(HARVESTER_SPOT_COUNTS)) {
+    let placed = 0;
+    let attempts = 0;
+    while (placed < count && attempts < count * 30) {
+      attempts++;
+      const x = Math.round((rng() - 0.5) * 160); // -80 to +80
+      const z = Math.round((rng() - 0.5) * 160);
+      const tooClose = spots.some((s) => {
+        const dx = s.position.x - x;
+        const dz = s.position.z - z;
+        return Math.sqrt(dx * dx + dz * dz) < SPOT_MIN_SEPARATION;
+      });
+      if (!tooClose) {
+        spots.push({
+          id: `spot_${typeId}_${placed}`,
+          buildingTypeId: typeId,
+          position: { x, y: 0, z },
+          occupiedByBuildingId: null,
+        });
+        placed++;
+      }
+    }
+  }
+
+  return spots;
+}
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -89,14 +145,10 @@ export function createNewGame(locale = 'en'): GameState {
     locale,
     worldSeed: Math.floor(Math.random() * 1_000_000),
     demand: {},
+    resourceSpots: [],
   };
 
-  // Place starting buildings directly (no cost deducted for a new game)
-  state.buildings.push(makeBuilding('wood_harvester', { x: 0, y: 0, z: 0 }));
-  state.buildings.push(makeBuilding('coal_mine', { x: 10, y: 0, z: 0 }));
-  state.buildings.push(makeBuilding('trading_terminal', { x: 20, y: 0, z: 0 }));
-  state.buildings.push(makeBuilding('storage_depot', { x: 30, y: 0, z: 0 }));
-
+  state.resourceSpots = generateResourceSpots(state.worldSeed);
   initialiseDemand(state);
 
   return state;
@@ -186,6 +238,9 @@ function coerceToGameState(raw: Record<string, unknown>): GameState {
     demand: isObject(raw['demand'])
       ? (raw['demand'] as Record<string, Record<string, number>>)
       : defaults.demand,
+    resourceSpots: Array.isArray(raw['resourceSpots'])
+      ? (raw['resourceSpots'] as ResourceSpot[])
+      : generateResourceSpots(typeof raw['worldSeed'] === 'number' ? raw['worldSeed'] : defaults.worldSeed),
   };
 }
 
