@@ -1,0 +1,163 @@
+import { RESOURCES_MAP } from '../data/resources';
+import { TRADE_PARTNERS_MAP } from '../data/tradePartners';
+import type { GameState } from '../game/GameState';
+import { getBuildingMaintenance } from './BuildingSystem';
+
+/** Game ticks per real second. */
+export const TICK_RATE = 20;
+/** Number of ticks between autosaves (~1 minute at 20 tps). */
+export const AUTOSAVE_TICKS = 1200;
+/** Maintenance is conceptually billed every this many ticks (1 game second). */
+export const MAINTENANCE_INTERVAL = 20;
+
+/** Maximum random demand shift per update call. */
+const DEMAND_DRIFT = 0.05;
+/** Minimum demand floor. */
+const DEMAND_MIN = 0.1;
+/** Maximum demand ceiling. */
+const DEMAND_MAX = 1.0;
+
+/**
+ * Economy tick: deducts maintenance costs proportional to elapsed seconds,
+ * and applies a small demand fluctuation every few seconds.
+ */
+export function tick(state: GameState, deltaSeconds: number): void {
+  const maintenancePerTick = getBuildingMaintenance(state);
+  state.cash -= maintenancePerTick * deltaSeconds * TICK_RATE;
+
+  // Fluctuate demand roughly every MAINTENANCE_INTERVAL ticks
+  if (state.tick % MAINTENANCE_INTERVAL === 0) {
+    updateDemand(state);
+  }
+}
+
+/**
+ * Sells a quantity of a resource to a trade partner.
+ * Removes the resource from inventory, credits cash, and records the trade.
+ * Returns false if the player does not have enough of the resource or the
+ * partner / resource is not valid.
+ */
+export function sellResource(
+  state: GameState,
+  resourceId: string,
+  amount: number,
+  partnerId: string,
+): boolean {
+  const current = state.inventory[resourceId] ?? 0;
+  if (current < amount) return false;
+
+  const partner = TRADE_PARTNERS_MAP[partnerId];
+  if (!partner) return false;
+  if (partner.unlockRequirement && !state.completedResearch.includes(partner.unlockRequirement)) {
+    return false;
+  }
+
+  const price = getSellPrice(state, resourceId, partnerId);
+  const totalValue = price * amount;
+
+  state.inventory[resourceId] = current - amount;
+  state.cash += totalValue;
+
+  state.tradeHistory.push({
+    tick: state.tick,
+    partnerId,
+    resourceId,
+    amount,
+    price,
+    totalValue,
+  });
+
+  return true;
+}
+
+/**
+ * Returns the effective sell price for a resource with a given partner,
+ * factoring in the partner's price modifier and current demand.
+ */
+export function getSellPrice(
+  state: GameState,
+  resourceId: string,
+  partnerId: string,
+): number {
+  const resource = RESOURCES_MAP[resourceId];
+  const partner = TRADE_PARTNERS_MAP[partnerId];
+  if (!resource || !partner) return 0;
+
+  const demand = getTradePartnerDemand(state, partnerId, resourceId);
+  // Demand in [0.1, 1.0] maps price to [0.6 × base, 1.5 × base]
+  return Math.floor(resource.basePrice * partner.priceModifier * (0.5 + demand));
+}
+
+/**
+ * Returns the total operating cost per game tick (maintenance across all buildings).
+ */
+export function getTotalOperatingCost(state: GameState): number {
+  return getBuildingMaintenance(state);
+}
+
+/**
+ * Returns the profit generated in the previous game tick:
+ * trade revenue recorded at tick-1 minus operating cost per tick.
+ */
+export function getProfitSinceLastTick(state: GameState): number {
+  const lastTick = state.tick - 1;
+  const revenue = state.tradeHistory
+    .filter((r) => r.tick === lastTick)
+    .reduce((sum, r) => sum + r.totalValue, 0);
+  return revenue - getTotalOperatingCost(state);
+}
+
+/**
+ * Applies small random fluctuations to all trade partner demand values.
+ */
+export function updateDemand(state: GameState): void {
+  for (const [partnerId, partnerDemand] of Object.entries(state.demand)) {
+    for (const resourceId of Object.keys(partnerDemand)) {
+      const current = partnerDemand[resourceId] ?? 0;
+      const delta = (Math.random() * 2 - 1) * DEMAND_DRIFT;
+      state.demand[partnerId][resourceId] = Math.max(
+        DEMAND_MIN,
+        Math.min(DEMAND_MAX, current + delta),
+      );
+    }
+  }
+}
+
+/**
+ * Returns the current demand level (0-1) for a resource from a trade partner.
+ * Falls back to the partner's baseDemand (preferred resources get +0.2 bonus).
+ */
+export function getTradePartnerDemand(
+  state: GameState,
+  partnerId: string,
+  resourceId: string,
+): number {
+  const storedDemand = state.demand[partnerId]?.[resourceId];
+  if (storedDemand !== undefined) return storedDemand;
+
+  const partner = TRADE_PARTNERS_MAP[partnerId];
+  if (!partner) return 0.5;
+  const bonus = partner.preferredResources.includes(resourceId) ? 0.2 : 0;
+  return Math.min(DEMAND_MAX, partner.baseDemand + bonus);
+}
+
+/**
+ * Initialises the demand map in state from trade partner base values.
+ * Called when creating a new game or loading a save without demand data.
+ */
+export function initialiseDemand(state: GameState): void {
+  for (const partner of Object.values(TRADE_PARTNERS_MAP)) {
+    if (!state.demand[partner.id]) {
+      state.demand[partner.id] = {};
+    }
+    for (const resourceId of Object.keys(RESOURCES_MAP)) {
+      if (state.demand[partner.id][resourceId] === undefined) {
+        const bonus = partner.preferredResources.includes(resourceId) ? 0.2 : 0;
+        state.demand[partner.id][resourceId] = Math.min(
+          DEMAND_MAX,
+          partner.baseDemand + bonus,
+        );
+      }
+    }
+  }
+}
