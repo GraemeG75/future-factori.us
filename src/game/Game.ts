@@ -4,6 +4,7 @@ import { CameraController } from './CameraController';
 import { SelectionManager } from './SelectionManager';
 import { World } from './World';
 import { Effects } from '../graphics/Effects';
+import { DayNightCycle } from '../graphics/DayNightCycle';
 import { AudioSystem } from '../systems/AudioSystem';
 import * as ProductionSystem from '../systems/ProductionSystem';
 import * as RouteSystem from '../systems/RouteSystem';
@@ -24,6 +25,7 @@ export class Game {
   private selectionManager: SelectionManager;
   private world: World;
   private effects: Effects;
+  private dayNightCycle: DayNightCycle | null = null;
   private audio: AudioSystem;
   private state: GameState;
   private lastTimestamp: number = 0;
@@ -51,6 +53,7 @@ export class Game {
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.setPixelRatio(window.devicePixelRatio);
     this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
     this.scene.background = new THREE.Color(0x0a0a0f);
     this.scene.fog = new THREE.FogExp2(0x0a0a0f, 0.008);
@@ -60,10 +63,21 @@ export class Game {
 
     const ambient = new THREE.AmbientLight(0x404060, 0.5);
     this.scene.add(ambient);
+
     const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
     dirLight.position.set(50, 80, 50);
     dirLight.castShadow = true;
+    dirLight.shadow.mapSize.width = 2048;
+    dirLight.shadow.mapSize.height = 2048;
+    dirLight.shadow.camera.near = 0.5;
+    dirLight.shadow.camera.far = 300;
+    dirLight.shadow.camera.left = -100;
+    dirLight.shadow.camera.right = 100;
+    dirLight.shadow.camera.top = 100;
+    dirLight.shadow.camera.bottom = -100;
     this.scene.add(dirLight);
+
+    this.dayNightCycle = new DayNightCycle(ambient, dirLight, this.scene);
 
     this.world.init(this.state);
 
@@ -255,11 +269,15 @@ export class Game {
     this.tickAccumulator += scaledDelta;
     const ticks = Math.min(Math.floor(this.tickAccumulator / TICK_INTERVAL), 5);
     this.tickAccumulator -= ticks * TICK_INTERVAL;
+    let didTick = false;
     for (let i = 0; i < ticks; i++) {
       this.tick();
+      didTick = true;
     }
     this.render();
-    if (this.onStateChange) this.onStateChange(this.state);
+    // Only notify the UI when the simulation state actually advanced —
+    // avoids 60fps DOM rebuilds when no tick ran this frame.
+    if (didTick && this.onStateChange) this.onStateChange(this.state);
     this.animFrameId = requestAnimationFrame((ts) => this.gameLoop(ts));
   }
 
@@ -280,6 +298,7 @@ export class Game {
     this.cameraController.update(this.deltaTime);
     this.selectionManager.update();
     this.effects.update(this.deltaTime);
+    if (this.dayNightCycle) this.dayNightCycle.update(this.deltaTime);
     this.renderer.render(this.scene, this.camera);
   }
 
@@ -288,6 +307,7 @@ export class Game {
     if (this.animFrameId) cancelAnimationFrame(this.animFrameId);
     this.cameraController.dispose();
     this.effects.dispose();
+    this.world.dispose();
     this.renderer.dispose();
   }
 }
