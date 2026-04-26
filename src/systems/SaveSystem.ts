@@ -3,6 +3,8 @@ import { initialiseDemand } from './EconomySystem';
 
 export const SAVE_VERSION = 2;
 export const SAVE_KEY = 'future_factorius_save';
+/** Starting cash for a fresh game. */
+export const STARTING_CASH = 2500;
 
 // ---------------------------------------------------------------------------
 // Resource spot generation
@@ -13,7 +15,7 @@ const HARVESTER_SPOT_COUNTS: Record<string, number> = {
   wood_harvester: 6,
   coal_mine: 4,
   iron_mine: 4,
-  water_pump: 3,
+  water_pump: 3
 };
 
 /** Minimum world-unit separation between any two spots. */
@@ -148,7 +150,7 @@ export function createNewGame(locale = 'en'): GameState {
   const state: GameState = {
     version: SAVE_VERSION,
     tick: 0,
-    cash: 1000,
+    cash: STARTING_CASH,
     researchPoints: 0,
     inventory: {},
     buildings: [],
@@ -163,7 +165,7 @@ export function createNewGame(locale = 'en'): GameState {
       gamePaused: false,
       gameSpeed: 1,
       autosaveEnabled: true,
-      autosaveIntervalMinutes: 1,
+      autosaveIntervalMinutes: 1
     },
     locale,
     worldSeed: Math.floor(Math.random() * 1_000_000),
@@ -199,46 +201,25 @@ function coerceToGameState(raw: Record<string, unknown>): GameState {
     version: typeof raw['version'] === 'number' ? raw['version'] : defaults.version,
     tick: typeof raw['tick'] === 'number' ? raw['tick'] : 0,
     cash: typeof raw['cash'] === 'number' ? raw['cash'] : defaults.cash,
-    researchPoints:
-      typeof raw['researchPoints'] === 'number' ? raw['researchPoints'] : 0,
-    inventory: isObject(raw['inventory'])
-      ? (raw['inventory'] as Record<string, number>)
-      : {},
-    buildings: Array.isArray(raw['buildings'])
-      ? (raw['buildings'] as BuildingInstance[])
-      : defaults.buildings,
-    routes: Array.isArray(raw['routes'])
-      ? raw['routes']
-      : [],
+    researchPoints: typeof raw['researchPoints'] === 'number' ? raw['researchPoints'] : 0,
+    inventory: isObject(raw['inventory']) ? (raw['inventory'] as Record<string, number>) : {},
+    buildings: Array.isArray(raw['buildings']) ? (raw['buildings'] as BuildingInstance[]) : defaults.buildings,
+    routes: Array.isArray(raw['routes']) ? raw['routes'] : [],
     activeResearch:
       isObject(raw['activeResearch']) && typeof raw['activeResearch']['technologyId'] === 'string'
         ? {
             technologyId: raw['activeResearch']['technologyId'] as string,
-            progress:
-              typeof raw['activeResearch']['progress'] === 'number'
-                ? (raw['activeResearch']['progress'] as number)
-                : 0,
-            startedAt:
-              typeof raw['activeResearch']['startedAt'] === 'number'
-                ? (raw['activeResearch']['startedAt'] as number)
-                : 0,
+            progress: typeof raw['activeResearch']['progress'] === 'number' ? (raw['activeResearch']['progress'] as number) : 0,
+            startedAt: typeof raw['activeResearch']['startedAt'] === 'number' ? (raw['activeResearch']['startedAt'] as number) : 0
           }
         : null,
-    completedResearch: Array.isArray(raw['completedResearch'])
-      ? (raw['completedResearch'] as string[])
-      : [],
-    tradeHistory: Array.isArray(raw['tradeHistory'])
-      ? raw['tradeHistory']
-      : [],
+    completedResearch: Array.isArray(raw['completedResearch']) ? (raw['completedResearch'] as string[]) : [],
+    tradeHistory: Array.isArray(raw['tradeHistory']) ? raw['tradeHistory'] : [],
     alerts: Array.isArray(raw['alerts']) ? raw['alerts'] : [],
-    settings: isObject(raw['settings'])
-      ? coerceSettings(raw['settings'])
-      : defaults.settings,
+    settings: isObject(raw['settings']) ? coerceSettings(raw['settings']) : defaults.settings,
     locale: typeof raw['locale'] === 'string' ? raw['locale'] : defaults.locale,
     worldSeed: typeof raw['worldSeed'] === 'number' ? raw['worldSeed'] : defaults.worldSeed,
-    demand: isObject(raw['demand'])
-      ? (raw['demand'] as Record<string, Record<string, number>>)
-      : defaults.demand,
+    demand: isObject(raw['demand']) ? (raw['demand'] as Record<string, Record<string, number>>) : defaults.demand,
     resourceSpots: Array.isArray(raw['resourceSpots'])
       ? (raw['resourceSpots'] as ResourceSpot[])
       : generateResourceSpots(typeof raw['worldSeed'] === 'number' ? raw['worldSeed'] : defaults.worldSeed),
@@ -254,14 +235,8 @@ function coerceSettings(raw: Record<string, unknown>): GameState['settings'] {
     soundEnabled: raw['soundEnabled'] !== false,
     musicEnabled: raw['musicEnabled'] !== false,
     gamePaused: raw['gamePaused'] === true,
-    gameSpeed:
-      raw['gameSpeed'] === 2 || raw['gameSpeed'] === 4
-        ? (raw['gameSpeed'] as 2 | 4)
-        : 1,
+    gameSpeed: raw['gameSpeed'] === 2 || raw['gameSpeed'] === 4 ? (raw['gameSpeed'] as 2 | 4) : 1,
     autosaveEnabled: raw['autosaveEnabled'] !== false,
-    autosaveIntervalMinutes:
-      typeof raw['autosaveIntervalMinutes'] === 'number'
-        ? raw['autosaveIntervalMinutes']
-        : 1,
+    autosaveIntervalMinutes: typeof raw['autosaveIntervalMinutes'] === 'number' ? raw['autosaveIntervalMinutes'] : 1
   };
 }

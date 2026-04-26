@@ -1,8 +1,9 @@
 import type { RouteInstance, GameState } from '../game/GameState';
+import { BUILDINGS_MAP } from '../data/buildings';
 import { addResource } from './ResourceSystem';
 
-/** Default cost deducted from cash per delivery trip. */
-const DEFAULT_COST_PER_TRIP = 0.5;
+/** Delivery travel does not deduct passive cash. */
+const DEFAULT_COST_PER_TRIP = 0;
 /** Minimum travel distance to avoid division by zero. */
 const MIN_DISTANCE = 1;
 
@@ -10,16 +11,18 @@ const MIN_DISTANCE = 1;
  * Creates a new transport route between two buildings.
  * Returns null if either building does not exist.
  */
-export function createRoute(
-  state: GameState,
-  fromId: string,
-  toId: string,
-  resourceId: string,
-  capacity: number,
-): RouteInstance | null {
+export function createRoute(state: GameState, fromId: string, toId: string, resourceId: string, capacity: number): RouteInstance | null {
+  if (fromId === toId) return null;
+
+  const duplicate = state.routes.some((r) => r.fromBuildingId === fromId && r.toBuildingId === toId && r.resourceId === resourceId);
+  if (duplicate) return null;
+
   const from = state.buildings.find((b) => b.id === fromId);
   const to = state.buildings.find((b) => b.id === toId);
   if (!from || !to) return null;
+
+  const toType = BUILDINGS_MAP[to.typeId];
+  if (!toType || toType.category === 'harvester') return null;
 
   const route: RouteInstance = {
     id: crypto.randomUUID(),
@@ -31,7 +34,7 @@ export function createRoute(
     currentLoad: 0,
     progress: 0,
     isActive: true,
-    costPerTrip: DEFAULT_COST_PER_TRIP,
+    costPerTrip: DEFAULT_COST_PER_TRIP
   };
 
   state.routes.push(route);
@@ -86,9 +89,6 @@ export function tick(state: GameState, deltaSeconds: number): void {
           addResource(state, route.resourceId, overflow);
         }
 
-        // Deduct delivery cost
-        state.cash -= route.costPerTrip;
-
         route.currentLoad = 0;
         // Immediately attempt reload
         tryLoad(state, route, from);
@@ -107,9 +107,7 @@ export function getRouteById(state: GameState, id: string): RouteInstance | unde
 
 /** Returns all routes that involve a given building (as source or destination). */
 export function getRoutesForBuilding(state: GameState, buildingId: string): RouteInstance[] {
-  return state.routes.filter(
-    (r) => r.fromBuildingId === buildingId || r.toBuildingId === buildingId,
-  );
+  return state.routes.filter((r) => r.fromBuildingId === buildingId || r.toBuildingId === buildingId);
 }
 
 /**
@@ -136,10 +134,7 @@ export function isRouteValid(state: GameState, route: RouteInstance): boolean {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function calcDistance(
-  a: { x: number; y: number; z: number },
-  b: { x: number; y: number; z: number },
-): number {
+function calcDistance(a: { x: number; y: number; z: number }, b: { x: number; y: number; z: number }): number {
   const dx = b.x - a.x;
   const dz = b.z - a.z;
   return Math.max(MIN_DISTANCE, Math.sqrt(dx * dx + dz * dz));
@@ -149,11 +144,7 @@ function calcDistance(
  * Attempts to load cargo from the source building's outputBuffer (then global
  * inventory) onto the route.
  */
-function tryLoad(
-  state: GameState,
-  route: RouteInstance,
-  from: { outputBuffer: Record<string, number> },
-): void {
+function tryLoad(state: GameState, route: RouteInstance, from: { outputBuffer: Record<string, number> }): void {
   const outputAmount = from.outputBuffer[route.resourceId] ?? 0;
   const inventoryAmount = state.inventory[route.resourceId] ?? 0;
   const totalAvailable = outputAmount + inventoryAmount;

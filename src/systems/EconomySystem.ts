@@ -1,13 +1,12 @@
 import { RESOURCES_MAP } from '../data/resources';
 import { TRADE_PARTNERS_MAP } from '../data/tradePartners';
 import type { GameState } from '../game/GameState';
-import { getBuildingMaintenance } from './BuildingSystem';
 
 /** Game ticks per real second. */
 export const TICK_RATE = 20;
 /** Number of ticks between autosaves (~1 minute at 20 tps). */
 export const AUTOSAVE_TICKS = 1200;
-/** Maintenance is conceptually billed every this many ticks (1 game second). */
+/** Demand is updated every this many ticks (1 game second). */
 export const MAINTENANCE_INTERVAL = 20;
 
 /** Maximum random demand shift per update call. */
@@ -18,13 +17,9 @@ const DEMAND_MIN = 0.1;
 const DEMAND_MAX = 1.0;
 
 /**
- * Economy tick: deducts maintenance costs proportional to elapsed seconds,
- * and applies a small demand fluctuation every few seconds.
+ * Economy tick: applies a small demand fluctuation every few seconds.
  */
-export function tick(state: GameState, deltaSeconds: number): void {
-  const maintenancePerTick = getBuildingMaintenance(state);
-  state.cash = Math.max(0, state.cash - maintenancePerTick * deltaSeconds * TICK_RATE);
-
+export function tick(state: GameState, _deltaSeconds: number): void {
   // Fluctuate demand roughly every MAINTENANCE_INTERVAL ticks
   if (state.tick % MAINTENANCE_INTERVAL === 0) {
     updateDemand(state);
@@ -82,10 +77,11 @@ export function getSellPrice(state: GameState, resourceId: string, partnerId: st
 }
 
 /**
- * Returns the total operating cost per game tick (maintenance across all buildings).
+ * Returns the total operating cost per game tick.
+ * Passive operating costs are currently disabled.
  */
-export function getTotalOperatingCost(state: GameState): number {
-  return getBuildingMaintenance(state);
+export function getTotalOperatingCost(_state: GameState): number {
+  return 0;
 }
 
 /**

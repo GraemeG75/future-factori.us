@@ -236,9 +236,18 @@ export class UiController {
       }
     });
 
-    btn1?.addEventListener('click', () => { this.game.setSpeed(1); this.syncSpeedButtons(1); });
-    btn2?.addEventListener('click', () => { this.game.setSpeed(2); this.syncSpeedButtons(2); });
-    btn4?.addEventListener('click', () => { this.game.setSpeed(4); this.syncSpeedButtons(4); });
+    btn1?.addEventListener('click', () => {
+      this.game.setSpeed(1);
+      this.syncSpeedButtons(1);
+    });
+    btn2?.addEventListener('click', () => {
+      this.game.setSpeed(2);
+      this.syncSpeedButtons(2);
+    });
+    btn4?.addEventListener('click', () => {
+      this.game.setSpeed(4);
+      this.syncSpeedButtons(4);
+    });
   }
 
   private attachBuildPanelToggle(): void {
@@ -303,15 +312,27 @@ export class UiController {
   private attachBottomNav(): void {
     document.getElementById('btn-research')?.addEventListener('click', () => {
       const screen = document.getElementById('research-screen');
-      if (screen?.classList.contains('hidden')) { this.openResearch(); } else { this.closeResearch(); }
+      if (screen?.classList.contains('hidden')) {
+        this.openResearch();
+      } else {
+        this.closeResearch();
+      }
     });
     document.getElementById('btn-trade')?.addEventListener('click', () => {
       const screen = document.getElementById('trade-screen');
-      if (screen?.classList.contains('hidden')) { this.openTrade(); } else { this.closeTrade(); }
+      if (screen?.classList.contains('hidden')) {
+        this.openTrade();
+      } else {
+        this.closeTrade();
+      }
     });
     document.getElementById('btn-routes')?.addEventListener('click', () => {
       const screen = document.getElementById('routes-screen');
-      if (screen?.classList.contains('hidden')) { this.openRoutes(); } else { this.closeRoutes(); }
+      if (screen?.classList.contains('hidden')) {
+        this.openRoutes();
+      } else {
+        this.closeRoutes();
+      }
     });
     document.getElementById('btn-achievements')?.addEventListener('click', () => {
       const screen = document.getElementById('achievements-screen');
@@ -319,7 +340,11 @@ export class UiController {
     });
     document.getElementById('btn-menu')?.addEventListener('click', () => {
       const screen = document.getElementById('save-screen');
-      if (screen?.classList.contains('hidden')) { this.openMenu(); } else { this.closeMenu(); }
+      if (screen?.classList.contains('hidden')) {
+        this.openMenu();
+      } else {
+        this.closeMenu();
+      }
     });
   }
 
@@ -387,7 +412,9 @@ export class UiController {
 
       const ok = this.game.createRoute(fromId, toId, resourceId);
       if (ok) {
-        this.addAlert('success', this.i18n.t('messages.routeCreated', fromId, toId));
+        const fromLabel = fromSel.options[fromSel.selectedIndex]?.textContent ?? fromId;
+        const toLabel = toSel.options[toSel.selectedIndex]?.textContent ?? toId;
+        this.addAlert('success', this.i18n.t('messages.routeCreated', fromLabel, toLabel));
         this.cancelRouteCreation();
         this.updateRoutesScreen(this.game.getState());
       } else {
@@ -399,14 +426,24 @@ export class UiController {
   private attachKeyboardShortcuts(): void {
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
-        if (this.buildModeActive) { this.deactivateBuildMode(); return; }
-        if (this.routeCreationMode) { this.cancelRouteCreation(); return; }
+        if (this.buildModeActive) {
+          this.deactivateBuildMode();
+          return;
+        }
+        if (this.routeCreationMode) {
+          this.cancelRouteCreation();
+          return;
+        }
         this.closeAllScreens();
       }
       if (e.key === ' ' || e.key === 'Spacebar') {
         e.preventDefault();
         const state = this.game.getState();
-        if (state.settings.gamePaused) { this.game.resume(); } else { this.game.pause(); }
+        if (state.settings.gamePaused) {
+          this.game.resume();
+        } else {
+          this.game.pause();
+        }
       }
     });
   }
@@ -595,9 +632,7 @@ export class UiController {
     const routesDiv = document.getElementById('building-routes');
     if (routesDiv) {
       routesDiv.innerHTML = '';
-      const routes = state.routes.filter(
-        (r) => r.fromBuildingId === building.id || r.toBuildingId === building.id,
-      );
+      const routes = state.routes.filter((r) => r.fromBuildingId === building.id || r.toBuildingId === building.id);
       if (routes.length === 0) {
         routesDiv.innerHTML = '<span style="color:#445566;font-size:10px;">No routes</span>';
       }
@@ -714,10 +749,12 @@ export class UiController {
             }
           });
         } else if (isLocked) {
-          const prereqNames = tech.prerequisites.map((p) => {
-            const pt = TECHNOLOGIES.find((t) => t.id === p);
-            return pt ? this.i18n.t(pt.nameKey) : p;
-          }).join(', ');
+          const prereqNames = tech.prerequisites
+            .map((p) => {
+              const pt = TECHNOLOGIES.find((t) => t.id === p);
+              return pt ? this.i18n.t(pt.nameKey) : p;
+            })
+            .join(', ');
           card.innerHTML += `<div class="tech-status locked-label">🔒 Requires: ${prereqNames || 'none'}</div>`;
         }
 
@@ -790,9 +827,7 @@ export class UiController {
     // Show preferred resources first, then others that have inventory
     const resourcesToShow = [
       ...partner.preferredResources,
-      ...Object.keys(state.inventory).filter(
-        (r) => !partner.preferredResources.includes(r) && (state.inventory[r] ?? 0) > 0,
-      ),
+      ...Object.keys(state.inventory).filter((r) => !partner.preferredResources.includes(r) && (state.inventory[r] ?? 0) > 0)
     ];
 
     const seen = new Set<string>();
@@ -885,23 +920,71 @@ export class UiController {
     const resSel = document.getElementById('route-resource') as HTMLSelectElement | null;
     if (!fromSel || !toSel || !resSel) return;
 
-    const buildingOptions = state.buildings.map((b) => {
-      const bt = BUILDINGS_MAP[b.typeId];
-      const name = bt ? this.i18n.t(bt.nameKey) : b.typeId;
-      return `<option value="${b.id}">${name} (${b.position.x},${b.position.z})</option>`;
-    }).join('');
+    // Preserve user selections across frequent UI refreshes.
+    const prevFrom = fromSel.value;
+    const prevTo = toSel.value;
+    const prevResource = resSel.value;
+
+    const buildingOptions = state.buildings
+      .map((b) => {
+        const bt = BUILDINGS_MAP[b.typeId];
+        const name = bt ? this.i18n.t(bt.nameKey) : b.typeId;
+        return `<option value="${b.id}">${name} (${b.position.x},${b.position.z})</option>`;
+      })
+      .join('');
 
     fromSel.innerHTML = `<option value="">-- From --</option>${buildingOptions}`;
-    toSel.innerHTML = `<option value="">-- To --</option>${buildingOptions}`;
 
-    if (this.routeFromId) {
-      fromSel.value = this.routeFromId;
+    const validBuildingIds = new Set(state.buildings.map((b) => b.id));
+    const fromValue = prevFrom || this.routeFromId || '';
+    if (fromValue && validBuildingIds.has(fromValue)) {
+      fromSel.value = fromValue;
+    }
+
+    const selectedFromId = fromSel.value;
+    const destinationOptions = state.buildings
+      .filter((b) => {
+        const bt = BUILDINGS_MAP[b.typeId];
+        if (!bt || bt.category === 'harvester') return false;
+        return b.id !== selectedFromId;
+      })
+      .map((b) => {
+        const bt = BUILDINGS_MAP[b.typeId];
+        const name = bt ? this.i18n.t(bt.nameKey) : b.typeId;
+        return `<option value="${b.id}">${name} (${b.position.x},${b.position.z})</option>`;
+      })
+      .join('');
+    toSel.innerHTML = `<option value="">-- To --</option>${destinationOptions}`;
+
+    const validDestinationIds = new Set(
+      state.buildings
+        .filter((b) => {
+          const bt = BUILDINGS_MAP[b.typeId];
+          if (!bt || bt.category === 'harvester') return false;
+          return b.id !== selectedFromId;
+        })
+        .map((b) => b.id)
+    );
+    if (prevTo && validDestinationIds.has(prevTo)) {
+      toSel.value = prevTo;
     }
 
     const resOptions = RESOURCES.filter((r) => !r.unlockRequirement || state.completedResearch.includes(r.unlockRequirement))
       .map((r) => `<option value="${r.id}">${r.icon} ${this.i18n.t(r.nameKey)}</option>`)
       .join('');
     resSel.innerHTML = `<option value="">-- Resource --</option>${resOptions}`;
+
+    const validResourceIds = new Set(
+      RESOURCES.filter((r) => !r.unlockRequirement || state.completedResearch.includes(r.unlockRequirement)).map((r) => r.id)
+    );
+    if (prevResource && validResourceIds.has(prevResource)) {
+      resSel.value = prevResource;
+    }
+
+    // Use the selected-building prefill only once when opening route creation.
+    if (this.routeFromId && fromSel.value === this.routeFromId) {
+      this.routeFromId = null;
+    }
   }
 
   private updateAchievementsScreen(state: GameState): void {
@@ -940,8 +1023,8 @@ export class UiController {
   private populateBuildPanel(): void {
     const categories: Record<string, string[]> = {
       'harvester-buttons': ['harvester'],
-      'factory-buttons':   ['factory', 'refinery'],
-      'infra-buttons':     ['storage', 'research', 'power', 'trade'],
+      'factory-buttons': ['factory', 'refinery'],
+      'infra-buttons': ['storage', 'research', 'power', 'trade']
     };
 
     for (const [containerId, catList] of Object.entries(categories)) {
@@ -1052,7 +1135,10 @@ export class UiController {
       setTimeout(() => item.remove(), 400);
     }
     const timer = this.alertTimers.get(id);
-    if (timer) { clearTimeout(timer); this.alertTimers.delete(id); }
+    if (timer) {
+      clearTimeout(timer);
+      this.alertTimers.delete(id);
+    }
   }
 
   private lastAlertTick: number = -1;

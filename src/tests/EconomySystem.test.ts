@@ -41,20 +41,20 @@ describe('EconomySystem', () => {
     expect(priceHigher).toBeGreaterThanOrEqual(priceBase);
   });
 
-  it('getTotalOperatingCost is positive', () => {
+  it('getTotalOperatingCost is zero when passive costs are disabled', () => {
     const cost = getTotalOperatingCost(state);
-    expect(cost).toBeGreaterThan(0);
+    expect(cost).toBe(0);
   });
 
-  it('maintenance is deducted each tick interval', () => {
+  it('tick does not deduct cash passively', () => {
     const cashBefore = state.cash;
     tick(state, 1); // 1 second
-    expect(state.cash).toBeLessThan(cashBefore);
+    expect(state.cash).toBe(cashBefore);
   });
 
-  it('cash does not go below zero from maintenance', () => {
-    state.cash = 0;
-    tick(state, 1000); // huge delta that would normally cause massive debt
-    expect(state.cash).toBe(0);
+  it('large deltas still do not change cash passively', () => {
+    const cashBefore = state.cash;
+    tick(state, 1000);
+    expect(state.cash).toBe(cashBefore);
   });
 });
