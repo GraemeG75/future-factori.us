@@ -98,6 +98,51 @@ export function applyUnlocks(state: GameState, technology: Technology): void {
   });
 }
 
+/**
+ * Returns the combined synergy production bonus multiplier for a building
+ * given the currently completed research.  Returns 1.0 (no bonus) when no
+ * applicable synergy is active.
+ *
+ * A synergy is active when:
+ *  - The technology that defines the synergy is completed, AND
+ *  - All technologies listed in that tech's `synergyWith` array are also
+ *    completed.
+ */
+export function getSynergyBonus(state: GameState, buildingSpecialization?: 'energy' | 'matter' | 'biology'): number {
+  let combined = 1.0;
+  for (const tech of TECHNOLOGIES) {
+    if (!state.completedResearch.includes(tech.id)) continue;
+    if (!tech.synergyWith || tech.synergyWith.length === 0 || !tech.synergyBonus) continue;
+    // If a specialization filter is given, only apply bonuses from the same branch
+    if (buildingSpecialization && tech.specialization && tech.specialization !== buildingSpecialization) continue;
+    // All synergy partners must also be completed
+    if (tech.synergyWith.every((sid) => state.completedResearch.includes(sid))) {
+      combined *= tech.synergyBonus;
+    }
+  }
+  return combined;
+}
+
+/**
+ * Returns the player's current (or most recently chosen) research specialization,
+ * derived from the last researched technology that has a specialization field.
+ * Falls back to state.researchSpecialization if set explicitly.
+ */
+export function getEffectiveSpecialization(state: GameState): 'energy' | 'matter' | 'biology' | null {
+  if (state.researchSpecialization) return state.researchSpecialization;
+  // Derive from the highest-tier completed tech that has a specialization
+  let result: 'energy' | 'matter' | 'biology' | null = null;
+  let highestTier = 0;
+  for (const techId of state.completedResearch) {
+    const tech = TECHNOLOGIES_MAP[techId];
+    if (tech?.specialization && tech.tier > highestTier) {
+      highestTier = tech.tier;
+      result = tech.specialization;
+    }
+  }
+  return result;
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------

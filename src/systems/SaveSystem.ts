@@ -1,7 +1,7 @@
-import type { GameState, BuildingInstance, ResourceSpot } from '../game/GameState';
+import type { GameState, BuildingInstance, ResourceSpot, Contract, Loan, MarketEvent } from '../game/GameState';
 import { initialiseDemand } from './EconomySystem';
 
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 export const SAVE_KEY = 'future_factorius_save';
 /** Starting cash for a fresh game. */
 export const STARTING_CASH = 2500;
@@ -123,6 +123,10 @@ export function migrate(data: unknown, fromVersion: number): GameState {
     state = migrateV1toV2(state);
   }
 
+  if (fromVersion < 3) {
+    state = migrateV2toV3(state);
+  }
+
   state.version = SAVE_VERSION;
   return state;
 }
@@ -139,6 +143,16 @@ function migrateV1toV2(state: GameState): GameState {
       (spot as ResourceSpot).maxRemaining = 10000;
     }
   }
+  return state;
+}
+
+/** Patches a v2 state to add v0.4.0 / v0.5.0 fields. */
+function migrateV2toV3(state: GameState): GameState {
+  if (!('contracts' in state)) (state as GameState).contracts = [];
+  if (!('loans' in state)) (state as GameState).loans = [];
+  if (!('priceHistory' in state)) (state as GameState).priceHistory = {};
+  if (!('activeMarketEvents' in state)) (state as GameState).activeMarketEvents = [];
+  if (!('researchSpecialization' in state)) (state as GameState).researchSpecialization = null;
   return state;
 }
 
@@ -173,6 +187,11 @@ export function createNewGame(locale = 'en'): GameState {
     resourceSpots: [],
     pollution: 0,
     unlockedAchievements: [],
+    contracts: [],
+    loans: [],
+    priceHistory: {},
+    activeMarketEvents: [],
+    researchSpecialization: null,
   };
 
   state.resourceSpots = generateResourceSpots(state.worldSeed);
@@ -227,6 +246,20 @@ function coerceToGameState(raw: Record<string, unknown>): GameState {
     unlockedAchievements: Array.isArray(raw['unlockedAchievements'])
       ? (raw['unlockedAchievements'] as string[])
       : [],
+    contracts: Array.isArray(raw['contracts']) ? (raw['contracts'] as Contract[]) : [],
+    loans: Array.isArray(raw['loans']) ? (raw['loans'] as Loan[]) : [],
+    priceHistory: isObject(raw['priceHistory'])
+      ? (raw['priceHistory'] as Record<string, Record<string, number[]>>)
+      : {},
+    activeMarketEvents: Array.isArray(raw['activeMarketEvents'])
+      ? (raw['activeMarketEvents'] as MarketEvent[])
+      : [],
+    researchSpecialization:
+      raw['researchSpecialization'] === 'energy' ||
+      raw['researchSpecialization'] === 'matter' ||
+      raw['researchSpecialization'] === 'biology'
+        ? (raw['researchSpecialization'] as 'energy' | 'matter' | 'biology')
+        : null,
   };
 }
 

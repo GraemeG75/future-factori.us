@@ -1,4 +1,6 @@
 import { ACHIEVEMENTS } from '../data/achievements';
+import { BUILDINGS_MAP } from '../data/buildings';
+import { TECHNOLOGIES, TECHNOLOGIES_MAP } from '../data/research';
 import type { GameState } from '../game/GameState';
 
 /**
@@ -75,6 +77,46 @@ function isUnlocked(id: string, state: GameState): boolean {
 
     case 'deposit_depleted':
       return state.resourceSpots.some((s) => s.remaining <= 0 && s.occupiedByBuildingId !== null);
+
+    // v0.4.0 achievements
+    case 'first_contract':
+      return state.contracts.some((c) => c.status === 'completed');
+
+    case 'ten_contracts':
+      return state.contracts.filter((c) => c.status === 'completed').length >= 10;
+
+    case 'first_loan':
+      return state.loans.length >= 1;
+
+    case 'debt_free':
+      return state.loans.length > 0 && state.loans.every((l) => l.remainingBalance <= 0);
+
+    case 'market_event':
+      return state.activeMarketEvents.length >= 1;
+
+    // v0.5.0 achievements
+    case 'tier5_research':
+      return state.completedResearch.some((id) => {
+        const tech = TECHNOLOGIES_MAP[id];
+        return tech?.tier === 5;
+      });
+
+    case 'synergy_active': {
+      // A synergy is active when a tech with synergyWith has all partners complete
+      return TECHNOLOGIES.some(
+        (tech) =>
+          tech.synergyWith &&
+          tech.synergyWith.length > 0 &&
+          state.completedResearch.includes(tech.id) &&
+          tech.synergyWith.every((sid) => state.completedResearch.includes(sid)),
+      );
+    }
+
+    case 'prototype_built':
+      return state.buildings.some((b) => {
+        const bt = BUILDINGS_MAP[b.typeId];
+        return bt?.category === 'prototype';
+      });
 
     default:
       return false;

@@ -13,6 +13,56 @@ export interface ResourceSpot {
   maxRemaining: number;
 }
 
+/** A timed delivery contract issued by a trade partner. */
+export interface Contract {
+  id: string;
+  partnerId: string;
+  resourceId: string;
+  /** Total amount to deliver. */
+  amountRequired: number;
+  /** Amount fulfilled so far. */
+  amountDelivered: number;
+  /** Cash reward on successful completion. */
+  rewardCash: number;
+  /** Cash penalty if contract expires unfulfilled. */
+  penaltyCash: number;
+  /** Tick at which the contract expires. */
+  deadlineAtTick: number;
+  status: 'active' | 'completed' | 'failed';
+}
+
+/** A cash loan taken by the player. */
+export interface Loan {
+  id: string;
+  /** Original amount borrowed. */
+  principal: number;
+  /** Remaining balance including accrued interest. */
+  remainingBalance: number;
+  /** Annual interest rate as a fraction (e.g. 0.10 = 10%). */
+  annualInterestRate: number;
+  /** Tick when the loan was taken. */
+  takenAtTick: number;
+  /** Tick when the full balance is due (hard deadline). */
+  dueAtTick: number;
+}
+
+/** A market/regulation event that temporarily shifts prices or demand. */
+export interface MarketEvent {
+  id: string;
+  /** i18n key for display. */
+  messageKey: string;
+  /** Tick when the event started. */
+  startTick: number;
+  /** Duration in ticks. */
+  durationTicks: number;
+  /** Optional: only affects this trade partner. */
+  affectedPartnerId?: string;
+  /** Optional: only affects this resource. */
+  affectedResourceId?: string;
+  /** Price/demand multiplier (e.g. 1.5 = +50%, 0.7 = −30%). */
+  modifier: number;
+}
+
 export interface GameState {
   /** Save format version for migration. */
   version: number;
@@ -40,6 +90,19 @@ export interface GameState {
   pollution: number;
   /** Achievement ids that have been unlocked. */
   unlockedAchievements: string[];
+  /** Active and historical delivery contracts. */
+  contracts: Contract[];
+  /** Outstanding loans taken by the player. */
+  loans: Loan[];
+  /**
+   * Recent sell-price history: partnerId -> resourceId -> array of recent prices
+   * (most recent at the end, capped at PRICE_HISTORY_LENGTH).
+   */
+  priceHistory: Record<string, Record<string, number[]>>;
+  /** Currently active market/regulation events. */
+  activeMarketEvents: MarketEvent[];
+  /** Which research specialization the player is pursuing (chosen freely). */
+  researchSpecialization: 'energy' | 'matter' | 'biology' | null;
 }
 
 export interface BuildingInstance {

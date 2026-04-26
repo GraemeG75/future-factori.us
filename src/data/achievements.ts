@@ -90,6 +90,56 @@ export const ACHIEVEMENTS: Achievement[] = [
     descriptionKey: 'achievements.deposit_depleted.description',
     icon: '⛏️',
   },
+  // v0.4.0 — Economy & Trade
+  {
+    id: 'first_contract',
+    nameKey: 'achievements.first_contract.name',
+    descriptionKey: 'achievements.first_contract.description',
+    icon: '📋',
+  },
+  {
+    id: 'ten_contracts',
+    nameKey: 'achievements.ten_contracts.name',
+    descriptionKey: 'achievements.ten_contracts.description',
+    icon: '📦',
+  },
+  {
+    id: 'first_loan',
+    nameKey: 'achievements.first_loan.name',
+    descriptionKey: 'achievements.first_loan.description',
+    icon: '🏦',
+  },
+  {
+    id: 'debt_free',
+    nameKey: 'achievements.debt_free.name',
+    descriptionKey: 'achievements.debt_free.description',
+    icon: '✅',
+  },
+  {
+    id: 'market_event',
+    nameKey: 'achievements.market_event.name',
+    descriptionKey: 'achievements.market_event.description',
+    icon: '📈',
+  },
+  // v0.5.0 — Research & Progression
+  {
+    id: 'tier5_research',
+    nameKey: 'achievements.tier5_research.name',
+    descriptionKey: 'achievements.tier5_research.description',
+    icon: '🚀',
+  },
+  {
+    id: 'synergy_active',
+    nameKey: 'achievements.synergy_active.name',
+    descriptionKey: 'achievements.synergy_active.description',
+    icon: '🔗',
+  },
+  {
+    id: 'prototype_built',
+    nameKey: 'achievements.prototype_built.name',
+    descriptionKey: 'achievements.prototype_built.description',
+    icon: '🔩',
+  },
 ];
 
 export const ACHIEVEMENTS_MAP: Record<string, Achievement> = Object.fromEntries(
