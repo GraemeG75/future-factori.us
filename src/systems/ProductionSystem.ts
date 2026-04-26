@@ -15,6 +15,12 @@ const POLLUTION_PER_BUILDING_SECOND = 0.002;
 /** Pollution decay rate per second (natural environmental recovery). */
 const POLLUTION_DECAY_PER_SECOND = 0.001;
 
+/** Fraction of remaining/maxRemaining below which a low-deposit alert fires. */
+const LOW_DEPOSIT_THRESHOLD = 0.1;
+
+/** Minimum ticks between repeat low-deposit alerts for the same spot. */
+const DEPOSIT_ALERT_COOLDOWN_TICKS = 600;
+
 /** Maps harvester building type ids to the resource id they produce. */
 const HARVESTER_RESOURCE_MAP: Record<string, string> = {
   wood_harvester: 'wood',
@@ -62,13 +68,13 @@ export function tick(state: GameState, deltaSeconds: number): void {
           const actualAmount = Math.min(amount, spot.remaining);
           spot.remaining -= actualAmount;
           addResource(state, resourceId, actualAmount);
-          // Alert when deposit is nearly depleted (< 10%)
-          if (spot.remaining > 0 && spot.remaining / spot.maxRemaining < 0.1) {
+          // Alert when deposit is nearly depleted
+          if (spot.remaining > 0 && spot.remaining / spot.maxRemaining < LOW_DEPOSIT_THRESHOLD) {
             const alreadyWarned = state.alerts.some(
               (a) =>
                 a.messageKey === 'alerts.deposit_low' &&
                 a.params?.[0] === spot.id &&
-                state.tick - a.tick < 600,
+                state.tick - a.tick < DEPOSIT_ALERT_COOLDOWN_TICKS,
             );
             if (!alreadyWarned) {
               state.alerts.push({

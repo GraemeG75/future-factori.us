@@ -13,6 +13,14 @@ const BREAKDOWN_DAMAGE = 40;
 /** Minimum health below which a building goes offline (broken). */
 export const BROKEN_HEALTH_THRESHOLD = 0;
 
+/** Fraction of base building cost charged per 1% of missing health repaired. */
+const REPAIR_COST_MULTIPLIER = 0.4;
+
+/** Minimum efficiency factor applied at 0% health (buildings below broken threshold are offline). */
+const MIN_EFFICIENCY = 0.5;
+/** Efficiency scale factor: health 0→100 maps efficiency MIN_EFFICIENCY→1.0. */
+const EFFICIENCY_SCALE = 1 - MIN_EFFICIENCY;
+
 /**
  * Advances building health: drains health from powered, operating buildings,
  * and randomly triggers breakdown events.
@@ -54,7 +62,7 @@ export function getRepairCost(building: BuildingInstance): number {
   if (!bt) return 0;
   const missingHealth = 100 - building.health;
   if (missingHealth <= 0) return 0;
-  return Math.ceil(bt.baseCost * 0.4 * (missingHealth / 100));
+  return Math.ceil(bt.baseCost * REPAIR_COST_MULTIPLIER * (missingHealth / 100));
 }
 
 /**
@@ -81,7 +89,7 @@ export function repairBuilding(state: GameState, buildingId: string): boolean {
  */
 export function getHealthEfficiency(building: BuildingInstance): number {
   if (building.health <= BROKEN_HEALTH_THRESHOLD) return 0;
-  // Scale from 0.5 at health=1 to 1.0 at health=100 for a meaningful
+  // Scale from MIN_EFFICIENCY at health=1 to 1.0 at health=100 for a meaningful
   // efficiency curve (a damaged building still works, just slower).
-  return 0.5 + (building.health / 100) * 0.5;
+  return MIN_EFFICIENCY + (building.health / 100) * EFFICIENCY_SCALE;
 }
