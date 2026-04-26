@@ -1,11 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import {
-  createRoute,
-  removeRoute,
-  getRouteThroughput,
-  getRoutesForBuilding,
-  tick,
-} from '../systems/RouteSystem';
+import { createRoute, removeRoute, getRouteThroughput, getRoutesForBuilding, tick } from '../systems/RouteSystem';
 import { createTestGameState, createTestBuilding } from './testHelpers';
 import type { GameState } from '../game/GameState';
 
@@ -34,6 +28,31 @@ describe('RouteSystem', () => {
     const route = createRoute(state, 'fake-a', 'fake-b', 'wood', 10);
     expect(route).toBeNull();
     expect(state.routes).toHaveLength(0);
+  });
+
+  it('createRoute fails when source and destination are the same building', () => {
+    const route = createRoute(state, fromId, fromId, 'wood', 10);
+    expect(route).toBeNull();
+    expect(state.routes).toHaveLength(0);
+  });
+
+  it('createRoute fails for duplicate from/to/resource route', () => {
+    const first = createRoute(state, fromId, toId, 'wood', 10);
+    expect(first).not.toBeNull();
+
+    const duplicate = createRoute(state, fromId, toId, 'wood', 10);
+    expect(duplicate).toBeNull();
+    expect(state.routes).toHaveLength(1);
+  });
+
+  it('createRoute fails when destination is a harvester', () => {
+    const source = createTestBuilding('storage_depot', { position: { x: 0, y: 0, z: 0 } });
+    const harvester = createTestBuilding('wood_harvester', { position: { x: 8, y: 0, z: 0 } });
+    const routeState = createTestGameState({ buildings: [source, harvester] });
+
+    const route = createRoute(routeState, source.id, harvester.id, 'wood', 10);
+    expect(route).toBeNull();
+    expect(routeState.routes).toHaveLength(0);
   });
 
   it('removeRoute removes the route', () => {
@@ -72,11 +91,24 @@ describe('RouteSystem', () => {
       // Tick enough time for delivery: distance=10, speed=10 => 1s trip
       tick(state, 2);
       // Either delivered to inputBuffer or inventory
-      const destBuilding = state.buildings.find(b => b.id === toId)!;
-      const delivered =
-        (destBuilding.inputBuffer['wood'] ?? 0) + (state.inventory['wood'] ?? 0);
+      const destBuilding = state.buildings.find((b) => b.id === toId)!;
+      const delivered = (destBuilding.inputBuffer['wood'] ?? 0) + (state.inventory['wood'] ?? 0);
       // wood started at 50, we loaded 10 onto route, delivery adds it to dest
       expect(delivered).toBeGreaterThan(0);
+    }
+  });
+
+  it('route delivery does not deduct cash', () => {
+    const route = createRoute(state, fromId, toId, 'wood', 10)!;
+    state.inventory['wood'] = 50;
+    const cashBefore = state.cash;
+
+    tick(state, 0.01); // load
+    if (route.currentLoad > 0) {
+      tick(state, 2); // deliver
+      expect(state.cash).toBe(cashBefore);
+    } else {
+      expect(state.cash).toBe(cashBefore);
     }
   });
 
