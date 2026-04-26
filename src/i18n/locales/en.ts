@@ -360,6 +360,76 @@ export const en = {
     gameSaved: 'Game saved.',
     gameLoaded: 'Game loaded.',
     newGameStarted: 'New game started. Good luck, Director!',
+    buildingRepaired: '{0} repaired.',
+    repairTooExpensive: 'Cannot afford repair.',
+    buildingBroken: '{0} has broken down and needs repair!',
+  },
+
+  alerts: {
+    research_complete: 'Research complete: {0} — unlocked {1}',
+    building_breakdown: '{0} has suffered a breakdown! Repair it to restore efficiency.',
+    deposit_low: 'Deposit running low — {1} nearly exhausted!',
+    deposit_depleted: 'Deposit exhausted — {1} is fully depleted.',
+    achievement_unlocked: '{1} Achievement Unlocked: {0}',
+  },
+
+  achievements: {
+    first_building: {
+      name: 'First Steps',
+      description: 'Place your first building.',
+    },
+    power_up: {
+      name: 'Power Up',
+      description: 'Build a Power Plant.',
+    },
+    first_sale: {
+      name: 'Merchant',
+      description: 'Complete your first trade.',
+    },
+    five_buildings: {
+      name: 'Growing Factory',
+      description: 'Place 5 buildings.',
+    },
+    ten_buildings: {
+      name: 'Industrial Complex',
+      description: 'Place 10 buildings.',
+    },
+    first_research: {
+      name: 'Knowledge Seeker',
+      description: 'Complete your first research.',
+    },
+    cash_1k: {
+      name: 'Pocket Change',
+      description: 'Accumulate $1,000.',
+    },
+    cash_10k: {
+      name: 'Profitable Venture',
+      description: 'Accumulate $10,000.',
+    },
+    cash_100k: {
+      name: 'Tycoon',
+      description: 'Accumulate $100,000.',
+    },
+    five_routes: {
+      name: 'Logistics Network',
+      description: 'Create 5 transport routes.',
+    },
+    repair_crew: {
+      name: 'Repair Crew',
+      description: 'Repair a broken building.',
+    },
+    polluter: {
+      name: 'Pollution Problem',
+      description: 'Let pollution reach level 50.',
+    },
+    clean_factory: {
+      name: 'Clean Industry',
+      description: 'Maintain low pollution with 5+ buildings.',
+    },
+    deposit_depleted: {
+      name: 'Exhausted Deposit',
+      description: 'Fully deplete a resource deposit.',
+    },
   },
 
   controls: {

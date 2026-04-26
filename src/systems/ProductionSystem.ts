@@ -4,9 +4,16 @@ import type { Recipe } from '../data/recipes';
 import type { BuildingInstance, GameState } from '../game/GameState';
 import { addResource, getStorageCapacity } from './ResourceSystem';
 import { getHarvestRate } from './BuildingSystem';
+import { getHealthEfficiency } from './MaintenanceSystem';
 
 /** Base research points generated per research center per level per second. */
 const BASE_RP_PER_SECOND = 1;
+
+/** Pollution (0–100) added to the global level per production-building second of operation. */
+const POLLUTION_PER_BUILDING_SECOND = 0.002;
+
+/** Pollution decay rate per second (natural environmental recovery). */
+const POLLUTION_DECAY_PER_SECOND = 0.001;
 
 /** Maps harvester building type ids to the resource id they produce. */
 const HARVESTER_RESOURCE_MAP: Record<string, string> = {
@@ -23,38 +30,83 @@ const HARVESTER_RESOURCE_MAP: Record<string, string> = {
  * accumulation by the given number of real seconds.
  */
 export function tick(state: GameState, deltaSeconds: number): void {
+  // Pollution decays naturally over time
+  state.pollution = Math.max(0, state.pollution - POLLUTION_DECAY_PER_SECOND * deltaSeconds);
+
   for (const building of state.buildings) {
     if (!building.isPowered) continue;
+    // Broken buildings (health = 0) cannot operate
+    if (building.health <= 0) continue;
 
     const buildingType = BUILDINGS_MAP[building.typeId];
     if (!buildingType) continue;
+
+    const healthEff = getHealthEfficiency(building);
 
     // --- Harvesters ---
     if (buildingType.category === 'harvester') {
       const resourceId = HARVESTER_RESOURCE_MAP[building.typeId];
       if (resourceId) {
         const rate = getHarvestRate(building); // units per tick at 20 tps
-        const amount = rate * 20 * deltaSeconds; // rate(u/tick) × 20(ticks/s) × Δs = units produced
-        addResource(state, resourceId, amount);
+        const amount = rate * 20 * deltaSeconds * healthEff;
+
+        // Resource scarcity: find the occupied spot and deplete it
+        const spot = state.resourceSpots.find(
+          (s) => s.occupiedByBuildingId === building.id,
+        );
+        if (spot !== undefined && spot.remaining <= 0) {
+          // Deposit exhausted — harvester cannot produce
+          continue;
+        }
+        if (spot !== undefined) {
+          const actualAmount = Math.min(amount, spot.remaining);
+          spot.remaining -= actualAmount;
+          addResource(state, resourceId, actualAmount);
+          // Alert when deposit is nearly depleted (< 10%)
+          if (spot.remaining > 0 && spot.remaining / spot.maxRemaining < 0.1) {
+            const alreadyWarned = state.alerts.some(
+              (a) =>
+                a.messageKey === 'alerts.deposit_low' &&
+                a.params?.[0] === spot.id &&
+                state.tick - a.tick < 600,
+            );
+            if (!alreadyWarned) {
+              state.alerts.push({
+                id: crypto.randomUUID(),
+                tick: state.tick,
+                type: 'warning',
+                messageKey: 'alerts.deposit_low',
+                params: [spot.id, resourceId],
+              });
+            }
+          }
+        } else {
+          // No spot (e.g. non-harvester-spot building placed manually in tests)
+          addResource(state, resourceId, amount);
+        }
       }
       continue;
     }
 
     // --- Research centers ---
     if (buildingType.category === 'research') {
-      state.researchPoints += BASE_RP_PER_SECOND * building.level * deltaSeconds;
+      state.researchPoints += BASE_RP_PER_SECOND * building.level * deltaSeconds * healthEff;
       continue;
     }
 
-    // --- Production buildings ---
+    // --- Production buildings (factories, refineries) ---
     if (building.activeRecipeId) {
       const recipe = RECIPES_MAP[building.activeRecipeId];
       if (!recipe) continue;
 
-      // Speed bonus from building level
-      const speedMultiplier = Math.pow(buildingType.productionRateMultiplier, building.level - 1);
+      // Speed bonus from building level + health efficiency
+      const speedMultiplier =
+        Math.pow(buildingType.productionRateMultiplier, building.level - 1) * healthEff;
       const progressDelta = (deltaSeconds * speedMultiplier) / recipe.processingTimeSeconds;
       building.productionProgress += progressDelta;
+
+      // Factories contribute to pollution
+      state.pollution = Math.min(100, state.pollution + POLLUTION_PER_BUILDING_SECOND * deltaSeconds);
 
       if (building.productionProgress >= 1) {
         building.productionProgress = 0;

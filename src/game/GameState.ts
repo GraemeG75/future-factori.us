@@ -7,6 +7,10 @@ export interface ResourceSpot {
   position: { x: number; y: number; z: number };
   /** null when empty; set to the placed building's id when occupied. */
   occupiedByBuildingId: string | null;
+  /** Remaining units in this deposit. Undefined on legacy saves (treated as infinite). */
+  remaining: number;
+  /** Maximum deposit size (units at world-gen time). */
+  maxRemaining: number;
 }
 
 export interface GameState {
@@ -32,6 +36,10 @@ export interface GameState {
   demand: Record<string, Record<string, number>>;
   /** World spots where harvesters can be built. */
   resourceSpots: ResourceSpot[];
+  /** Global pollution level 0–100 produced by running factories. */
+  pollution: number;
+  /** Achievement ids that have been unlocked. */
+  unlockedAchievements: string[];
 }
 
 export interface BuildingInstance {

@@ -148,6 +148,28 @@ export function getPowerConsumption(state: GameState): number {
 }
 
 /**
+ * Returns the supply chain efficiency of a building as a 0–1 value.
+ * Factors in power status, health, and whether a recipe is running.
+ */
+export function getBuildingEfficiency(building: BuildingInstance): number {
+  if (!building.isPowered) return 0;
+  if (building.health <= 0) return 0;
+  const bt = BUILDINGS_MAP[building.typeId];
+  if (!bt) return 0;
+  // Research and storage buildings are always considered efficient when powered
+  if (bt.category === 'research' || bt.category === 'storage' || bt.category === 'trade' || bt.category === 'power') {
+    return building.health / 100;
+  }
+  // Factories and harvesters need a recipe/resource to be productive
+  if (bt.category === 'harvester') {
+    return building.health / 100;
+  }
+  // Factories need an active recipe
+  if (!building.activeRecipeId) return 0;
+  return building.health / 100;
+}
+
+/**
  * Updates the isPowered flag on all buildings based on total grid balance.
  * If production >= consumption every building is powered; otherwise buildings
  * are powered in order until capacity runs out.

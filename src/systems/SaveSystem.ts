@@ -1,7 +1,7 @@
 import type { GameState, BuildingInstance, ResourceSpot } from '../game/GameState';
 import { initialiseDemand } from './EconomySystem';
 
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 export const SAVE_KEY = 'future_factorius_save';
 
 // ---------------------------------------------------------------------------
@@ -28,6 +28,11 @@ function seededRng(seed: number): () => number {
   };
 }
 
+/** Minimum deposit size (units) for any resource spot. */
+const DEPOSIT_MIN = 3000;
+/** Maximum deposit size (units) for any resource spot. */
+const DEPOSIT_MAX = 15000;
+
 /** Deterministically generates resource spots from the world seed. */
 export function generateResourceSpots(seed: number): ResourceSpot[] {
   const rng = seededRng(seed);
@@ -46,11 +51,14 @@ export function generateResourceSpots(seed: number): ResourceSpot[] {
         return Math.sqrt(dx * dx + dz * dz) < SPOT_MIN_SEPARATION;
       });
       if (!tooClose) {
+        const maxRemaining = Math.round(DEPOSIT_MIN + rng() * (DEPOSIT_MAX - DEPOSIT_MIN));
         spots.push({
           id: `spot_${typeId}_${placed}`,
           buildingTypeId: typeId,
           position: { x, y: 0, z },
           occupiedByBuildingId: null,
+          remaining: maxRemaining,
+          maxRemaining,
         });
         placed++;
       }
@@ -109,11 +117,26 @@ export function migrate(data: unknown, fromVersion: number): GameState {
 
   let state = coerceToGameState(data);
 
-  // Future migration steps go here, e.g.:
-  // if (fromVersion < 2) { state = migrateV1toV2(state); }
-  void fromVersion; // acknowledged – no migrations needed yet
+  if (fromVersion < 2) {
+    state = migrateV1toV2(state);
+  }
 
   state.version = SAVE_VERSION;
+  return state;
+}
+
+/** Patches a v1 state to add v0.3.0 fields. */
+function migrateV1toV2(state: GameState): GameState {
+  // Add new top-level fields
+  if (!('pollution' in state)) (state as GameState).pollution = 0;
+  if (!('unlockedAchievements' in state)) (state as GameState).unlockedAchievements = [];
+  // Add remaining/maxRemaining to any resource spots that lack them
+  for (const spot of state.resourceSpots) {
+    if (!('remaining' in spot)) {
+      (spot as ResourceSpot).remaining = 10000;
+      (spot as ResourceSpot).maxRemaining = 10000;
+    }
+  }
   return state;
 }
 
@@ -146,6 +169,8 @@ export function createNewGame(locale = 'en'): GameState {
     worldSeed: Math.floor(Math.random() * 1_000_000),
     demand: {},
     resourceSpots: [],
+    pollution: 0,
+    unlockedAchievements: [],
   };
 
   state.resourceSpots = generateResourceSpots(state.worldSeed);
@@ -217,6 +242,10 @@ function coerceToGameState(raw: Record<string, unknown>): GameState {
     resourceSpots: Array.isArray(raw['resourceSpots'])
       ? (raw['resourceSpots'] as ResourceSpot[])
       : generateResourceSpots(typeof raw['worldSeed'] === 'number' ? raw['worldSeed'] : defaults.worldSeed),
+    pollution: typeof raw['pollution'] === 'number' ? raw['pollution'] : 0,
+    unlockedAchievements: Array.isArray(raw['unlockedAchievements'])
+      ? (raw['unlockedAchievements'] as string[])
+      : [],
   };
 }
 

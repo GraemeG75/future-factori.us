@@ -67,7 +67,7 @@ export function sellResource(state: GameState, resourceId: string, amount: numbe
 
 /**
  * Returns the effective sell price for a resource with a given partner,
- * factoring in the partner's price modifier and current demand.
+ * factoring in the partner's price modifier, current demand, and pollution.
  */
 export function getSellPrice(state: GameState, resourceId: string, partnerId: string): number {
   const resource = RESOURCES_MAP[resourceId];
@@ -75,8 +75,10 @@ export function getSellPrice(state: GameState, resourceId: string, partnerId: st
   if (!resource || !partner) return 0;
 
   const demand = getTradePartnerDemand(state, partnerId, resourceId);
+  // Pollution suppresses prices: at pollution=100 prices are halved.
+  const pollutionFactor = 1 - (state.pollution / 100) * 0.5;
   // Demand in [0.1, 1.0] maps price to [0.6 × base, 1.5 × base]
-  return Math.floor(resource.basePrice * partner.priceModifier * (0.5 + demand));
+  return Math.floor(resource.basePrice * partner.priceModifier * (0.5 + demand) * pollutionFactor);
 }
 
 /**

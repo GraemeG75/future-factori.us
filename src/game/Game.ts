@@ -11,9 +11,12 @@ import * as RouteSystem from '../systems/RouteSystem';
 import * as EconomySystem from '../systems/EconomySystem';
 import * as ResearchSystem from '../systems/ResearchSystem';
 import * as BuildingSystem from '../systems/BuildingSystem';
+import * as MaintenanceSystem from '../systems/MaintenanceSystem';
+import * as AchievementSystem from '../systems/AchievementSystem';
 import * as SaveSystem from '../systems/SaveSystem';
 import { TICK_RATE, AUTOSAVE_TICKS } from '../systems/EconomySystem';
 import { BUILDINGS_MAP } from '../data/buildings';
+import { ACHIEVEMENTS_MAP } from '../data/achievements';
 
 const TICK_INTERVAL = 1 / TICK_RATE;
 
@@ -260,6 +263,32 @@ export class Game {
     return bt.baseCost * Math.pow(bt.upgradeCostMultiplier, building.level);
   }
 
+  getRepairCost(buildingId: string): number {
+    const building = BuildingSystem.getBuildingById(this.state, buildingId);
+    if (!building) return 0;
+    return MaintenanceSystem.getRepairCost(building);
+  }
+
+  repairBuilding(buildingId: string): boolean {
+    const ok = MaintenanceSystem.repairBuilding(this.state, buildingId);
+    if (ok) {
+      // Unlock repair_crew achievement
+      if (!this.state.unlockedAchievements.includes('repair_crew')) {
+        this.state.unlockedAchievements.push('repair_crew');
+        const ach = ACHIEVEMENTS_MAP['repair_crew'];
+        this.state.alerts.push({
+          id: crypto.randomUUID(),
+          tick: this.state.tick,
+          type: 'success',
+          messageKey: 'alerts.achievement_unlocked',
+          params: [ach?.nameKey ?? 'achievements.repair_crew.name', ach?.icon ?? '🔧'],
+        });
+      }
+      if (this.onStateChange) this.onStateChange(this.state);
+    }
+    return ok;
+  }
+
   private gameLoop(timestamp: number): void {
     if (!this.running) return;
     this.deltaTime = (timestamp - this.lastTimestamp) / 1000;
@@ -284,10 +313,13 @@ export class Game {
   private tick(): void {
     if (this.state.settings.gamePaused) return;
     this.state.tick++;
+    BuildingSystem.updatePowerState(this.state);
     ProductionSystem.tick(this.state, TICK_INTERVAL);
     RouteSystem.tick(this.state, TICK_INTERVAL);
     EconomySystem.tick(this.state, TICK_INTERVAL);
     ResearchSystem.tick(this.state, TICK_INTERVAL);
+    MaintenanceSystem.tick(this.state, TICK_INTERVAL);
+    AchievementSystem.checkAchievements(this.state);
     if (this.state.tick % AUTOSAVE_TICKS === 0 && this.state.settings.autosaveEnabled) {
       SaveSystem.autosave(this.state);
     }

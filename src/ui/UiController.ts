@@ -6,8 +6,10 @@ import { BUILDINGS, BUILDINGS_MAP } from '../data/buildings';
 import { RECIPES } from '../data/recipes';
 import { TECHNOLOGIES } from '../data/research';
 import { TRADE_PARTNERS } from '../data/tradePartners';
+import { ACHIEVEMENTS } from '../data/achievements';
 import * as EconomySystem from '../systems/EconomySystem';
 import * as BuildingSystem from '../systems/BuildingSystem';
+import * as MaintenanceSystem from '../systems/MaintenanceSystem';
 
 const ALERT_DISMISS_MS = 5000;
 
@@ -42,7 +44,6 @@ export class UiController {
     this.attachKeyboardShortcuts();
     this.setupSelectionCallback();
   }
-
   update(state: GameState): void {
     this.updateTopBar(state);
     this.updateResourceBar(state);
@@ -68,6 +69,11 @@ export class UiController {
     const routesScreen = document.getElementById('routes-screen');
     if (routesScreen && !routesScreen.classList.contains('hidden')) {
       this.updateRoutesScreen(state);
+    }
+
+    const achievementsScreen = document.getElementById('achievements-screen');
+    if (achievementsScreen && !achievementsScreen.classList.contains('hidden')) {
+      this.updateAchievementsScreen(state);
     }
 
     this.syncGameAlerts(state);
@@ -123,6 +129,19 @@ export class UiController {
 
   closeMenu(): void {
     document.getElementById('save-screen')?.classList.add('hidden');
+  }
+
+  openAchievements(): void {
+    this.closeAllScreens();
+    const el = document.getElementById('achievements-screen');
+    if (el) {
+      el.classList.remove('hidden');
+      this.updateAchievementsScreen(this.game.getState());
+    }
+  }
+
+  closeAchievements(): void {
+    document.getElementById('achievements-screen')?.classList.add('hidden');
   }
 
   // ----------------------------------------------------------------
@@ -262,6 +281,19 @@ export class UiController {
       this.addAlert('info', this.i18n.t('messages.buildingDemolished', name));
     });
 
+    document.getElementById('btn-repair')?.addEventListener('click', () => {
+      const selected = this.game.getSelectedBuilding();
+      if (!selected) return;
+      const ok = this.game.repairBuilding(selected.id);
+      const bt = BUILDINGS_MAP[selected.typeId];
+      const name = bt ? this.i18n.t(bt.nameKey) : selected.typeId;
+      if (ok) {
+        this.addAlert('success', this.i18n.t('messages.buildingRepaired', name));
+      } else {
+        this.addAlert('warning', this.i18n.t('messages.repairTooExpensive'));
+      }
+    });
+
     document.getElementById('btn-create-route')?.addEventListener('click', () => {
       const selected = this.game.getSelectedBuilding();
       this.startRouteCreation(selected?.id);
@@ -280,6 +312,10 @@ export class UiController {
     document.getElementById('btn-routes')?.addEventListener('click', () => {
       const screen = document.getElementById('routes-screen');
       if (screen?.classList.contains('hidden')) { this.openRoutes(); } else { this.closeRoutes(); }
+    });
+    document.getElementById('btn-achievements')?.addEventListener('click', () => {
+      const screen = document.getElementById('achievements-screen');
+      if (screen?.classList.contains('hidden')) { this.openAchievements(); } else { this.closeAchievements(); }
     });
     document.getElementById('btn-menu')?.addEventListener('click', () => {
       const screen = document.getElementById('save-screen');
@@ -397,6 +433,29 @@ export class UiController {
       }
     }
 
+    // Power display
+    const powerEl = document.getElementById('power-value');
+    if (powerEl) {
+      const prod = Math.floor(BuildingSystem.getPowerProduction(state));
+      const cons = Math.floor(BuildingSystem.getPowerConsumption(state));
+      powerEl.textContent = `${prod}/${cons}`;
+      const powerDisplay = document.getElementById('power-display');
+      if (powerDisplay) {
+        powerDisplay.classList.toggle('power-deficit', prod < cons);
+      }
+    }
+
+    // Pollution display
+    const pollEl = document.getElementById('pollution-value');
+    if (pollEl) {
+      pollEl.textContent = `${Math.floor(state.pollution)}%`;
+      const pollDisplay = document.getElementById('pollution-display');
+      if (pollDisplay) {
+        pollDisplay.classList.toggle('pollution-high', state.pollution >= 50);
+        pollDisplay.classList.toggle('pollution-critical', state.pollution >= 80);
+      }
+    }
+
     const speed = state.settings.gameSpeed;
     this.syncSpeedButtons(speed);
 
@@ -461,9 +520,29 @@ export class UiController {
 
     const statusEl = document.getElementById('info-status');
     if (statusEl) {
-      statusEl.textContent = building.isPowered ? 'Status: Active' : 'Status: No Power';
-      statusEl.style.color = building.isPowered ? '' : '#ff4444';
+      let statusText = 'Status: Active';
+      let statusColor = '';
+      if (!building.isPowered) { statusText = 'Status: No Power'; statusColor = '#ff4444'; }
+      else if (building.health <= 0) { statusText = 'Status: Broken'; statusColor = '#ff6600'; }
+      statusEl.textContent = statusText;
+      statusEl.style.color = statusColor;
     }
+
+    // Health bar
+    const healthFill = document.getElementById('health-fill');
+    const healthInfo = document.getElementById('health-info');
+    if (healthFill) {
+      const pct = Math.max(0, Math.min(100, building.health));
+      healthFill.style.width = `${pct.toFixed(1)}%`;
+      const hue = Math.round(pct * 1.2); // green at 100, red at 0
+      healthFill.style.background = `hsl(${hue}, 80%, 50%)`;
+    }
+    if (healthInfo) healthInfo.textContent = `${Math.floor(building.health)}%`;
+
+    // Efficiency rating
+    const eff = BuildingSystem.getBuildingEfficiency(building);
+    const effEl = document.getElementById('info-efficiency');
+    if (effEl) effEl.textContent = `Efficiency: ${(eff * 100).toFixed(0)}%`;
 
     // Recipe section
     const recipeSection = document.getElementById('info-recipe-section');
@@ -554,6 +633,18 @@ export class UiController {
       const canAfford = state.cash >= cost;
       upgradeBtn.disabled = atMax || !canAfford;
       upgradeBtn.textContent = atMax ? '⬆ Max Level' : `⬆ Upgrade ($${Math.floor(cost)})`;
+    }
+
+    // Repair button
+    const repairBtn = document.getElementById('btn-repair') as HTMLButtonElement | null;
+    if (repairBtn) {
+      const repairCost = this.game.getRepairCost(building.id);
+      const atFullHealth = building.health >= 100;
+      const canAffordRepair = state.cash >= repairCost;
+      repairBtn.disabled = atFullHealth || !canAffordRepair;
+      repairBtn.textContent = atFullHealth
+        ? '🔧 Full Health'
+        : `🔧 Repair ($${Math.floor(repairCost)})`;
     }
   }
 
@@ -811,6 +902,35 @@ export class UiController {
       .map((r) => `<option value="${r.id}">${r.icon} ${this.i18n.t(r.nameKey)}</option>`)
       .join('');
     resSel.innerHTML = `<option value="">-- Resource --</option>${resOptions}`;
+  }
+
+  private updateAchievementsScreen(state: GameState): void {
+    const list = document.getElementById('achievements-list');
+    if (!list) return;
+
+    list.innerHTML = '';
+    const unlocked = state.unlockedAchievements;
+    const total = ACHIEVEMENTS.length;
+    const count = unlocked.length;
+
+    const summary = document.createElement('div');
+    summary.className = 'achievements-summary';
+    summary.textContent = `${count} / ${total} achievements unlocked`;
+    list.appendChild(summary);
+
+    for (const ach of ACHIEVEMENTS) {
+      const isUnlocked = unlocked.includes(ach.id);
+      const card = document.createElement('div');
+      card.className = `achievement-card ${isUnlocked ? 'unlocked' : 'locked'}`;
+      card.innerHTML = `
+        <span class="ach-icon">${isUnlocked ? ach.icon : '🔒'}</span>
+        <div class="ach-info">
+          <div class="ach-name">${isUnlocked ? this.i18n.t(ach.nameKey) : '???'}</div>
+          <div class="ach-desc">${isUnlocked ? this.i18n.t(ach.descriptionKey) : 'Hidden achievement'}</div>
+        </div>
+      `;
+      list.appendChild(card);
+    }
   }
 
   // ----------------------------------------------------------------

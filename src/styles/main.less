@@ -1158,3 +1158,151 @@ html, body {
   z-index: @z-panels;
   animation: glow-pulse 1.5s ease-in-out infinite;
 }
+
+// ----------------------------------------------------------
+// Power & Pollution displays (top bar)
+// ----------------------------------------------------------
+#power-display,
+#pollution-display {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: @font-mono;
+  font-size: 12px;
+  color: @neon-green;
+  padding: 2px 8px;
+  border: 1px solid rgba(68, 255, 136, 0.3);
+  border-radius: @panel-radius;
+  transition: @transition;
+}
+
+#power-display.power-deficit {
+  color: @neon-red;
+  border-color: rgba(255, 68, 68, 0.5);
+  animation: glow-pulse 1s ease-in-out infinite;
+}
+
+#pollution-display {
+  color: @neon-gold;
+  border-color: rgba(255, 204, 0, 0.3);
+}
+#pollution-display.pollution-high {
+  color: #ff8800;
+  border-color: rgba(255, 136, 0, 0.5);
+}
+#pollution-display.pollution-critical {
+  color: @neon-red;
+  border-color: rgba(255, 68, 68, 0.5);
+  animation: glow-pulse 1s ease-in-out infinite;
+}
+
+// ----------------------------------------------------------
+// Health bar (info panel)
+// ----------------------------------------------------------
+#health-progress-bar {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid @border-color;
+  border-radius: @panel-radius;
+  height: 8px;
+  width: 100%;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+#health-fill {
+  height: 100%;
+  background: @neon-green;
+  border-radius: @panel-radius;
+  transition: width 0.3s ease, background 0.3s ease;
+}
+
+#health-info {
+  font-size: 10px;
+  color: @text-dim;
+  text-align: right;
+  margin-bottom: 6px;
+}
+
+#info-efficiency {
+  font-size: 11px;
+  color: @text-body;
+  margin-bottom: 4px;
+}
+
+// ----------------------------------------------------------
+// Repair button
+// ----------------------------------------------------------
+.action-btn.repair {
+  background: rgba(0, 100, 200, 0.15);
+  color: #55aaff;
+  border-color: rgba(85, 170, 255, 0.4);
+  &:hover:not(:disabled) {
+    background: rgba(0, 100, 200, 0.35);
+    border-color: rgba(85, 170, 255, 0.8);
+    color: #88ccff;
+  }
+  &:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+}
+
+// ----------------------------------------------------------
+// Achievements screen
+// ----------------------------------------------------------
+#achievements-content {
+  padding: 12px;
+  overflow-y: auto;
+  max-height: calc(100% - 48px);
+}
+
+.achievements-summary {
+  font-size: 12px;
+  color: @text-dim;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+  border-bottom: 1px solid @border-color;
+  padding-bottom: 8px;
+}
+
+#achievements-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.achievement-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: @panel-radius;
+  border: 1px solid @border-color;
+  background: rgba(0, 0, 0, 0.3);
+  transition: @transition;
+
+  &.unlocked {
+    border-color: rgba(255, 204, 0, 0.5);
+    background: rgba(255, 204, 0, 0.05);
+
+    .ach-name { color: @neon-gold; }
+    .ach-desc { color: @text-body; font-size: 10px; }
+  }
+
+  &.locked {
+    opacity: 0.45;
+    .ach-name { color: @text-dim; }
+    .ach-desc { color: @text-dim; font-size: 10px; }
+  }
+}
+
+.ach-icon {
+  font-size: 20px;
+  min-width: 28px;
+  text-align: center;
+}
+
+.ach-info { flex: 1; overflow: hidden; }
+.ach-name { font-size: 12px; font-weight: bold; letter-spacing: 0.5px; }
+.ach-desc { font-size: 10px; color: @text-dim; margin-top: 2px; }
