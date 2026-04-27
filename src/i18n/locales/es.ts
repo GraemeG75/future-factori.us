@@ -538,7 +538,7 @@ export const es: Locale = {
     },
     market_event: {
       name: 'Observador del mercado',
-      description: 'Presensia un evento de mercado.',
+      description: 'Presencia un evento de mercado.',
     },
     tier5_research: {
       name: 'Post-Singularidad',
