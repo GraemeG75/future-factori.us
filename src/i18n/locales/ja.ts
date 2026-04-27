@@ -1,6 +1,6 @@
-import type { Locale } from './en';
 
-export const ja: Locale = {
+
+export const ja = {
   resources: {
     wood: {
       name: '木材',

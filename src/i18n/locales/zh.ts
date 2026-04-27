@@ -1,6 +1,6 @@
-import type { Locale } from './en';
 
-export const zh: Locale = {
+
+export const zh = {
   resources: {
     wood: {
       name: '木材',

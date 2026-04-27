@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import * as ScenarioSystem from '../systems/ScenarioSystem';
-import { createTestGameState } from './testHelpers';
-import type { GameState } from '../game/GameState';
+import { createTestGameState, createTestBuilding } from './testHelpers';
+import type { GameState, Contract, TradeRecord } from '../game/GameState';
 import type { ScenarioObjective } from '../data/scenarios';
 
 function makeObjective(overrides: Partial<ScenarioObjective>): ScenarioObjective {
@@ -35,7 +35,7 @@ describe('ScenarioSystem', () => {
   it('checkObjective buildings uses buildings array length', () => {
     state.buildings = [];
     expect(ScenarioSystem.checkObjective(state, makeObjective({ type: 'buildings', target: 1 }))).toBe(false);
-    state.buildings = [{ id: 'b1', typeId: 'sawmill', x: 0, y: 0, z: 0, rotation: 0, level: 1, isOperational: true }];
+    state.buildings = [createTestBuilding('wood_harvester')];
     expect(ScenarioSystem.checkObjective(state, makeObjective({ type: 'buildings', target: 1 }))).toBe(true);
   });
 
@@ -46,16 +46,25 @@ describe('ScenarioSystem', () => {
   });
 
   it('checkObjective contracts counts completed contracts', () => {
-    state.contracts = [
-      { id: 'c1', fromCity: 'A', toCity: 'B', resourceId: 'wood', amount: 10, reward: 100, penaltyPerTick: 0, deadlineTick: 99999, status: 'completed', acceptedTick: 0 },
-      { id: 'c2', fromCity: 'A', toCity: 'B', resourceId: 'wood', amount: 10, reward: 100, penaltyPerTick: 0, deadlineTick: 99999, status: 'active', acceptedTick: 0 },
-    ];
+    const makeContract = (id: string, status: Contract['status']): Contract => ({
+      id,
+      partnerId: 'industrial_corp',
+      resourceId: 'wood',
+      amountRequired: 10,
+      amountDelivered: status === 'completed' ? 10 : 0,
+      rewardCash: 100,
+      penaltyCash: 50,
+      deadlineAtTick: 99999,
+      status,
+    });
+    state.contracts = [makeContract('c1', 'completed'), makeContract('c2', 'active')];
     expect(ScenarioSystem.checkObjective(state, makeObjective({ type: 'contracts', target: 1 }))).toBe(true);
     expect(ScenarioSystem.checkObjective(state, makeObjective({ type: 'contracts', target: 2 }))).toBe(false);
   });
 
   it('checkObjective trade checks tradeHistory length', () => {
-    state.tradeHistory = [{ tick: 1, resourceId: 'wood', amount: 5, price: 10, type: 'sell' }];
+    const makeRecord = (): TradeRecord => ({ tick: 1, partnerId: 'industrial_corp', resourceId: 'wood', amount: 5, price: 10, totalValue: 50 });
+    state.tradeHistory = [makeRecord()];
     expect(ScenarioSystem.checkObjective(state, makeObjective({ type: 'trade', target: 1 }))).toBe(true);
     expect(ScenarioSystem.checkObjective(state, makeObjective({ type: 'trade', target: 2 }))).toBe(false);
   });
@@ -78,9 +87,9 @@ describe('ScenarioSystem', () => {
     state.activeScenarioId = 'tutorial';
     state.cash = 10000;
     state.buildings = [
-      { id: 'b1', typeId: 'sawmill', x: 0, y: 0, z: 0, rotation: 0, level: 1, isOperational: true },
-      { id: 'b2', typeId: 'sawmill', x: 1, y: 0, z: 0, rotation: 0, level: 1, isOperational: true },
-      { id: 'b3', typeId: 'sawmill', x: 2, y: 0, z: 0, rotation: 0, level: 1, isOperational: true },
+      createTestBuilding('wood_harvester'),
+      createTestBuilding('wood_harvester'),
+      createTestBuilding('wood_harvester'),
     ];
     state.completedResearch = ['silicon_extraction'];
     expect(ScenarioSystem.areAllObjectivesComplete(state)).toBe(true);
@@ -125,7 +134,17 @@ describe('ScenarioSystem', () => {
     state.activeScenarioId = 'tutorial'; // multiplier 1.0
     state.cash = 0;
     state.contracts = [
-      { id: 'c1', fromCity: 'A', toCity: 'B', resourceId: 'wood', amount: 10, reward: 100, penaltyPerTick: 0, deadlineTick: 99999, status: 'completed', acceptedTick: 0 },
+      {
+        id: 'c1',
+        partnerId: 'industrial_corp',
+        resourceId: 'wood',
+        amountRequired: 10,
+        amountDelivered: 10,
+        rewardCash: 100,
+        penaltyCash: 50,
+        deadlineAtTick: 99999,
+        status: 'completed',
+      },
     ];
     state.completedResearch = ['a'];
     const expected = 500 + 200; // 1 contract × 500 + 1 research × 200
@@ -174,9 +193,9 @@ describe('ScenarioSystem', () => {
     state.scenarioStatus = 'active';
     state.cash = 10000;
     state.buildings = [
-      { id: 'b1', typeId: 'sawmill', x: 0, y: 0, z: 0, rotation: 0, level: 1, isOperational: true },
-      { id: 'b2', typeId: 'sawmill', x: 1, y: 0, z: 0, rotation: 0, level: 1, isOperational: true },
-      { id: 'b3', typeId: 'sawmill', x: 2, y: 0, z: 0, rotation: 0, level: 1, isOperational: true },
+      createTestBuilding('wood_harvester'),
+      createTestBuilding('wood_harvester'),
+      createTestBuilding('wood_harvester'),
     ];
     state.completedResearch = ['silicon_extraction'];
     ScenarioSystem.tick(state);
