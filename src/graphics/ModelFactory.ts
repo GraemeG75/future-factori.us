@@ -464,12 +464,21 @@ export class ModelFactory {
     const points: number[] = [];
     const hw = width / 2;
     const hd = depth / 2;
+    const heightCache = new Map<string, number>();
+    const getGridHeight = (x: number, z: number): number => {
+      const key = `${x},${z}`;
+      const cached = heightCache.get(key);
+      if (cached !== undefined) return cached;
+      const height = sampleTerrainHeight(seed, x, z, width, depth) + 0.08;
+      heightCache.set(key, height);
+      return height;
+    };
     for (let x = -hw; x <= hw; x += step) {
       for (let z = -hd; z < hd; z += step) {
         const nextZ = Math.min(hd, z + step);
         points.push(
-          x, sampleTerrainHeight(seed, x, z, width, depth) + 0.08, z,
-          x, sampleTerrainHeight(seed, x, nextZ, width, depth) + 0.08, nextZ
+          x, getGridHeight(x, z), z,
+          x, getGridHeight(x, nextZ), nextZ
         );
       }
     }
@@ -477,8 +486,8 @@ export class ModelFactory {
       for (let x = -hw; x < hw; x += step) {
         const nextX = Math.min(hw, x + step);
         points.push(
-          x, sampleTerrainHeight(seed, x, z, width, depth) + 0.08, z,
-          nextX, sampleTerrainHeight(seed, nextX, z, width, depth) + 0.08, z
+          x, getGridHeight(x, z), z,
+          nextX, getGridHeight(nextX, z), z
         );
       }
     }
