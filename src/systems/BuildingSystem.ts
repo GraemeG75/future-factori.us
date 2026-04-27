@@ -1,11 +1,24 @@
 import { BUILDINGS_MAP } from '../data/buildings';
 import type { BuildingInstance, GameState, ResourceSpot } from '../game/GameState';
+import { sampleTerrainHeight } from '../game/TerrainGeneration';
 
 /** Base harvest rate in units per tick at building level 1. */
 const BASE_HARVEST_RATE = 0.1;
 
 /** Max distance (world units) from a spot to snap a harvester placement. */
 const HARVESTER_SNAP_RADIUS = 8;
+
+/** Minimum distance (world units) between any two non-harvester buildings. */
+const MIN_BUILDING_SEPARATION = 4;
+const TERRAIN_HEIGHT_PRECISION = 100;
+
+function getTerrainAnchoredPosition(state: GameState, position: { x: number; y: number; z: number }) {
+  return {
+    x: position.x,
+    y: Math.round(sampleTerrainHeight(state.worldSeed, position.x, position.z) * TERRAIN_HEIGHT_PRECISION) / TERRAIN_HEIGHT_PRECISION,
+    z: position.z
+  };
+}
 
 /**
  * Attempts to place a building of the given type at the specified position.
@@ -25,6 +38,15 @@ export function placeBuilding(state: GameState, typeId: string, clickPosition: {
     targetSpot = findNearestUnoccupiedSpot(state, typeId, clickPosition);
     if (!targetSpot) return null;
     buildPosition = targetSpot.position;
+  } else {
+    buildPosition = getTerrainAnchoredPosition(state, clickPosition);
+    // Collision detection: reject placement if too close to any existing building.
+    const tooClose = state.buildings.some((b) => {
+      const dx = b.position.x - clickPosition.x;
+      const dz = b.position.z - clickPosition.z;
+      return Math.sqrt(dx * dx + dz * dz) < MIN_BUILDING_SEPARATION;
+    });
+    if (tooClose) return null;
   }
 
   state.cash -= buildingType.baseCost;
@@ -41,7 +63,8 @@ export function placeBuilding(state: GameState, typeId: string, clickPosition: {
     inputBuffer: {},
     outputBuffer: {},
     isPowered: true,
-    assignedRouteIds: []
+    assignedRouteIds: [],
+    heat: 0
   };
 
   state.buildings.push(building);

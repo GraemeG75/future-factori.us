@@ -34,7 +34,8 @@ export function createRoute(state: GameState, fromId: string, toId: string, reso
     currentLoad: 0,
     progress: 0,
     isActive: true,
-    costPerTrip: DEFAULT_COST_PER_TRIP
+    costPerTrip: DEFAULT_COST_PER_TRIP,
+    automationLevel: 0
   };
 
   state.routes.push(route);

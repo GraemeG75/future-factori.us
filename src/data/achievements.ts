@@ -140,6 +140,44 @@ export const ACHIEVEMENTS: Achievement[] = [
     descriptionKey: 'achievements.prototype_built.description',
     icon: '🔩',
   },
+  // v0.8.0 — Heat Management
+  {
+    id: 'cooling_installed',
+    nameKey: 'achievements.cooling_installed.name',
+    descriptionKey: 'achievements.cooling_installed.description',
+    icon: '❄️',
+  },
+  {
+    id: 'heat_crisis',
+    nameKey: 'achievements.heat_crisis.name',
+    descriptionKey: 'achievements.heat_crisis.description',
+    icon: '🔥',
+  },
+  {
+    id: 'thermal_master',
+    nameKey: 'achievements.thermal_master.name',
+    descriptionKey: 'achievements.thermal_master.description',
+    icon: '🌡️',
+  },
+  // v0.9.0 — Platform Polish
+  {
+    id: 'save_exported',
+    nameKey: 'achievements.save_exported.name',
+    descriptionKey: 'achievements.save_exported.description',
+    icon: '💾',
+  },
+  {
+    id: 'all_routes_active',
+    nameKey: 'achievements.all_routes_active.name',
+    descriptionKey: 'achievements.all_routes_active.description',
+    icon: '🛣️',
+  },
+  {
+    id: 'minimap_watcher',
+    nameKey: 'achievements.minimap_watcher.name',
+    descriptionKey: 'achievements.minimap_watcher.description',
+    icon: '🗺️',
+  },
 ];
 
 export const ACHIEVEMENTS_MAP: Record<string, Achievement> = Object.fromEntries(

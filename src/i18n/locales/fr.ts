@@ -169,6 +169,14 @@ export const fr = {
       name: 'Forge de la réalité',
       description: 'The ultimate prototype: a device that can bend the laws of physics. Requires reality engineering.',
     },
+    radiator: {
+      name: 'Radiateur',
+      description: 'Dissipe la chaleur des bâtiments exotiques voisins. Évite les pénalités de surchauffe.',
+    },
+    cooling_tower: {
+      name: 'Tour de refroidissement',
+      description: 'Unité de refroidissement haute capacité. Réduit la chaleur dans une large zone.',
+    },
   },
 
   recipes: {

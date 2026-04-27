@@ -21,6 +21,7 @@ export function createTestBuilding(typeId: string, overrides: Partial<BuildingIn
     outputBuffer: {},
     isPowered: true,
     assignedRouteIds: [],
+    heat: 0,
     ...overrides
   };
 }
@@ -61,6 +62,8 @@ export function createTestGameState(overrides: Partial<GameState> = {}): GameSta
     scenarioStatus: null,
     scenarioScore: 0,
     sandboxMode: false,
+    globalHeat: 0,
+    heatCrisisTicks: 0,
     ...overrides
   };
   initialiseDemand(state);

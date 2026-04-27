@@ -34,7 +34,7 @@ export class World {
     this.terrain = ModelFactory.createTerrain(500, 500, 60, gameState.worldSeed);
     this.scene.add(this.terrain);
 
-    this.grid = ModelFactory.createGridOverlay(500, 500, 25);
+    this.grid = ModelFactory.createGridOverlay(500, 500, 25, gameState.worldSeed);
     this.scene.add(this.grid);
 
     this.initSpotMarkers(gameState.resourceSpots);

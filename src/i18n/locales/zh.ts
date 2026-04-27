@@ -169,6 +169,14 @@ export const zh = {
       name: '现实锻造炉',
       description: 'The ultimate prototype: a device that can bend the laws of physics. Requires reality engineering.',
     },
+    radiator: {
+      name: '散热器',
+      description: '散发附近异域建筑的热量。防止过热导致效率下降。',
+    },
+    cooling_tower: {
+      name: '冷却塔',
+      description: '大容量冷却设备。大幅降低大范围内的热量。',
+    },
   },
 
   recipes: {

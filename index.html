@@ -5,8 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Future Factorius</title>
   <link rel="stylesheet" href="/src/styles/main.less" />
+  <link rel="manifest" href="/manifest.json" />
 </head>
 <body>
+  <!-- Loading screen -->
+  <div id="loading-screen">
+    <div id="loading-spinner"></div>
+    <div id="loading-text">Initializing Future Factorius…</div>
+  </div>
+
   <!-- Game canvas (3D world) -->
   <canvas id="game-canvas"></canvas>
 
@@ -23,6 +30,10 @@
       <div id="pollution-display" title="Pollution level">
         <span id="pollution-icon">🌫️</span>
         <span id="pollution-value">0%</span>
+      </div>
+      <div id="heat-display" title="Global heat level">
+        <span id="heat-icon">🌡️</span>
+        <span id="heat-value">0%</span>
       </div>
       <div id="cash-display">
         <span id="cash-value">$ 0</span>
@@ -54,6 +65,10 @@
         <div class="build-category" id="cat-infrastructure">
           <div class="category-label">INFRASTRUCTURE</div>
           <div class="build-buttons" id="infra-buttons"></div>
+        </div>
+        <div class="build-category" id="cat-cooling">
+          <div class="category-label">COOLING</div>
+          <div class="build-buttons" id="cooling-buttons"></div>
         </div>
         <div class="build-category" id="cat-prototypes">
           <div class="category-label">PROTOTYPES</div>
@@ -102,6 +117,11 @@
           <button id="btn-demolish" class="action-btn danger">&#128465; Demolish</button>
         </div>
       </div>
+    </div>
+
+    <!-- Minimap -->
+    <div id="minimap-panel">
+      <canvas id="minimap-canvas" width="160" height="160" title="Factory minimap"></canvas>
     </div>
 
     <!-- Bottom: Alerts feed -->
@@ -178,6 +198,9 @@
         <button id="btn-new-game" class="menu-btn">New Game</button>
         <button id="btn-save-game" class="menu-btn">Save Game</button>
         <button id="btn-load-game" class="menu-btn">Load Game</button>
+        <button id="btn-export-save" class="menu-btn">Export Save</button>
+        <button id="btn-import-save" class="menu-btn">Import Save</button>
+        <input type="file" id="import-file-input" accept=".json" style="display:none" />
         <button id="btn-delete-save" class="menu-btn danger">Delete Save</button>
         <div id="save-status"></div>
         <div id="language-selector">
@@ -272,5 +295,12 @@
   </div>
 
   <script type="module" src="/src/main.ts"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
+      });
+    }
+  </script>
 </body>
 </html>

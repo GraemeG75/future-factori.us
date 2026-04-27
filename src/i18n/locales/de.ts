@@ -169,6 +169,14 @@ export const de = {
       name: 'Realitäts-Schmiede',
       description: 'The ultimate prototype: a device that can bend the laws of physics. Requires reality engineering.',
     },
+    radiator: {
+      name: 'Kühler',
+      description: 'Leitet Wärme von nahegelegenen exotischen Gebäuden ab. Verhindert Effizienzeinbußen durch Überhitzung.',
+    },
+    cooling_tower: {
+      name: 'Kühlturm',
+      description: 'Hochleistungskühlanlage. Reduziert Wärme in einem weiten Bereich erheblich.',
+    },
   },
 
   recipes: {

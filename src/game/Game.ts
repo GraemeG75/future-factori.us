@@ -4,6 +4,7 @@ import { CameraController } from './CameraController';
 import { SelectionManager } from './SelectionManager';
 import { World } from './World';
 import { Effects } from '../graphics/Effects';
+import { DayNightCycle } from '../graphics/DayNightCycle';
 import { AudioSystem } from '../systems/AudioSystem';
 import * as ProductionSystem from '../systems/ProductionSystem';
 import * as RouteSystem from '../systems/RouteSystem';
@@ -17,7 +18,8 @@ import * as LoanSystem from '../systems/LoanSystem';
 import * as EventSystem from '../systems/EventSystem';
 import * as SaveSystem from '../systems/SaveSystem';
 import * as ScenarioSystem from '../systems/ScenarioSystem';
-import { TICK_RATE, AUTOSAVE_TICKS } from '../systems/EconomySystem';
+import * as HeatSystem from '../systems/HeatSystem';
+import { TICK_RATE } from '../systems/EconomySystem';
 import { BUILDINGS_MAP } from '../data/buildings';
 import { ACHIEVEMENTS_MAP } from '../data/achievements';
 import { LOAN_TIERS } from '../systems/LoanSystem';
@@ -32,6 +34,7 @@ export class Game {
   private selectionManager: SelectionManager;
   private world: World;
   private effects: Effects;
+  private dayNightCycle: DayNightCycle | null = null;
   private audio: AudioSystem;
   private state: GameState;
   private lastTimestamp: number = 0;
@@ -42,6 +45,7 @@ export class Game {
   private clickOverride: ((e: MouseEvent) => void) | null = null;
   private animFrameId: number = 0;
   private deltaTime: number = 0;
+  private lastAutosaveTick: number = 0;
 
   constructor(canvas: HTMLCanvasElement) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -62,7 +66,7 @@ export class Game {
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.setPixelRatio(window.devicePixelRatio);
     this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFShadowMap;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
     this.scene.background = new THREE.Color(0x0a0a0f);
     this.scene.fog = new THREE.FogExp2(0x0a0a0f, 0.008);
@@ -85,6 +89,7 @@ export class Game {
     dirLight.shadow.camera.top = 100;
     dirLight.shadow.camera.bottom = -100;
     this.scene.add(dirLight);
+    this.dayNightCycle = new DayNightCycle(ambient, dirLight, this.scene);
 
     this.applyState(this.state);
     this.render();
@@ -122,6 +127,18 @@ export class Game {
 
   loadGame(): boolean {
     const loaded = SaveSystem.load();
+    if (!loaded) return false;
+    this.applyState(loaded);
+    if (this.onStateChange) this.onStateChange(this.state);
+    return true;
+  }
+
+  exportSave(): string {
+    return SaveSystem.exportSave(this.state);
+  }
+
+  importSave(json: string): boolean {
+    const loaded = SaveSystem.importSave(json);
     if (!loaded) return false;
     this.applyState(loaded);
     if (this.onStateChange) this.onStateChange(this.state);
@@ -376,8 +393,13 @@ export class Game {
     EventSystem.tick(this.state);
     AchievementSystem.checkAchievements(this.state);
     ScenarioSystem.tick(this.state);
-    if (this.state.tick % AUTOSAVE_TICKS === 0 && this.state.settings.autosaveEnabled) {
-      SaveSystem.autosave(this.state);
+    HeatSystem.tick(this.state);
+    if (this.state.settings.autosaveEnabled) {
+      const intervalTicks = Math.floor(this.state.settings.autosaveIntervalMinutes * 60 * TICK_RATE);
+      if (this.state.tick - this.lastAutosaveTick >= intervalTicks) {
+        SaveSystem.autosave(this.state);
+        this.lastAutosaveTick = this.state.tick;
+      }
     }
     this.world.update(this.state, TICK_INTERVAL);
   }
@@ -386,6 +408,7 @@ export class Game {
     this.cameraController.update(this.deltaTime);
     this.selectionManager.update();
     this.effects.update(this.deltaTime);
+    this.dayNightCycle?.update(this.deltaTime);
     this.renderer.render(this.scene, this.camera);
   }
 

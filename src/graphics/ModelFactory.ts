@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { RetroMaterials } from './RetroMaterials';
-import { sampleTerrain } from '../game/TerrainGeneration';
+import { sampleTerrain, sampleTerrainHeight } from '../game/TerrainGeneration';
+
+const GRID_HEIGHT_OFFSET = 0.08;
 
 export class ModelFactory {
   static createBuilding(typeId: string, level: number = 1): THREE.Group {
@@ -460,19 +462,40 @@ export class ModelFactory {
     return mesh;
   }
 
-  static createGridOverlay(width: number, depth: number, step: number = 10): THREE.LineSegments {
+  static createGridOverlay(width: number, depth: number, step: number = 10, seed: number = 1337): THREE.LineSegments {
     const points: number[] = [];
     const hw = width / 2;
     const hd = depth / 2;
+    const heightCache = new Map<string, number>();
+    const getGridHeight = (x: number, z: number): number => {
+      const key = `${x},${z}`;
+      const cached = heightCache.get(key);
+      if (cached !== undefined) return cached;
+      const height = sampleTerrainHeight(seed, x, z, width, depth) + GRID_HEIGHT_OFFSET;
+      heightCache.set(key, height);
+      return height;
+    };
     for (let x = -hw; x <= hw; x += step) {
-      points.push(x, 0.01, -hd, x, 0.01, hd);
+      for (let z = -hd; z < hd; z += step) {
+        const nextZ = Math.min(hd, z + step);
+        points.push(
+          x, getGridHeight(x, z), z,
+          x, getGridHeight(x, nextZ), nextZ
+        );
+      }
     }
     for (let z = -hd; z <= hd; z += step) {
-      points.push(-hw, 0.01, z, hw, 0.01, z);
+      for (let x = -hw; x < hw; x += step) {
+        const nextX = Math.min(hw, x + step);
+        points.push(
+          x, getGridHeight(x, z), z,
+          nextX, getGridHeight(nextX, z), z
+        );
+      }
     }
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.Float32BufferAttribute(points, 3));
-    const mat = new THREE.LineBasicMaterial({ color: 0x223322, transparent: true, opacity: 0.4 });
+    const mat = new THREE.LineBasicMaterial({ color: 0x29412e, transparent: true, opacity: 0.28 });
     return new THREE.LineSegments(geo, mat);
   }
 

@@ -167,6 +167,14 @@ export const en = {
       name: 'Reality Forge',
       description: 'The ultimate prototype: a device that can bend the laws of physics. Requires reality engineering.',
     },
+    radiator: {
+      name: 'Radiator',
+      description: 'Dissipates heat from nearby exotic buildings. Helps prevent efficiency penalties from overheating.',
+    },
+    cooling_tower: {
+      name: 'Cooling Tower',
+      description: 'High-capacity cooling unit. Significantly reduces heat across a wide area. Ideal for dense exotic installations.',
+    },
   },
 
   recipes: {
@@ -555,6 +563,32 @@ export const en = {
     prototype_built: {
       name: 'Prototype Engineer',
       description: 'Build a Prototype-class structure.',
+    },
+    // v0.8.0
+    cooling_installed: {
+      name: 'Chill Out',
+      description: 'Install a Radiator or Cooling Tower.',
+    },
+    heat_crisis: {
+      name: 'Too Hot to Handle',
+      description: 'Sustain a heat crisis (global heat > 90) for 60 consecutive ticks.',
+    },
+    thermal_master: {
+      name: 'Thermal Master',
+      description: 'Keep global heat below 20 while operating 4 or more exotic buildings.',
+    },
+    // v0.9.0
+    save_exported: {
+      name: 'Data Backup',
+      description: 'Export your game save to a file.',
+    },
+    all_routes_active: {
+      name: 'Supply Chain',
+      description: 'Have 5 or more routes all active simultaneously.',
+    },
+    minimap_watcher: {
+      name: "Bird's Eye View",
+      description: 'Open the minimap for the first time.',
     },
   },
 
