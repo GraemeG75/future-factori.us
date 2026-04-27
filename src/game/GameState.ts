@@ -103,6 +103,14 @@ export interface GameState {
   activeMarketEvents: MarketEvent[];
   /** Which research specialization the player is pursuing (chosen freely). */
   researchSpecialization: 'energy' | 'matter' | 'biology' | null;
+  /** Id of the active scenario, or null in freeplay */
+  activeScenarioId: string | null;
+  /** Current scenario status */
+  scenarioStatus: 'active' | 'won' | 'lost' | null;
+  /** Current scenario score */
+  scenarioScore: number;
+  /** If true, resource deposits never deplete */
+  sandboxMode: boolean;
 }
 
 export interface BuildingInstance {

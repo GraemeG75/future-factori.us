@@ -17,6 +17,7 @@ import * as ContractSystem from '../systems/ContractSystem';
 import * as LoanSystem from '../systems/LoanSystem';
 import * as EventSystem from '../systems/EventSystem';
 import * as SaveSystem from '../systems/SaveSystem';
+import * as ScenarioSystem from '../systems/ScenarioSystem';
 import { TICK_RATE, AUTOSAVE_TICKS } from '../systems/EconomySystem';
 import { BUILDINGS_MAP } from '../data/buildings';
 import { ACHIEVEMENTS_MAP } from '../data/achievements';
@@ -190,6 +191,15 @@ export class Game {
     return this.state;
   }
 
+  startScenario(scenarioId: string): boolean {
+    const ok = ScenarioSystem.startScenario(this.state, scenarioId);
+    if (ok) {
+      this.world.init(this.state);
+      if (this.onStateChange) this.onStateChange(this.state);
+    }
+    return ok;
+  }
+
   getSelectedBuilding(): BuildingInstance | undefined {
     const id = this.selectionManager.getSelected();
     if (!id) return undefined;
@@ -354,6 +364,7 @@ export class Game {
     LoanSystem.tick(this.state);
     EventSystem.tick(this.state);
     AchievementSystem.checkAchievements(this.state);
+    ScenarioSystem.tick(this.state);
     if (this.state.tick % AUTOSAVE_TICKS === 0 && this.state.settings.autosaveEnabled) {
       SaveSystem.autosave(this.state);
     }

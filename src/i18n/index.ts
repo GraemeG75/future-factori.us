@@ -1,4 +1,9 @@
 import { en } from './locales/en';
+import { fr } from './locales/fr';
+import { de } from './locales/de';
+import { es } from './locales/es';
+import { ja } from './locales/ja';
+import { zh } from './locales/zh';
 
 type NestedKeyOf<T> = T extends object
   ? { [K in keyof T]: K extends string ? `${K}` | `${K}.${NestedKeyOf<T[K]>}` : never }[keyof T]
@@ -8,6 +13,11 @@ export type I18nKey = NestedKeyOf<typeof en>;
 
 const localeMap: Record<string, typeof en> = {
   en,
+  fr: fr as unknown as typeof en,
+  de: de as unknown as typeof en,
+  es: es as unknown as typeof en,
+  ja: ja as unknown as typeof en,
+  zh: zh as unknown as typeof en,
 };
 
 function getNestedValue(obj: Record<string, unknown>, keys: string[]): string | undefined {

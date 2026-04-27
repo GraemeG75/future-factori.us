@@ -55,6 +55,10 @@
           <div class="category-label">INFRASTRUCTURE</div>
           <div class="build-buttons" id="infra-buttons"></div>
         </div>
+        <div class="build-category" id="cat-prototypes">
+          <div class="category-label">PROTOTYPES</div>
+          <div class="build-buttons" id="prototype-buttons"></div>
+        </div>
       </div>
     </div>
 
@@ -117,6 +121,17 @@
           <div id="active-research-info">No active research</div>
           <div id="research-progress-bar"><div id="research-fill"></div></div>
         </div>
+        <div id="research-specialization-panel">
+          <div class="panel-section-label">SPECIALIZATION</div>
+          <div id="specialization-info"></div>
+          <div id="specialization-buttons">
+            <button class="spec-btn" data-spec="energy">⚡ Energy</button>
+            <button class="spec-btn" data-spec="matter">🔬 Matter</button>
+            <button class="spec-btn" data-spec="biology">🧬 Biology</button>
+            <button class="spec-btn" data-spec="">🔄 Auto</button>
+          </div>
+          <div id="synergy-bonuses"></div>
+        </div>
       </div>
     </div>
 
@@ -165,6 +180,17 @@
         <button id="btn-load-game" class="menu-btn">Load Game</button>
         <button id="btn-delete-save" class="menu-btn danger">Delete Save</button>
         <div id="save-status"></div>
+        <div id="language-selector">
+          <label>Language:</label>
+          <select id="language-select">
+            <option value="en">English</option>
+            <option value="fr">Français</option>
+            <option value="de">Deutsch</option>
+            <option value="es">Español</option>
+            <option value="ja">日本語</option>
+            <option value="zh">中文</option>
+          </select>
+        </div>
       </div>
     </div>
 
@@ -210,6 +236,7 @@
       <button id="btn-routes" class="nav-btn" title="Routes">&#128644; Routes</button>
       <button id="btn-finance" class="nav-btn" title="Finance">💳 Finance</button>
       <button id="btn-achievements" class="nav-btn" title="Achievements">🏆 Achievements</button>
+      <button id="btn-scenarios" class="nav-btn" title="Scenarios">🎯 Scenarios</button>
       <button id="btn-menu" class="nav-btn" title="Menu">&#9776; Menu</button>
     </div>
 
@@ -221,6 +248,25 @@
       </div>
       <div id="achievements-content">
         <div id="achievements-list"></div>
+      </div>
+    </div>
+
+    <!-- Scenarios screen -->
+    <div id="scenarios-screen" class="screen hidden">
+      <div class="screen-header">
+        <span>SCENARIOS</span>
+        <button class="screen-close">&#10005;</button>
+      </div>
+      <div id="scenarios-content">
+        <div id="scenarios-list"></div>
+        <div id="scenario-active-panel" class="hidden">
+          <div class="panel-section-label">CURRENT SCENARIO</div>
+          <div id="scenario-name"></div>
+          <div id="scenario-objectives-list"></div>
+          <div id="scenario-score"></div>
+          <div id="scenario-time-left"></div>
+          <div id="scenario-result" class="hidden"></div>
+        </div>
       </div>
     </div>
   </div>

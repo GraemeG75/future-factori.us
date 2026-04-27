@@ -64,45 +64,49 @@
 
 ---
 
-## v0.4.0 — Economy & Trade Expansion
+## v0.4.0 — Economy & Trade Expansion ✅
 
-- [ ] Dynamic demand simulation (price curves over time)
-- [ ] Contract system (commit to delivering X units by Y time)
-- [ ] Import/export with new trade partners
-- [ ] Stock market-style price display
-- [ ] Loan/investment system
-- [ ] Operating expenses breakdown UI
-- [ ] Tax/regulation events
-
----
-
-## v0.5.0 — Research & Progression
-
-- [ ] More technology tiers (add Tier 5: Post-Singularity)
-- [ ] Research specialization trees (energy focus, matter focus, biology focus)
-- [ ] Technology cards with flavor text and artwork
-- [ ] Cross-technology synergies
-- [ ] Prototype buildings (unlock by combining technologies)
+### Completed
+- **Dynamic demand simulation**: Price curves tracked over time; `priceHistory` sampled every 30 s; sparklines rendered in the Trade screen
+- **Contract system**: `ContractSystem` generates timed delivery contracts from trade partners; `fulfillContract` consumes inventory and pays reward; expired contracts apply a penalty
+- **Import/export with new trade partners**: 2 additional partners added (Black Market, Terraformers Collective) for a total of 6
+- **Stock market-style price display**: Sparkline canvas charts per resource/partner pair in the Trade screen
+- **Loan/investment system**: `LoanSystem` with 4 loan tiers; interest accrual; repayment; overdue penalties; Finance screen Loans tab
+- **Operating expenses breakdown UI**: Finance screen with Contracts / Loans / Market Events tabs
+- **Tax/regulation events**: `EventSystem` spawns random market events (embargo, boom, crash, subsidy, tech surge, pollution fine); active events visible in Finance screen
 
 ---
 
-## v0.6.0 — Additional Languages
+## v0.5.0 — Research & Progression ✅
 
-- [ ] French locale
-- [ ] German locale
-- [ ] Spanish locale
-- [ ] Japanese locale
-- [ ] Chinese (Simplified) locale
-- [ ] Language selector in settings menu
+### Completed
+- **More technology tiers (Tier 5: Post-Singularity)**: 3 Tier-5 techs added — Singularity Engine (energy), Consciousness Upload (biology), Reality Engineering (matter)
+- **Research specialization trees**: `energy`, `matter`, `biology` branches on relevant techs; specialization selector panel in the Research screen; `getEffectiveSpecialization` auto-detects from highest-tier completed tech
+- **Technology cards with flavor text**: Description/flavor text rendered on every tech card in the Research tree; specialization badge and synergy callout shown on applicable cards
+- **Cross-technology synergies**: `getSynergyBonus` multiplies production for buildings when all synergy-partner techs are complete; active bonuses displayed in the Research specialization panel
+- **Prototype buildings (unlock by combining technologies)**: 6 prototype-class structures (Quantum Forge, Fusion Plant, Bio Reactor, Singularity Tap, Mind Matrix, Reality Forge) added to the PROTOTYPES section of the build menu; each requires a Tier-4/5 research unlock
+- **Achievements**: 3 new v0.5.0 achievements (tier5_research, synergy_active, prototype_built) tracked by `AchievementSystem`
+- **Unit tests**: 8 new tests (getSynergyBonus × 4, getEffectiveSpecialization × 4) — 132 total
 
 ---
 
-## v0.7.0 — Campaign / Scenario Mode
+## v0.6.0 — Additional Languages ✅
 
-- [ ] Tutorial mission (guided gameplay)
-- [ ] Scenario challenges (time limits, resource constraints)
-- [ ] Sandbox mode (unlimited starting resources)
-- [ ] Leaderboard/score system
+- [x] French locale
+- [x] German locale
+- [x] Spanish locale
+- [x] Japanese locale
+- [x] Chinese (Simplified) locale
+- [x] Language selector in settings menu
+
+---
+
+## v0.7.0 — Campaign / Scenario Mode ✅
+
+- [x] Tutorial mission (guided gameplay)
+- [x] Scenario challenges (time limits, resource constraints)
+- [x] Sandbox mode (unlimited starting resources)
+- [x] Leaderboard/score system
 
 ---
 

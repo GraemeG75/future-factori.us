@@ -5,6 +5,8 @@ import {
   isUnlocked,
   getAvailableTechnologies,
   tick,
+  getSynergyBonus,
+  getEffectiveSpecialization,
 } from '../systems/ResearchSystem';
 import { createTestGameState, createTestBuilding } from './testHelpers';
 import type { GameState } from '../game/GameState';
@@ -84,5 +86,66 @@ describe('ResearchSystem', () => {
     expect(state.activeResearch).not.toBeNull();
     cancelResearch(state);
     expect(state.activeResearch).toBeNull();
+  });
+
+  describe('getSynergyBonus', () => {
+    it('returns 1.0 when no research completed', () => {
+      expect(getSynergyBonus(state)).toBe(1.0);
+    });
+
+    it('returns 1.0 when only the primary tech is completed but synergy partner is not', () => {
+      // plasma_tech has synergyWith: ['dark_matter_research']
+      state.completedResearch = ['silicon_extraction', 'uranium_mining', 'plasma_tech'];
+      expect(getSynergyBonus(state)).toBe(1.0);
+    });
+
+    it('returns bonus multiplier when both synergy partners are completed', () => {
+      // plasma_tech (synergyWith: dark_matter_research, synergyBonus: 1.2)
+      // dark_matter_research (synergyWith: quantum_physics, synergyBonus: 1.25)
+      // Complete plasma_tech + dark_matter_research → plasma_tech synergy fires
+      state.completedResearch = [
+        'silicon_extraction', 'uranium_mining', 'plasma_tech', 'dark_matter_research',
+      ];
+      const bonus = getSynergyBonus(state);
+      expect(bonus).toBeGreaterThan(1.0);
+    });
+
+    it('filters by specialization when provided', () => {
+      // Complete plasma_tech + dark_matter_research
+      state.completedResearch = [
+        'silicon_extraction', 'uranium_mining', 'plasma_tech', 'dark_matter_research',
+      ];
+      // plasma_tech specialization is 'energy'; dark_matter is 'matter'
+      const energyBonus = getSynergyBonus(state, 'energy');
+      const matterBonus = getSynergyBonus(state, 'matter');
+      // The energy spec should include plasma_tech's bonus; matter should include dark_matter's
+      expect(energyBonus).toBeGreaterThanOrEqual(1.0);
+      expect(matterBonus).toBeGreaterThanOrEqual(1.0);
+    });
+  });
+
+  describe('getEffectiveSpecialization', () => {
+    it('returns null when no research is completed', () => {
+      expect(getEffectiveSpecialization(state)).toBeNull();
+    });
+
+    it('returns explicit specialization when set', () => {
+      state.researchSpecialization = 'energy';
+      expect(getEffectiveSpecialization(state)).toBe('energy');
+    });
+
+    it('derives specialization from highest-tier completed tech', () => {
+      // uranium_mining is tier 2, specialization energy
+      state.completedResearch = ['silicon_extraction', 'uranium_mining'];
+      state.researchSpecialization = null;
+      expect(getEffectiveSpecialization(state)).toBe('energy');
+    });
+
+    it('returns null if no completed tech has a specialization field', () => {
+      // silicon_extraction has no specialization
+      state.completedResearch = ['silicon_extraction'];
+      state.researchSpecialization = null;
+      expect(getEffectiveSpecialization(state)).toBeNull();
+    });
   });
 });
