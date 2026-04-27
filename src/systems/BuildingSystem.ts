@@ -1,5 +1,6 @@
 import { BUILDINGS_MAP } from '../data/buildings';
 import type { BuildingInstance, GameState, ResourceSpot } from '../game/GameState';
+import { sampleTerrainHeight } from '../game/TerrainGeneration';
 
 /** Base harvest rate in units per tick at building level 1. */
 const BASE_HARVEST_RATE = 0.1;
@@ -9,6 +10,14 @@ const HARVESTER_SNAP_RADIUS = 8;
 
 /** Minimum distance (world units) between any two non-harvester buildings. */
 const MIN_BUILDING_SEPARATION = 4;
+
+function getTerrainAnchoredPosition(state: GameState, position: { x: number; y: number; z: number }) {
+  return {
+    x: position.x,
+    y: Math.round(sampleTerrainHeight(state.worldSeed, position.x, position.z) * 100) / 100,
+    z: position.z
+  };
+}
 
 /**
  * Attempts to place a building of the given type at the specified position.
@@ -29,6 +38,7 @@ export function placeBuilding(state: GameState, typeId: string, clickPosition: {
     if (!targetSpot) return null;
     buildPosition = targetSpot.position;
   } else {
+    buildPosition = getTerrainAnchoredPosition(state, clickPosition);
     // Collision detection: reject placement if too close to any existing building.
     const tooClose = state.buildings.some((b) => {
       const dx = b.position.x - clickPosition.x;

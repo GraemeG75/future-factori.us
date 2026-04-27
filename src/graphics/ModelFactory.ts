@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { RetroMaterials } from './RetroMaterials';
-import { sampleTerrain } from '../game/TerrainGeneration';
+import { sampleTerrain, sampleTerrainHeight } from '../game/TerrainGeneration';
 
 export class ModelFactory {
   static createBuilding(typeId: string, level: number = 1): THREE.Group {
@@ -460,19 +460,31 @@ export class ModelFactory {
     return mesh;
   }
 
-  static createGridOverlay(width: number, depth: number, step: number = 10): THREE.LineSegments {
+  static createGridOverlay(width: number, depth: number, step: number = 10, seed: number = 1337): THREE.LineSegments {
     const points: number[] = [];
     const hw = width / 2;
     const hd = depth / 2;
     for (let x = -hw; x <= hw; x += step) {
-      points.push(x, 0.01, -hd, x, 0.01, hd);
+      for (let z = -hd; z < hd; z += step) {
+        const nextZ = Math.min(hd, z + step);
+        points.push(
+          x, sampleTerrainHeight(seed, x, z, width, depth) + 0.08, z,
+          x, sampleTerrainHeight(seed, x, nextZ, width, depth) + 0.08, nextZ
+        );
+      }
     }
     for (let z = -hd; z <= hd; z += step) {
-      points.push(-hw, 0.01, z, hw, 0.01, z);
+      for (let x = -hw; x < hw; x += step) {
+        const nextX = Math.min(hw, x + step);
+        points.push(
+          x, sampleTerrainHeight(seed, x, z, width, depth) + 0.08, z,
+          nextX, sampleTerrainHeight(seed, nextX, z, width, depth) + 0.08, z
+        );
+      }
     }
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.Float32BufferAttribute(points, 3));
-    const mat = new THREE.LineBasicMaterial({ color: 0x223322, transparent: true, opacity: 0.4 });
+    const mat = new THREE.LineBasicMaterial({ color: 0x29412e, transparent: true, opacity: 0.28 });
     return new THREE.LineSegments(geo, mat);
   }
 

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { placeBuilding } from '../systems/BuildingSystem';
 import { migrate } from '../systems/SaveSystem';
+import { sampleTerrainHeight } from '../game/TerrainGeneration';
 import { createTestGameState, createTestBuilding } from './testHelpers';
 
 describe('v1.0.0 Bug Fixes', () => {
@@ -23,6 +24,18 @@ describe('v1.0.0 Bug Fixes', () => {
       // (10, 0, 0) is beyond the 4-unit min separation
       const result = placeBuilding(state, 'basic_factory', { x: 10, y: 0, z: 0 });
       expect(result).not.toBeNull();
+    });
+
+    it('anchors non-harvester buildings to terrain height', () => {
+      const state = createTestGameState({
+        buildings: [],
+        cash: 100000,
+        worldSeed: 12345
+      });
+      const result = placeBuilding(state, 'basic_factory', { x: 18, y: 0, z: -22 });
+      expect(result).not.toBeNull();
+      const expectedY = Math.round(sampleTerrainHeight(state.worldSeed, 18, -22) * 100) / 100;
+      expect(result!.position.y).toBe(expectedY);
     });
   });
 

@@ -4,6 +4,7 @@ import { CameraController } from './CameraController';
 import { SelectionManager } from './SelectionManager';
 import { World } from './World';
 import { Effects } from '../graphics/Effects';
+import { DayNightCycle } from '../graphics/DayNightCycle';
 import { AudioSystem } from '../systems/AudioSystem';
 import * as ProductionSystem from '../systems/ProductionSystem';
 import * as RouteSystem from '../systems/RouteSystem';
@@ -33,6 +34,7 @@ export class Game {
   private selectionManager: SelectionManager;
   private world: World;
   private effects: Effects;
+  private dayNightCycle: DayNightCycle | null = null;
   private audio: AudioSystem;
   private state: GameState;
   private lastTimestamp: number = 0;
@@ -64,7 +66,7 @@ export class Game {
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.setPixelRatio(window.devicePixelRatio);
     this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFShadowMap;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
     this.scene.background = new THREE.Color(0x0a0a0f);
     this.scene.fog = new THREE.FogExp2(0x0a0a0f, 0.008);
@@ -87,6 +89,7 @@ export class Game {
     dirLight.shadow.camera.top = 100;
     dirLight.shadow.camera.bottom = -100;
     this.scene.add(dirLight);
+    this.dayNightCycle = new DayNightCycle(ambient, dirLight, this.scene);
 
     this.applyState(this.state);
     this.render();
@@ -405,6 +408,7 @@ export class Game {
     this.cameraController.update(this.deltaTime);
     this.selectionManager.update();
     this.effects.update(this.deltaTime);
+    this.dayNightCycle?.update(this.deltaTime);
     this.renderer.render(this.scene, this.camera);
   }
 
