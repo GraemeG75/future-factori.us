@@ -11,9 +11,16 @@ import * as RouteSystem from '../systems/RouteSystem';
 import * as EconomySystem from '../systems/EconomySystem';
 import * as ResearchSystem from '../systems/ResearchSystem';
 import * as BuildingSystem from '../systems/BuildingSystem';
+import * as MaintenanceSystem from '../systems/MaintenanceSystem';
+import * as AchievementSystem from '../systems/AchievementSystem';
+import * as ContractSystem from '../systems/ContractSystem';
+import * as LoanSystem from '../systems/LoanSystem';
+import * as EventSystem from '../systems/EventSystem';
 import * as SaveSystem from '../systems/SaveSystem';
 import { TICK_RATE, AUTOSAVE_TICKS } from '../systems/EconomySystem';
 import { BUILDINGS_MAP } from '../data/buildings';
+import { ACHIEVEMENTS_MAP } from '../data/achievements';
+import { LOAN_TIERS } from '../systems/LoanSystem';
 
 const TICK_INTERVAL = 1 / TICK_RATE;
 
@@ -252,12 +259,65 @@ export class Game {
     if (this.onStateChange) this.onStateChange(this.state);
   }
 
+  fulfillContract(contractId: string): boolean {
+    const ok = ContractSystem.fulfillContract(this.state, contractId);
+    if (ok && this.onStateChange) this.onStateChange(this.state);
+    return ok;
+  }
+
+  takeLoan(tierIndex: number): boolean {
+    const ok = LoanSystem.takeLoan(this.state, tierIndex);
+    if (ok && this.onStateChange) this.onStateChange(this.state);
+    return ok;
+  }
+
+  repayLoan(loanId: string): number {
+    const amount = LoanSystem.repayLoan(this.state, loanId);
+    if (amount > 0 && this.onStateChange) this.onStateChange(this.state);
+    return amount;
+  }
+
+  setResearchSpecialization(spec: 'energy' | 'matter' | 'biology' | null): void {
+    this.state.researchSpecialization = spec;
+    if (this.onStateChange) this.onStateChange(this.state);
+  }
+
+  getLoanTiers() {
+    return LOAN_TIERS;
+  }
+
   getUpgradeCost(buildingId: string): number {
     const building = BuildingSystem.getBuildingById(this.state, buildingId);
     if (!building) return 0;
     const bt = BUILDINGS_MAP[building.typeId];
     if (!bt) return 0;
     return bt.baseCost * Math.pow(bt.upgradeCostMultiplier, building.level);
+  }
+
+  getRepairCost(buildingId: string): number {
+    const building = BuildingSystem.getBuildingById(this.state, buildingId);
+    if (!building) return 0;
+    return MaintenanceSystem.getRepairCost(building);
+  }
+
+  repairBuilding(buildingId: string): boolean {
+    const ok = MaintenanceSystem.repairBuilding(this.state, buildingId);
+    if (ok) {
+      // Unlock repair_crew achievement
+      if (!this.state.unlockedAchievements.includes('repair_crew')) {
+        this.state.unlockedAchievements.push('repair_crew');
+        const ach = ACHIEVEMENTS_MAP['repair_crew'];
+        this.state.alerts.push({
+          id: crypto.randomUUID(),
+          tick: this.state.tick,
+          type: 'success',
+          messageKey: 'alerts.achievement_unlocked',
+          params: [ach?.nameKey ?? 'achievements.repair_crew.name', ach?.icon ?? '🔧'],
+        });
+      }
+      if (this.onStateChange) this.onStateChange(this.state);
+    }
+    return ok;
   }
 
   private gameLoop(timestamp: number): void {
@@ -284,10 +344,16 @@ export class Game {
   private tick(): void {
     if (this.state.settings.gamePaused) return;
     this.state.tick++;
+    BuildingSystem.updatePowerState(this.state);
     ProductionSystem.tick(this.state, TICK_INTERVAL);
     RouteSystem.tick(this.state, TICK_INTERVAL);
     EconomySystem.tick(this.state, TICK_INTERVAL);
     ResearchSystem.tick(this.state, TICK_INTERVAL);
+    MaintenanceSystem.tick(this.state, TICK_INTERVAL);
+    ContractSystem.tick(this.state);
+    LoanSystem.tick(this.state);
+    EventSystem.tick(this.state);
+    AchievementSystem.checkAchievements(this.state);
     if (this.state.tick % AUTOSAVE_TICKS === 0 && this.state.settings.autosaveEnabled) {
       SaveSystem.autosave(this.state);
     }

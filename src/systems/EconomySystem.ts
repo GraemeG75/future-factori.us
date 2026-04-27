@@ -1,6 +1,7 @@
 import { RESOURCES_MAP } from '../data/resources';
 import { TRADE_PARTNERS_MAP } from '../data/tradePartners';
 import type { GameState } from '../game/GameState';
+import { getEventPriceModifier } from './EventSystem';
 
 /** Game ticks per real second. */
 export const TICK_RATE = 20;
@@ -16,13 +17,23 @@ const DEMAND_MIN = 0.1;
 /** Maximum demand ceiling. */
 const DEMAND_MAX = 1.0;
 
+/** Maximum number of historical price entries kept per resource per partner. */
+export const PRICE_HISTORY_LENGTH = 20;
+
+/** How often (in ticks) price history is sampled. */
+const PRICE_SAMPLE_INTERVAL = 600; // every 30 s
+
 /**
- * Economy tick: applies a small demand fluctuation every few seconds.
+ * Economy tick: applies demand fluctuation, samples price history.
  */
 export function tick(state: GameState, _deltaSeconds: number): void {
   // Fluctuate demand roughly every MAINTENANCE_INTERVAL ticks
   if (state.tick % MAINTENANCE_INTERVAL === 0) {
     updateDemand(state);
+  }
+  // Sample price history periodically
+  if (state.tick % PRICE_SAMPLE_INTERVAL === 0) {
+    samplePriceHistory(state);
   }
 }
 
@@ -62,7 +73,8 @@ export function sellResource(state: GameState, resourceId: string, amount: numbe
 
 /**
  * Returns the effective sell price for a resource with a given partner,
- * factoring in the partner's price modifier and current demand.
+ * factoring in the partner's price modifier, current demand, pollution, and
+ * any active market events.
  */
 export function getSellPrice(state: GameState, resourceId: string, partnerId: string): number {
   const resource = RESOURCES_MAP[resourceId];
@@ -70,8 +82,12 @@ export function getSellPrice(state: GameState, resourceId: string, partnerId: st
   if (!resource || !partner) return 0;
 
   const demand = getTradePartnerDemand(state, partnerId, resourceId);
+  // Pollution suppresses prices: at pollution=100 prices are halved.
+  const pollutionFactor = 1 - (state.pollution / 100) * 0.5;
+  // Active market events can boost or reduce prices.
+  const eventModifier = getEventPriceModifier(state, resourceId, partnerId);
   // Demand in [0.1, 1.0] maps price to [0.6 × base, 1.5 × base]
-  return Math.floor(resource.basePrice * partner.priceModifier * (0.5 + demand));
+  return Math.floor(resource.basePrice * partner.priceModifier * (0.5 + demand) * pollutionFactor * eventModifier);
 }
 
 /**
@@ -133,6 +149,31 @@ export function initialiseDemand(state: GameState): void {
         const bonus = partner.preferredResources.includes(resourceId) ? 0.2 : 0;
         state.demand[partner.id][resourceId] = Math.min(DEMAND_MAX, partner.baseDemand + bonus);
       }
+    }
+  }
+}
+
+/**
+ * Returns the price history sparkline data for a resource / partner pair
+ * (array of recent prices, oldest first, up to PRICE_HISTORY_LENGTH entries).
+ */
+export function getPriceHistory(state: GameState, partnerId: string, resourceId: string): number[] {
+  return state.priceHistory[partnerId]?.[resourceId] ?? [];
+}
+
+// ---------------------------------------------------------------------------
+// Internal helpers
+// ---------------------------------------------------------------------------
+
+function samplePriceHistory(state: GameState): void {
+  for (const [partnerId] of Object.entries(TRADE_PARTNERS_MAP)) {
+    if (!state.priceHistory[partnerId]) state.priceHistory[partnerId] = {};
+    for (const resourceId of Object.keys(RESOURCES_MAP)) {
+      const price = getSellPrice(state, resourceId, partnerId);
+      const history = state.priceHistory[partnerId][resourceId] ?? [];
+      history.push(price);
+      if (history.length > PRICE_HISTORY_LENGTH) history.shift();
+      state.priceHistory[partnerId][resourceId] = history;
     }
   }
 }

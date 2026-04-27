@@ -1158,3 +1158,344 @@ html, body {
   z-index: @z-panels;
   animation: glow-pulse 1.5s ease-in-out infinite;
 }
+
+// ----------------------------------------------------------
+// Power & Pollution displays (top bar)
+// ----------------------------------------------------------
+#power-display,
+#pollution-display {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: @font-mono;
+  font-size: 12px;
+  color: @neon-green;
+  padding: 2px 8px;
+  border: 1px solid rgba(68, 255, 136, 0.3);
+  border-radius: @panel-radius;
+  transition: @transition;
+}
+
+#power-display.power-deficit {
+  color: @neon-red;
+  border-color: rgba(255, 68, 68, 0.5);
+  animation: glow-pulse 1s ease-in-out infinite;
+}
+
+#pollution-display {
+  color: @neon-gold;
+  border-color: rgba(255, 204, 0, 0.3);
+}
+#pollution-display.pollution-high {
+  color: #ff8800;
+  border-color: rgba(255, 136, 0, 0.5);
+}
+#pollution-display.pollution-critical {
+  color: @neon-red;
+  border-color: rgba(255, 68, 68, 0.5);
+  animation: glow-pulse 1s ease-in-out infinite;
+}
+
+// ----------------------------------------------------------
+// Health bar (info panel)
+// ----------------------------------------------------------
+#health-progress-bar {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid @border-color;
+  border-radius: @panel-radius;
+  height: 8px;
+  width: 100%;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+#health-fill {
+  height: 100%;
+  background: @neon-green;
+  border-radius: @panel-radius;
+  transition: width 0.3s ease, background 0.3s ease;
+}
+
+#health-info {
+  font-size: 10px;
+  color: @text-dim;
+  text-align: right;
+  margin-bottom: 6px;
+}
+
+#info-efficiency {
+  font-size: 11px;
+  color: @text-body;
+  margin-bottom: 4px;
+}
+
+// ----------------------------------------------------------
+// Repair button
+// ----------------------------------------------------------
+.action-btn.repair {
+  background: rgba(0, 100, 200, 0.15);
+  color: #55aaff;
+  border-color: rgba(85, 170, 255, 0.4);
+  &:hover:not(:disabled) {
+    background: rgba(0, 100, 200, 0.35);
+    border-color: rgba(85, 170, 255, 0.8);
+    color: #88ccff;
+  }
+  &:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+}
+
+// ----------------------------------------------------------
+// Achievements screen
+// ----------------------------------------------------------
+#achievements-content {
+  padding: 12px;
+  overflow-y: auto;
+  max-height: calc(100% - 48px);
+}
+
+.achievements-summary {
+  font-size: 12px;
+  color: @text-dim;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+  border-bottom: 1px solid @border-color;
+  padding-bottom: 8px;
+}
+
+#achievements-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.achievement-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: @panel-radius;
+  border: 1px solid @border-color;
+  background: rgba(0, 0, 0, 0.3);
+  transition: @transition;
+
+  &.unlocked {
+    border-color: rgba(255, 204, 0, 0.5);
+    background: rgba(255, 204, 0, 0.05);
+
+    .ach-name { color: @neon-gold; }
+    .ach-desc { color: @text-body; font-size: 10px; }
+  }
+
+  &.locked {
+    opacity: 0.45;
+    .ach-name { color: @text-dim; }
+    .ach-desc { color: @text-dim; font-size: 10px; }
+  }
+}
+
+.ach-icon {
+  font-size: 20px;
+  min-width: 28px;
+  text-align: center;
+}
+
+.ach-info { flex: 1; overflow: hidden; }
+.ach-name { font-size: 12px; font-weight: bold; letter-spacing: 0.5px; }
+.ach-desc { font-size: 10px; color: @text-dim; margin-top: 2px; }
+
+// ----------------------------------------------------------
+// Finance screen (Contracts / Loans / Market Events)
+// ----------------------------------------------------------
+#finance-content {
+  display: flex;
+  flex-direction: column;
+  height: calc(100% - 48px);
+  overflow: hidden;
+}
+
+#finance-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 8px 12px 0;
+  border-bottom: 1px solid @border-color;
+}
+
+.finance-tab {
+  background: transparent;
+  border: 1px solid @border-color;
+  border-bottom: none;
+  color: @text-dim;
+  font-family: @font-main;
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 6px 14px;
+  cursor: pointer;
+  border-radius: @panel-radius @panel-radius 0 0;
+  transition: @transition;
+
+  &:hover { color: @text-body; background: rgba(255,255,255,0.05); }
+
+  &.active {
+    color: @neon-blue;
+    background: rgba(0, 170, 255, 0.1);
+    border-color: rgba(0, 170, 255, 0.4);
+  }
+}
+
+.finance-tab-panel {
+  padding: 12px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.finance-empty {
+  color: @text-dim;
+  font-size: 12px;
+  padding: 16px 0;
+  text-align: center;
+}
+
+// Contracts
+.contract-card {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid @border-color;
+  border-radius: @panel-radius;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  transition: @transition;
+
+  &:hover { border-color: rgba(0, 170, 255, 0.5); }
+}
+
+.contract-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.contract-partner { font-size: 11px; color: @text-dim; text-transform: uppercase; letter-spacing: 1px; }
+.contract-timer { font-size: 11px; color: @text-body; &.urgent { color: @neon-red; } }
+.contract-resource { font-size: 13px; color: @neon-blue; margin-bottom: 6px; font-weight: bold; }
+
+.contract-progress-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.contract-progress-bar {
+  flex: 1;
+  height: 6px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.contract-progress-fill {
+  height: 100%;
+  background: @neon-green;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.contract-amounts { font-size: 10px; color: @text-dim; white-space: nowrap; }
+
+.contract-rewards {
+  display: flex;
+  gap: 12px;
+  font-size: 10px;
+  margin-bottom: 8px;
+  .contract-reward { color: @neon-green; }
+  .contract-penalty { color: @neon-red; }
+  .contract-inv { color: @text-dim; margin-left: auto; }
+}
+
+.contract-history {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  font-size: 11px;
+  color: @text-dim;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+
+  &.completed { color: @neon-green; }
+  &.failed { color: @neon-red; }
+}
+
+// Loans
+.loan-tier-btn {
+  width: 100%;
+  margin-bottom: 6px;
+  text-align: left;
+}
+
+.loan-card {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid @border-color;
+  border-radius: @panel-radius;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+
+  &.overdue { border-color: rgba(255, 68, 68, 0.5); background: rgba(255, 68, 68, 0.05); }
+}
+
+.loan-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: @text-body;
+  margin-bottom: 4px;
+  .urgent { color: @neon-red; font-weight: bold; }
+}
+
+.loan-balance { font-size: 13px; color: @neon-gold; font-weight: bold; margin-bottom: 2px; }
+.loan-rate { font-size: 10px; color: @text-dim; margin-bottom: 8px; }
+.loan-history { font-size: 11px; color: @neon-green; padding: 4px 0; }
+
+// Market events
+.market-event-card {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid @border-color;
+  border-radius: @panel-radius;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+
+  &.positive { border-color: rgba(0, 200, 100, 0.4); background: rgba(0, 200, 100, 0.05); }
+  &.negative { border-color: rgba(255, 100, 0, 0.4); background: rgba(255, 100, 0, 0.05); }
+}
+
+.event-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.event-message { font-size: 12px; color: @text-body; }
+.event-timer { font-size: 11px; color: @text-dim; &.urgent { color: @neon-red; } }
+
+.event-details {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+}
+
+.event-target { color: @text-dim; }
+.event-modifier {
+  font-weight: bold;
+  &.positive { color: @neon-green; }
+  &.negative { color: @neon-red; }
+}
+
+// Trade screen sparkline
+.price-sparkline {
+  display: block;
+  margin-left: auto;
+  border-radius: 2px;
+  opacity: 0.8;
+}

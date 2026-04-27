@@ -16,6 +16,14 @@
     <div id="top-bar">
       <div id="game-title">FUTURE FACTORIUS</div>
       <div id="resource-bar"></div>
+      <div id="power-display" title="Power: Production / Consumption">
+        <span id="power-icon">⚡</span>
+        <span id="power-value">0/0</span>
+      </div>
+      <div id="pollution-display" title="Pollution level">
+        <span id="pollution-icon">🌫️</span>
+        <span id="pollution-value">0%</span>
+      </div>
       <div id="cash-display">
         <span id="cash-value">$ 0</span>
         <span id="profit-indicator"></span>
@@ -59,6 +67,12 @@
       <div id="info-panel-content">
         <div id="info-level">Level: 1</div>
         <div id="info-status">Status: Active</div>
+        <div id="info-efficiency">Efficiency: 100%</div>
+        <div id="info-health-section">
+          <div class="panel-section-label">HEALTH</div>
+          <div id="health-progress-bar"><div id="health-fill"></div></div>
+          <div id="health-info">100%</div>
+        </div>
         <div id="info-recipe-section" class="hidden">
           <div class="panel-section-label">RECIPE</div>
           <select id="recipe-select"></select>
@@ -80,6 +94,7 @@
         </div>
         <div id="info-actions">
           <button id="btn-upgrade" class="action-btn upgrade">&#11014; Upgrade</button>
+          <button id="btn-repair" class="action-btn repair">🔧 Repair</button>
           <button id="btn-demolish" class="action-btn danger">&#128465; Demolish</button>
         </div>
       </div>
@@ -153,12 +168,60 @@
       </div>
     </div>
 
+    <!-- Finance screen (Contracts / Loans / Market Events) -->
+    <div id="finance-screen" class="screen hidden">
+      <div class="screen-header">
+        <span>FINANCE</span>
+        <button class="screen-close">&#10005;</button>
+      </div>
+      <div id="finance-content">
+        <div id="finance-tabs">
+          <button class="finance-tab active" data-tab="contracts">📋 Contracts</button>
+          <button class="finance-tab" data-tab="loans">💳 Loans</button>
+          <button class="finance-tab" data-tab="events">📊 Market Events</button>
+        </div>
+
+        <!-- Contracts panel -->
+        <div id="finance-tab-contracts" class="finance-tab-panel">
+          <div class="panel-section-label">ACTIVE CONTRACTS</div>
+          <div id="contracts-list"></div>
+        </div>
+
+        <!-- Loans panel -->
+        <div id="finance-tab-loans" class="finance-tab-panel hidden">
+          <div class="panel-section-label">TAKE A LOAN</div>
+          <div id="loan-tiers"></div>
+          <div class="panel-section-label" style="margin-top:12px;">OUTSTANDING LOANS</div>
+          <div id="loans-list"></div>
+        </div>
+
+        <!-- Market events panel -->
+        <div id="finance-tab-events" class="finance-tab-panel hidden">
+          <div class="panel-section-label">ACTIVE MARKET EVENTS</div>
+          <div id="market-events-list"></div>
+        </div>
+      </div>
+    </div>
+
     <!-- Bottom nav buttons -->
     <div id="bottom-nav">
       <button id="btn-research" class="nav-btn" title="Research Tree">&#128300; Research</button>
       <button id="btn-trade" class="nav-btn" title="Trading">&#8652; Trade</button>
       <button id="btn-routes" class="nav-btn" title="Routes">&#128644; Routes</button>
+      <button id="btn-finance" class="nav-btn" title="Finance">💳 Finance</button>
+      <button id="btn-achievements" class="nav-btn" title="Achievements">🏆 Achievements</button>
       <button id="btn-menu" class="nav-btn" title="Menu">&#9776; Menu</button>
+    </div>
+
+    <!-- Achievements screen -->
+    <div id="achievements-screen" class="screen hidden">
+      <div class="screen-header">
+        <span>ACHIEVEMENTS</span>
+        <button class="screen-close">&#10005;</button>
+      </div>
+      <div id="achievements-content">
+        <div id="achievements-list"></div>
+      </div>
     </div>
   </div>
 

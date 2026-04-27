@@ -5,9 +5,12 @@ import { RESOURCES, RESOURCES_MAP } from '../data/resources';
 import { BUILDINGS, BUILDINGS_MAP } from '../data/buildings';
 import { RECIPES } from '../data/recipes';
 import { TECHNOLOGIES } from '../data/research';
-import { TRADE_PARTNERS } from '../data/tradePartners';
+import { TRADE_PARTNERS, TRADE_PARTNERS_MAP } from '../data/tradePartners';
+import { ACHIEVEMENTS } from '../data/achievements';
 import * as EconomySystem from '../systems/EconomySystem';
 import * as BuildingSystem from '../systems/BuildingSystem';
+import * as ContractSystem from '../systems/ContractSystem';
+import * as LoanSystem from '../systems/LoanSystem';
 
 const ALERT_DISMISS_MS = 5000;
 
@@ -19,6 +22,7 @@ export class UiController {
   private routeCreationMode: boolean = false;
   private routeFromId: string | null = null;
   private selectedPartnerId: string | null = null;
+  private activeFinanceTab: 'contracts' | 'loans' | 'events' = 'contracts';
   private alertTimers: Map<string, ReturnType<typeof setTimeout>> = new Map();
 
   constructor(game: Game, i18n: I18n) {
@@ -40,9 +44,9 @@ export class UiController {
     this.attachSaveMenuButtons();
     this.attachRoutesScreen();
     this.attachKeyboardShortcuts();
+    this.attachFinanceScreen();
     this.setupSelectionCallback();
   }
-
   update(state: GameState): void {
     this.updateTopBar(state);
     this.updateResourceBar(state);
@@ -68,6 +72,16 @@ export class UiController {
     const routesScreen = document.getElementById('routes-screen');
     if (routesScreen && !routesScreen.classList.contains('hidden')) {
       this.updateRoutesScreen(state);
+    }
+
+    const achievementsScreen = document.getElementById('achievements-screen');
+    if (achievementsScreen && !achievementsScreen.classList.contains('hidden')) {
+      this.updateAchievementsScreen(state);
+    }
+
+    const financeScreen = document.getElementById('finance-screen');
+    if (financeScreen && !financeScreen.classList.contains('hidden')) {
+      this.updateFinanceScreen(state);
     }
 
     this.syncGameAlerts(state);
@@ -123,6 +137,32 @@ export class UiController {
 
   closeMenu(): void {
     document.getElementById('save-screen')?.classList.add('hidden');
+  }
+
+  openAchievements(): void {
+    this.closeAllScreens();
+    const el = document.getElementById('achievements-screen');
+    if (el) {
+      el.classList.remove('hidden');
+      this.updateAchievementsScreen(this.game.getState());
+    }
+  }
+
+  closeAchievements(): void {
+    document.getElementById('achievements-screen')?.classList.add('hidden');
+  }
+
+  openFinance(): void {
+    this.closeAllScreens();
+    const el = document.getElementById('finance-screen');
+    if (el) {
+      el.classList.remove('hidden');
+      this.updateFinanceScreen(this.game.getState());
+    }
+  }
+
+  closeFinance(): void {
+    document.getElementById('finance-screen')?.classList.add('hidden');
   }
 
   // ----------------------------------------------------------------
@@ -271,6 +311,19 @@ export class UiController {
       this.addAlert('info', this.i18n.t('messages.buildingDemolished', name));
     });
 
+    document.getElementById('btn-repair')?.addEventListener('click', () => {
+      const selected = this.game.getSelectedBuilding();
+      if (!selected) return;
+      const ok = this.game.repairBuilding(selected.id);
+      const bt = BUILDINGS_MAP[selected.typeId];
+      const name = bt ? this.i18n.t(bt.nameKey) : selected.typeId;
+      if (ok) {
+        this.addAlert('success', this.i18n.t('messages.buildingRepaired', name));
+      } else {
+        this.addAlert('warning', this.i18n.t('messages.repairTooExpensive'));
+      }
+    });
+
     document.getElementById('btn-create-route')?.addEventListener('click', () => {
       const selected = this.game.getSelectedBuilding();
       this.startRouteCreation(selected?.id);
@@ -301,6 +354,14 @@ export class UiController {
       } else {
         this.closeRoutes();
       }
+    });
+    document.getElementById('btn-achievements')?.addEventListener('click', () => {
+      const screen = document.getElementById('achievements-screen');
+      if (screen?.classList.contains('hidden')) { this.openAchievements(); } else { this.closeAchievements(); }
+    });
+    document.getElementById('btn-finance')?.addEventListener('click', () => {
+      const screen = document.getElementById('finance-screen');
+      if (screen?.classList.contains('hidden')) { this.openFinance(); } else { this.closeFinance(); }
     });
     document.getElementById('btn-menu')?.addEventListener('click', () => {
       const screen = document.getElementById('save-screen');
@@ -434,6 +495,29 @@ export class UiController {
       }
     }
 
+    // Power display
+    const powerEl = document.getElementById('power-value');
+    if (powerEl) {
+      const prod = Math.floor(BuildingSystem.getPowerProduction(state));
+      const cons = Math.floor(BuildingSystem.getPowerConsumption(state));
+      powerEl.textContent = `${prod}/${cons}`;
+      const powerDisplay = document.getElementById('power-display');
+      if (powerDisplay) {
+        powerDisplay.classList.toggle('power-deficit', prod < cons);
+      }
+    }
+
+    // Pollution display
+    const pollEl = document.getElementById('pollution-value');
+    if (pollEl) {
+      pollEl.textContent = `${Math.floor(state.pollution)}%`;
+      const pollDisplay = document.getElementById('pollution-display');
+      if (pollDisplay) {
+        pollDisplay.classList.toggle('pollution-high', state.pollution >= 50);
+        pollDisplay.classList.toggle('pollution-critical', state.pollution >= 80);
+      }
+    }
+
     const speed = state.settings.gameSpeed;
     this.syncSpeedButtons(speed);
 
@@ -498,9 +582,29 @@ export class UiController {
 
     const statusEl = document.getElementById('info-status');
     if (statusEl) {
-      statusEl.textContent = building.isPowered ? 'Status: Active' : 'Status: No Power';
-      statusEl.style.color = building.isPowered ? '' : '#ff4444';
+      let statusText = 'Status: Active';
+      let statusColor = '';
+      if (!building.isPowered) { statusText = 'Status: No Power'; statusColor = '#ff4444'; }
+      else if (building.health <= 0) { statusText = 'Status: Broken'; statusColor = '#ff6600'; }
+      statusEl.textContent = statusText;
+      statusEl.style.color = statusColor;
     }
+
+    // Health bar
+    const healthFill = document.getElementById('health-fill');
+    const healthInfo = document.getElementById('health-info');
+    if (healthFill) {
+      const pct = Math.max(0, Math.min(100, building.health));
+      healthFill.style.width = `${pct.toFixed(1)}%`;
+      const hue = Math.round(pct * 1.2); // green at 100, red at 0
+      healthFill.style.background = `hsl(${hue}, 80%, 50%)`;
+    }
+    if (healthInfo) healthInfo.textContent = `${Math.floor(building.health)}%`;
+
+    // Efficiency rating
+    const eff = BuildingSystem.getBuildingEfficiency(building);
+    const effEl = document.getElementById('info-efficiency');
+    if (effEl) effEl.textContent = `Efficiency: ${(eff * 100).toFixed(0)}%`;
 
     // Recipe section
     const recipeSection = document.getElementById('info-recipe-section');
@@ -589,6 +693,18 @@ export class UiController {
       const canAfford = state.cash >= cost;
       upgradeBtn.disabled = atMax || !canAfford;
       upgradeBtn.textContent = atMax ? '⬆ Max Level' : `⬆ Upgrade ($${Math.floor(cost)})`;
+    }
+
+    // Repair button
+    const repairBtn = document.getElementById('btn-repair') as HTMLButtonElement | null;
+    if (repairBtn) {
+      const repairCost = this.game.getRepairCost(building.id);
+      const atFullHealth = building.health >= 100;
+      const canAffordRepair = state.cash >= repairCost;
+      repairBtn.disabled = atFullHealth || !canAffordRepair;
+      repairBtn.textContent = atFullHealth
+        ? '🔧 Full Health'
+        : `🔧 Repair ($${Math.floor(repairCost)})`;
     }
   }
 
@@ -752,6 +868,11 @@ export class UiController {
 
       const row = document.createElement('div');
       row.className = 'trade-resource-row';
+
+      // Build a tiny sparkline from price history
+      const history = EconomySystem.getPriceHistory(state, partnerId, resId);
+      const sparkline = this.buildSparkline(history, 60, 20);
+
       row.innerHTML = `
         <span class="tr-icon">${res.icon}</span>
         <span class="tr-name">${this.i18n.t(res.nameKey)}</span>
@@ -759,6 +880,7 @@ export class UiController {
         <span class="tr-price">$${price}/unit</span>
         <span class="tr-demand">Demand: ${(demand * 100).toFixed(0)}%</span>
       `;
+      row.appendChild(sparkline);
 
       const sellBtn = document.createElement('button');
       sellBtn.className = 'tr-sell-btn';
@@ -896,6 +1018,258 @@ export class UiController {
     }
   }
 
+  private updateAchievementsScreen(state: GameState): void {
+    const list = document.getElementById('achievements-list');
+    if (!list) return;
+
+    list.innerHTML = '';
+    const unlocked = state.unlockedAchievements;
+    const total = ACHIEVEMENTS.length;
+    const count = unlocked.length;
+
+    const summary = document.createElement('div');
+    summary.className = 'achievements-summary';
+    summary.textContent = `${count} / ${total} achievements unlocked`;
+    list.appendChild(summary);
+
+    for (const ach of ACHIEVEMENTS) {
+      const isUnlocked = unlocked.includes(ach.id);
+      const card = document.createElement('div');
+      card.className = `achievement-card ${isUnlocked ? 'unlocked' : 'locked'}`;
+      card.innerHTML = `
+        <span class="ach-icon">${isUnlocked ? ach.icon : '🔒'}</span>
+        <div class="ach-info">
+          <div class="ach-name">${isUnlocked ? this.i18n.t(ach.nameKey) : '???'}</div>
+          <div class="ach-desc">${isUnlocked ? this.i18n.t(ach.descriptionKey) : 'Hidden achievement'}</div>
+        </div>
+      `;
+      list.appendChild(card);
+    }
+  }
+
+  private attachFinanceScreen(): void {
+    document.querySelectorAll('.finance-tab').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const tab = (btn as HTMLElement).dataset['tab'] as 'contracts' | 'loans' | 'events';
+        if (!tab) return;
+        this.activeFinanceTab = tab;
+        document.querySelectorAll('.finance-tab').forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('.finance-tab-panel').forEach((p) => p.classList.add('hidden'));
+        document.getElementById(`finance-tab-${tab}`)?.classList.remove('hidden');
+        this.updateFinanceScreen(this.game.getState());
+      });
+    });
+  }
+
+  private updateFinanceScreen(state: GameState): void {
+    if (this.activeFinanceTab === 'contracts') this.renderContractsTab(state);
+    else if (this.activeFinanceTab === 'loans') this.renderLoansTab(state);
+    else this.renderMarketEventsTab(state);
+  }
+
+  private renderContractsTab(state: GameState): void {
+    const list = document.getElementById('contracts-list');
+    if (!list) return;
+    list.innerHTML = '';
+
+    const active = ContractSystem.getActiveContracts(state);
+    if (active.length === 0) {
+      list.innerHTML = '<div class="finance-empty">No active contracts. Check back soon!</div>';
+    }
+
+    for (const contract of active) {
+      const res = RESOURCES_MAP[contract.resourceId];
+      const resName = res ? `${res.icon} ${this.i18n.t(res.nameKey)}` : contract.resourceId;
+      const partner = TRADE_PARTNERS_MAP[contract.partnerId];
+      const partnerName = partner ? this.i18n.t(partner.nameKey) : contract.partnerId;
+      const ticksLeft = ContractSystem.getContractTicksRemaining(state, contract);
+      const secsLeft = Math.ceil(ticksLeft / 20);
+      const inv = Math.floor(state.inventory[contract.resourceId] ?? 0);
+      const progress = contract.amountDelivered / contract.amountRequired;
+
+      const card = document.createElement('div');
+      card.className = 'contract-card';
+      card.innerHTML = `
+        <div class="contract-header">
+          <span class="contract-partner">${partnerName}</span>
+          <span class="contract-timer ${secsLeft < 60 ? 'urgent' : ''}">⏱ ${secsLeft}s</span>
+        </div>
+        <div class="contract-resource">${resName}</div>
+        <div class="contract-progress-row">
+          <div class="contract-progress-bar"><div class="contract-progress-fill" style="width:${(progress * 100).toFixed(1)}%"></div></div>
+          <span class="contract-amounts">${contract.amountDelivered} / ${contract.amountRequired}</span>
+        </div>
+        <div class="contract-rewards">
+          <span class="contract-reward">✅ $${contract.rewardCash.toLocaleString()}</span>
+          <span class="contract-penalty">❌ -$${contract.penaltyCash.toLocaleString()}</span>
+          <span class="contract-inv">In stock: ${inv}</span>
+        </div>
+      `;
+
+      const fulfillBtn = document.createElement('button');
+      fulfillBtn.className = 'action-btn';
+      fulfillBtn.textContent = `Deliver (${Math.min(inv, contract.amountRequired - contract.amountDelivered)} units)`;
+      fulfillBtn.disabled = inv <= 0 || contract.amountDelivered >= contract.amountRequired;
+      fulfillBtn.addEventListener('click', () => {
+        const ok = this.game.fulfillContract(contract.id);
+        if (ok) {
+          this.addAlert('success', `Contract completed! Earned $${contract.rewardCash.toLocaleString()}`);
+        }
+        this.renderContractsTab(this.game.getState());
+      });
+      card.appendChild(fulfillBtn);
+      list.appendChild(card);
+    }
+
+    // Recently finished contracts
+    const finished = state.contracts.filter((c) => c.status !== 'active');
+    if (finished.length > 0) {
+      const label = document.createElement('div');
+      label.className = 'panel-section-label';
+      label.style.marginTop = '12px';
+      label.textContent = 'RECENT';
+      list.appendChild(label);
+      for (const contract of finished.slice(-5).reverse()) {
+        const res = RESOURCES_MAP[contract.resourceId];
+        const resName = res ? `${res.icon} ${this.i18n.t(res.nameKey)}` : contract.resourceId;
+        const row = document.createElement('div');
+        row.className = `contract-history ${contract.status}`;
+        row.innerHTML = `
+          <span>${contract.status === 'completed' ? '✅' : '❌'} ${resName} ×${contract.amountRequired}</span>
+          <span>${contract.status === 'completed' ? `+$${contract.rewardCash.toLocaleString()}` : `-$${contract.penaltyCash.toLocaleString()}`}</span>
+        `;
+        list.appendChild(row);
+      }
+    }
+  }
+
+  private renderLoansTab(state: GameState): void {
+    const tiersEl = document.getElementById('loan-tiers');
+    const listEl = document.getElementById('loans-list');
+    if (!tiersEl || !listEl) return;
+
+    // Loan tier buttons
+    tiersEl.innerHTML = '';
+    const tiers = this.game.getLoanTiers();
+    const canTake = LoanSystem.canTakeLoan(state);
+    for (let i = 0; i < tiers.length; i++) {
+      const tier = tiers[i]!;
+      const btn = document.createElement('button');
+      btn.className = 'action-btn loan-tier-btn';
+      btn.disabled = !canTake;
+      btn.title = `Annual interest rate: ${(tier.annualInterestRate * 100).toFixed(0)}%`;
+      btn.textContent = tier.label;
+      btn.addEventListener('click', () => {
+        const ok = this.game.takeLoan(i);
+        if (!ok) {
+          this.addAlert('warning', 'Cannot take another loan right now (maximum 3 outstanding).');
+        }
+        this.renderLoansTab(this.game.getState());
+      });
+      tiersEl.appendChild(btn);
+    }
+
+    if (!canTake) {
+      const warn = document.createElement('div');
+      warn.className = 'finance-empty';
+      warn.textContent = 'Maximum loans reached (3). Repay an existing loan first.';
+      tiersEl.appendChild(warn);
+    }
+
+    // Outstanding loans
+    listEl.innerHTML = '';
+    const outstanding = state.loans.filter((l) => l.remainingBalance > 0);
+    if (outstanding.length === 0) {
+      listEl.innerHTML = '<div class="finance-empty">No outstanding loans. You\'re debt-free! 🎉</div>';
+    }
+    for (const loan of outstanding) {
+      const overdue = state.tick > loan.dueAtTick;
+      const dueIn = Math.max(0, Math.ceil((loan.dueAtTick - state.tick) / 20));
+      const card = document.createElement('div');
+      card.className = `loan-card ${overdue ? 'overdue' : ''}`;
+      card.innerHTML = `
+        <div class="loan-header">
+          <span>Principal: $${loan.principal.toLocaleString()}</span>
+          <span class="${overdue ? 'urgent' : ''}">
+            ${overdue ? '⚠️ OVERDUE' : `Due in ${dueIn}s`}
+          </span>
+        </div>
+        <div class="loan-balance">Balance: $${Math.ceil(loan.remainingBalance).toLocaleString()}</div>
+        <div class="loan-rate">Rate: ${(loan.annualInterestRate * 100).toFixed(0)}% p.a.</div>
+      `;
+      const repayBtn = document.createElement('button');
+      repayBtn.className = 'action-btn';
+      const payment = Math.min(state.cash, loan.remainingBalance);
+      repayBtn.textContent = `Repay $${Math.ceil(payment).toLocaleString()}`;
+      repayBtn.disabled = state.cash <= 0;
+      repayBtn.addEventListener('click', () => {
+        const paid = this.game.repayLoan(loan.id);
+        if (paid > 0) {
+          this.addAlert('success', `Repaid $${Math.ceil(paid).toLocaleString()} on loan.`);
+        }
+        this.renderLoansTab(this.game.getState());
+      });
+      card.appendChild(repayBtn);
+      listEl.appendChild(card);
+    }
+
+    // Fully paid loans
+    const paid = state.loans.filter((l) => l.remainingBalance <= 0);
+    if (paid.length > 0) {
+      const label = document.createElement('div');
+      label.className = 'panel-section-label';
+      label.style.marginTop = '12px';
+      label.textContent = `REPAID (${paid.length})`;
+      listEl.appendChild(label);
+      for (const loan of paid.slice(-3).reverse()) {
+        const row = document.createElement('div');
+        row.className = 'loan-history';
+        row.innerHTML = `✅ $${loan.principal.toLocaleString()} — fully repaid`;
+        listEl.appendChild(row);
+      }
+    }
+  }
+
+  private renderMarketEventsTab(state: GameState): void {
+    const listEl = document.getElementById('market-events-list');
+    if (!listEl) return;
+    listEl.innerHTML = '';
+
+    if (state.activeMarketEvents.length === 0) {
+      listEl.innerHTML = '<div class="finance-empty">No active market events. Markets are stable.</div>';
+      return;
+    }
+
+    for (const event of state.activeMarketEvents) {
+      const ticksLeft = Math.max(0, event.startTick + event.durationTicks - state.tick);
+      const secsLeft = Math.ceil(ticksLeft / 20);
+      const res = event.affectedResourceId ? RESOURCES_MAP[event.affectedResourceId] : null;
+      const partner = event.affectedPartnerId ? TRADE_PARTNERS_MAP[event.affectedPartnerId] : null;
+      const target = res
+        ? `${res.icon} ${this.i18n.t(res.nameKey)}`
+        : partner
+          ? this.i18n.t(partner.nameKey)
+          : 'All markets';
+      const modPct = Math.round((event.modifier - 1) * 100);
+      const isPositive = event.modifier >= 1;
+
+      const card = document.createElement('div');
+      card.className = `market-event-card ${isPositive ? 'positive' : 'negative'}`;
+      card.innerHTML = `
+        <div class="event-header">
+          <span class="event-message">${this.i18n.t(event.messageKey, target)}</span>
+          <span class="event-timer ${secsLeft < 30 ? 'urgent' : ''}">⏱ ${secsLeft}s</span>
+        </div>
+        <div class="event-details">
+          <span class="event-target">${target}</span>
+          <span class="event-modifier ${isPositive ? 'positive' : 'negative'}">${isPositive ? '+' : ''}${modPct}% prices</span>
+        </div>
+      `;
+      listEl.appendChild(card);
+    }
+  }
+
   // ----------------------------------------------------------------
   // Build panel population
   // ----------------------------------------------------------------
@@ -1006,6 +1380,43 @@ export class UiController {
       row.innerHTML = `<span class="buf-label">${icon} ${name}</span><span class="buf-amount">${Math.floor(amt)}</span>`;
       el.appendChild(row);
     }
+  }
+
+  /**
+   * Builds a tiny SVG sparkline from an array of price samples.
+   * Returns a <canvas> element sized to (width × height) pixels.
+   */
+  private buildSparkline(history: number[], width: number, height: number): HTMLCanvasElement {
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    canvas.className = 'price-sparkline';
+    canvas.title = history.length > 0 ? `Price history (${history.length} samples)` : 'No price history yet';
+    if (history.length < 2) return canvas;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return canvas;
+
+    const min = Math.min(...history);
+    const max = Math.max(...history);
+    const range = max - min || 1;
+    const pad = 2;
+    const w = width - pad * 2;
+    const h = height - pad * 2;
+
+    ctx.strokeStyle = '#00ccff';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    for (let i = 0; i < history.length; i++) {
+      const value = history[i];
+      if (value === undefined) continue;
+      const x = pad + (i / (history.length - 1)) * w;
+      const y = pad + (1 - (value - min) / range) * h;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    return canvas;
   }
 
   private dismissAlert(id: string): void {

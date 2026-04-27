@@ -143,6 +143,30 @@ export const en = {
       name: 'Exotic Lab',
       description: 'Synthesises exotic materials from advanced inputs. Requires plasma tech research.',
     },
+    quantum_forge: {
+      name: 'Quantum Forge',
+      description: 'Prototype factory that manipulates matter at the quantum level. Requires antimatter containment.',
+    },
+    fusion_plant: {
+      name: 'Fusion Plant',
+      description: 'Generates enormous clean energy through nuclear fusion. Requires fusion reactor research.',
+    },
+    bio_reactor: {
+      name: 'Bio Reactor',
+      description: 'Prototype bio-industrial reactor for advanced organic synthesis. Requires advanced biotech.',
+    },
+    singularity_tap: {
+      name: 'Singularity Tap',
+      description: 'Extracts near-infinite energy from a controlled singularity. Requires singularity engine research.',
+    },
+    mind_matrix: {
+      name: 'Mind Matrix',
+      description: 'Uploaded consciousness network providing massive research acceleration. Requires consciousness upload.',
+    },
+    reality_forge: {
+      name: 'Reality Forge',
+      description: 'The ultimate prototype: a device that can bend the laws of physics. Requires reality engineering.',
+    },
   },
 
   recipes: {
@@ -190,6 +214,27 @@ export const en = {
       name: 'Charcoal Production',
       description: 'Char wood into coal as an early-game fuel source.',
     },
+    // v0.4.0 / v0.5.0
+    fusion_power: {
+      name: 'Fusion Power Generation',
+      description: 'Generate power through deuterium-tritium nuclear fusion.',
+    },
+    nano_bio_gel: {
+      name: 'Nano Bio-Gel Synthesis',
+      description: 'Combine nano alloy and synthetic bio-gel into an advanced biological compound.',
+    },
+    void_energy: {
+      name: 'Void Energy Extraction',
+      description: 'Draw pure energy from the singularity tap.',
+    },
+    neural_substrate: {
+      name: 'Neural Substrate Fabrication',
+      description: 'Fabricate the biological substrate used for consciousness upload.',
+    },
+    reality_shard: {
+      name: 'Reality Shard Forging',
+      description: 'Forge a crystallised fragment of rewritten physical law.',
+    },
   },
 
   research: {
@@ -233,6 +278,28 @@ export const en = {
       name: 'Automation',
       description: 'Automated control systems that improve building efficiency.',
     },
+    // v0.4.0 — Tier 4 specializations
+    fusion_reactor: {
+      name: 'Fusion Reactor',
+      description: 'Achieve sustained nuclear fusion to generate virtually unlimited clean power.',
+    },
+    advanced_biotech: {
+      name: 'Advanced Biotechnology',
+      description: 'Merge dark matter with biological systems to create next-generation organic materials.',
+    },
+    // v0.5.0 — Tier 5 Post-Singularity
+    singularity_engine: {
+      name: 'Singularity Engine',
+      description: 'Harness a controlled singularity as a near-infinite power source. The ultimate energy technology.',
+    },
+    consciousness_upload: {
+      name: 'Consciousness Upload',
+      description: 'Digitise human consciousness to create an ever-growing research super-intelligence.',
+    },
+    reality_engineering: {
+      name: 'Reality Engineering',
+      description: 'Manipulate the fundamental laws of physics itself. The pinnacle of matter science.',
+    },
   },
 
   tradePartners: {
@@ -252,6 +319,14 @@ export const en = {
       name: 'Colony Supply Co.',
       description: 'Supplies interplanetary colonies with steady demand for essential goods.',
     },
+    black_market: {
+      name: 'Black Market',
+      description: 'Off-books traders offering double market rates for rare and dangerous materials.',
+    },
+    terraformers: {
+      name: 'Terraformers Collective',
+      description: 'Planetary engineers who need bio-materials and water for large-scale terraforming projects.',
+    },
   },
 
   ui: {
@@ -265,6 +340,7 @@ export const en = {
         research: 'Research',
         power: 'Power',
         trade: 'Trade',
+        prototype: 'Prototypes',
       },
       cost: 'Cost',
       maintenance: 'Maintenance',
@@ -360,6 +436,126 @@ export const en = {
     gameSaved: 'Game saved.',
     gameLoaded: 'Game loaded.',
     newGameStarted: 'New game started. Good luck, Director!',
+    buildingRepaired: '{0} repaired.',
+    repairTooExpensive: 'Cannot afford repair.',
+    buildingBroken: '{0} has broken down and needs repair!',
+  },
+
+  alerts: {
+    research_complete: 'Research complete: {0} — unlocked {1}',
+    building_breakdown: '{0} has suffered a breakdown! Repair it to restore efficiency.',
+    deposit_low: 'Deposit running low — {1} nearly exhausted!',
+    deposit_depleted: 'Deposit exhausted — {1} is fully depleted.',
+    achievement_unlocked: '{1} Achievement Unlocked: {0}',
+    // v0.4.0
+    contract_new: 'New contract: deliver {1}× {0} for ${2}!',
+    contract_completed: 'Contract completed! Delivered {0} — earned ${1}.',
+    contract_failed: 'Contract failed! Could not deliver {0} — penalty ${1} deducted.',
+    loan_taken: 'Loan of ${0} received.',
+    loan_repaid: 'Loan of ${0} fully repaid!',
+    loan_overdue: 'Loan overdue! Balance ${0} — pay now to avoid mounting penalties.',
+  },
+
+  events: {
+    trade_embargo: '⚠️ Trade Embargo! {0} refuses trade — prices slashed.',
+    resource_boom: '📈 Resource Boom! {0} price surges.',
+    market_crash: '📉 Market Crash! All prices drop sharply.',
+    subsidy: '💰 Government Subsidy! {0} prices boosted.',
+    tech_demand_surge: '🔬 Tech Demand Surge! {0} prices double briefly.',
+    pollution_fine: '🌫️ Pollution Fine! Prices suppressed due to environmental violations.',
+  },
+
+  achievements: {
+    first_building: {
+      name: 'First Steps',
+      description: 'Place your first building.',
+    },
+    power_up: {
+      name: 'Power Up',
+      description: 'Build a Power Plant.',
+    },
+    first_sale: {
+      name: 'Merchant',
+      description: 'Complete your first trade.',
+    },
+    five_buildings: {
+      name: 'Growing Factory',
+      description: 'Place 5 buildings.',
+    },
+    ten_buildings: {
+      name: 'Industrial Complex',
+      description: 'Place 10 buildings.',
+    },
+    first_research: {
+      name: 'Knowledge Seeker',
+      description: 'Complete your first research.',
+    },
+    cash_1k: {
+      name: 'Pocket Change',
+      description: 'Accumulate $1,000.',
+    },
+    cash_10k: {
+      name: 'Profitable Venture',
+      description: 'Accumulate $10,000.',
+    },
+    cash_100k: {
+      name: 'Tycoon',
+      description: 'Accumulate $100,000.',
+    },
+    five_routes: {
+      name: 'Logistics Network',
+      description: 'Create 5 transport routes.',
+    },
+    repair_crew: {
+      name: 'Repair Crew',
+      description: 'Repair a broken building.',
+    },
+    polluter: {
+      name: 'Pollution Problem',
+      description: 'Let pollution reach level 50.',
+    },
+    clean_factory: {
+      name: 'Clean Industry',
+      description: 'Maintain low pollution with 5+ buildings.',
+    },
+    deposit_depleted: {
+      name: 'Exhausted Deposit',
+      description: 'Fully deplete a resource deposit.',
+    },
+    // v0.4.0
+    first_contract: {
+      name: 'Deal Maker',
+      description: 'Complete your first delivery contract.',
+    },
+    ten_contracts: {
+      name: 'Contract King',
+      description: 'Complete 10 delivery contracts.',
+    },
+    first_loan: {
+      name: 'Leveraged',
+      description: 'Take out your first loan.',
+    },
+    debt_free: {
+      name: 'Debt-Free',
+      description: 'Repay all outstanding loans.',
+    },
+    market_event: {
+      name: 'Market Watcher',
+      description: 'Witness a market event.',
+    },
+    // v0.5.0
+    tier5_research: {
+      name: 'Post-Singularity',
+      description: 'Complete a Tier 5 Post-Singularity research.',
+    },
+    synergy_active: {
+      name: 'Synergy!',
+      description: 'Unlock a cross-technology production synergy bonus.',
+    },
+    prototype_built: {
+      name: 'Prototype Engineer',
+      description: 'Build a Prototype-class structure.',
+    },
   },
 
   controls: {

@@ -50,6 +50,13 @@ export function createTestGameState(overrides: Partial<GameState> = {}): GameSta
     worldSeed: 42,
     demand: {},
     resourceSpots: [],
+    pollution: 0,
+    unlockedAchievements: [],
+    contracts: [],
+    loans: [],
+    priceHistory: {},
+    activeMarketEvents: [],
+    researchSpecialization: null,
     ...overrides
   };
   initialiseDemand(state);

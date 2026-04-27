@@ -1,7 +1,7 @@
-import type { GameState, BuildingInstance, ResourceSpot } from '../game/GameState';
+import type { GameState, BuildingInstance, ResourceSpot, Contract, Loan, MarketEvent } from '../game/GameState';
 import { initialiseDemand } from './EconomySystem';
 
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 3;
 export const SAVE_KEY = 'future_factorius_save';
 /** Starting cash for a fresh game. */
 export const STARTING_CASH = 2500;
@@ -30,6 +30,11 @@ function seededRng(seed: number): () => number {
   };
 }
 
+/** Minimum deposit size (units) for any resource spot. */
+const DEPOSIT_MIN = 3000;
+/** Maximum deposit size (units) for any resource spot. */
+const DEPOSIT_MAX = 15000;
+
 /** Deterministically generates resource spots from the world seed. */
 export function generateResourceSpots(seed: number): ResourceSpot[] {
   const rng = seededRng(seed);
@@ -48,11 +53,14 @@ export function generateResourceSpots(seed: number): ResourceSpot[] {
         return Math.sqrt(dx * dx + dz * dz) < SPOT_MIN_SEPARATION;
       });
       if (!tooClose) {
+        const maxRemaining = Math.round(DEPOSIT_MIN + rng() * (DEPOSIT_MAX - DEPOSIT_MIN));
         spots.push({
           id: `spot_${typeId}_${placed}`,
           buildingTypeId: typeId,
           position: { x, y: 0, z },
-          occupiedByBuildingId: null
+          occupiedByBuildingId: null,
+          remaining: maxRemaining,
+          maxRemaining,
         });
         placed++;
       }
@@ -111,11 +119,40 @@ export function migrate(data: unknown, fromVersion: number): GameState {
 
   let state = coerceToGameState(data);
 
-  // Future migration steps go here, e.g.:
-  // if (fromVersion < 2) { state = migrateV1toV2(state); }
-  void fromVersion; // acknowledged – no migrations needed yet
+  if (fromVersion < 2) {
+    state = migrateV1toV2(state);
+  }
+
+  if (fromVersion < 3) {
+    state = migrateV2toV3(state);
+  }
 
   state.version = SAVE_VERSION;
+  return state;
+}
+
+/** Patches a v1 state to add v0.3.0 fields. */
+function migrateV1toV2(state: GameState): GameState {
+  // Add new top-level fields
+  if (!('pollution' in state)) (state as GameState).pollution = 0;
+  if (!('unlockedAchievements' in state)) (state as GameState).unlockedAchievements = [];
+  // Add remaining/maxRemaining to any resource spots that lack them
+  for (const spot of state.resourceSpots) {
+    if (!('remaining' in spot)) {
+      (spot as ResourceSpot).remaining = 10000;
+      (spot as ResourceSpot).maxRemaining = 10000;
+    }
+  }
+  return state;
+}
+
+/** Patches a v2 state to add v0.4.0 / v0.5.0 fields. */
+function migrateV2toV3(state: GameState): GameState {
+  if (!('contracts' in state)) (state as GameState).contracts = [];
+  if (!('loans' in state)) (state as GameState).loans = [];
+  if (!('priceHistory' in state)) (state as GameState).priceHistory = {};
+  if (!('activeMarketEvents' in state)) (state as GameState).activeMarketEvents = [];
+  if (!('researchSpecialization' in state)) (state as GameState).researchSpecialization = null;
   return state;
 }
 
@@ -147,7 +184,14 @@ export function createNewGame(locale = 'en'): GameState {
     locale,
     worldSeed: Math.floor(Math.random() * 1_000_000),
     demand: {},
-    resourceSpots: []
+    resourceSpots: [],
+    pollution: 0,
+    unlockedAchievements: [],
+    contracts: [],
+    loans: [],
+    priceHistory: {},
+    activeMarketEvents: [],
+    researchSpecialization: null,
   };
 
   state.resourceSpots = generateResourceSpots(state.worldSeed);
@@ -197,7 +241,25 @@ function coerceToGameState(raw: Record<string, unknown>): GameState {
     demand: isObject(raw['demand']) ? (raw['demand'] as Record<string, Record<string, number>>) : defaults.demand,
     resourceSpots: Array.isArray(raw['resourceSpots'])
       ? (raw['resourceSpots'] as ResourceSpot[])
-      : generateResourceSpots(typeof raw['worldSeed'] === 'number' ? raw['worldSeed'] : defaults.worldSeed)
+      : generateResourceSpots(typeof raw['worldSeed'] === 'number' ? raw['worldSeed'] : defaults.worldSeed),
+    pollution: typeof raw['pollution'] === 'number' ? raw['pollution'] : 0,
+    unlockedAchievements: Array.isArray(raw['unlockedAchievements'])
+      ? (raw['unlockedAchievements'] as string[])
+      : [],
+    contracts: Array.isArray(raw['contracts']) ? (raw['contracts'] as Contract[]) : [],
+    loans: Array.isArray(raw['loans']) ? (raw['loans'] as Loan[]) : [],
+    priceHistory: isObject(raw['priceHistory'])
+      ? (raw['priceHistory'] as Record<string, Record<string, number[]>>)
+      : {},
+    activeMarketEvents: Array.isArray(raw['activeMarketEvents'])
+      ? (raw['activeMarketEvents'] as MarketEvent[])
+      : [],
+    researchSpecialization:
+      raw['researchSpecialization'] === 'energy' ||
+      raw['researchSpecialization'] === 'matter' ||
+      raw['researchSpecialization'] === 'biology'
+        ? (raw['researchSpecialization'] as 'energy' | 'matter' | 'biology')
+        : null,
   };
 }
 

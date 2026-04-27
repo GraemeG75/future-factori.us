@@ -46,16 +46,21 @@
 
 ---
 
-## v0.3.0 — Gameplay Depth
+## v0.3.0 — Gameplay Depth ✅
 
-- [ ] Power grid system (buildings go offline without power)
-- [ ] Building health/maintenance events (random breakdowns)
-- [ ] Supply chain efficiency ratings
-- [ ] Worker units (animated movement on routes)
-- [ ] Multiple world zones (expand to new regions)
-- [ ] Resource scarcity (deposits deplete over time)
-- [ ] Environmental hazards (pollution from factories)
-- [ ] Achievements system
+### Completed
+- **Power grid system**: `updatePowerState` called every tick — buildings go offline when power demand exceeds supply; power production/consumption displayed in the top bar
+- **Building health & maintenance events**: Gradual wear-and-tear health drain; random breakdown events; `repairBuilding` function with cost scaling; health bar in info panel; repair button in UI
+- **Supply chain efficiency ratings**: `getBuildingEfficiency` returns 0–1 factor based on power + health; displayed in building info panel
+- **Resource scarcity**: Each `ResourceSpot` now has `remaining` and `maxRemaining` deposit fields; harvesters deplete deposits over time; low-deposit alerts fire at 10%; harvester stops when deposit is exhausted
+- **Environmental pollution**: Factories accumulate global pollution (0–100) per production cycle; natural decay over time; pollution suppresses trade prices (up to −50% at max pollution); top-bar pollution indicator with color coding
+- **Achievements system**: `AchievementSystem` with 14 achievements tracking buildings, cash, trades, research, routes, repairs, and pollution; achievement unlock alerts; Achievements screen accessible from the bottom nav
+- **Save migration**: SAVE_VERSION bumped to 2 with v1→v2 migration adding `pollution`, `unlockedAchievements`, and `remaining`/`maxRemaining` to resource spots
+- **Unit tests**: +25 tests (12 MaintenanceSystem, 13 AchievementSystem) — 87 total
+
+### Known Issues / Deferred
+- Worker units (animated humanoid figures on routes) — deferred to v0.3.1 (complex visual)
+- Multiple world zones — deferred to v0.4.0 as part of Economy expansion
 
 ---
 

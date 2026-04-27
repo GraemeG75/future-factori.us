@@ -2,7 +2,7 @@ export interface BuildingType {
   id: string;
   nameKey: string;
   descriptionKey: string;
-  category: 'harvester' | 'factory' | 'refinery' | 'storage' | 'research' | 'power' | 'trade';
+  category: 'harvester' | 'factory' | 'refinery' | 'storage' | 'research' | 'power' | 'trade' | 'prototype';
   baseCost: number;
   baseMaintenanceCostPerTick: number;
   basePowerUsage: number;
@@ -228,6 +228,99 @@ export const BUILDINGS: BuildingType[] = [
     unlockRequirement: 'plasma_tech',
     size: { width: 4, depth: 4 },
     defaultColor: '#FF00FF',
+  },
+  // ---------------------------------------------------------------------------
+  // Prototype buildings — require advanced multi-tech research
+  // ---------------------------------------------------------------------------
+  {
+    id: 'quantum_forge',
+    nameKey: 'buildings.quantum_forge.name',
+    descriptionKey: 'buildings.quantum_forge.description',
+    category: 'prototype',
+    baseCost: 15000,
+    baseMaintenanceCostPerTick: 40,
+    basePowerUsage: 120,
+    maxLevel: 3,
+    upgradeCostMultiplier: 4.0,
+    productionRateMultiplier: 1.2,
+    unlockRequirement: 'antimatter_containment',
+    size: { width: 5, depth: 5 },
+    defaultColor: '#00FFFF',
+  },
+  {
+    id: 'fusion_plant',
+    nameKey: 'buildings.fusion_plant.name',
+    descriptionKey: 'buildings.fusion_plant.description',
+    category: 'power',
+    baseCost: 20000,
+    baseMaintenanceCostPerTick: 50,
+    basePowerUsage: -500,
+    maxLevel: 3,
+    upgradeCostMultiplier: 3.5,
+    productionRateMultiplier: 1.0,
+    unlockRequirement: 'fusion_reactor',
+    size: { width: 6, depth: 6 },
+    defaultColor: '#FFD700',
+  },
+  {
+    id: 'bio_reactor',
+    nameKey: 'buildings.bio_reactor.name',
+    descriptionKey: 'buildings.bio_reactor.description',
+    category: 'prototype',
+    baseCost: 10000,
+    baseMaintenanceCostPerTick: 30,
+    basePowerUsage: 80,
+    maxLevel: 3,
+    upgradeCostMultiplier: 3.5,
+    productionRateMultiplier: 1.3,
+    unlockRequirement: 'advanced_biotech',
+    size: { width: 4, depth: 4 },
+    defaultColor: '#00FA9A',
+  },
+  {
+    id: 'singularity_tap',
+    nameKey: 'buildings.singularity_tap.name',
+    descriptionKey: 'buildings.singularity_tap.description',
+    category: 'prototype',
+    baseCost: 80000,
+    baseMaintenanceCostPerTick: 200,
+    basePowerUsage: -2000,
+    maxLevel: 2,
+    upgradeCostMultiplier: 5.0,
+    productionRateMultiplier: 1.5,
+    unlockRequirement: 'singularity_engine',
+    size: { width: 7, depth: 7 },
+    defaultColor: '#9400D3',
+  },
+  {
+    id: 'mind_matrix',
+    nameKey: 'buildings.mind_matrix.name',
+    descriptionKey: 'buildings.mind_matrix.description',
+    category: 'prototype',
+    baseCost: 60000,
+    baseMaintenanceCostPerTick: 150,
+    basePowerUsage: 300,
+    maxLevel: 2,
+    upgradeCostMultiplier: 4.5,
+    productionRateMultiplier: 2.0,
+    unlockRequirement: 'consciousness_upload',
+    size: { width: 6, depth: 6 },
+    defaultColor: '#FF69B4',
+  },
+  {
+    id: 'reality_forge',
+    nameKey: 'buildings.reality_forge.name',
+    descriptionKey: 'buildings.reality_forge.description',
+    category: 'prototype',
+    baseCost: 200000,
+    baseMaintenanceCostPerTick: 500,
+    basePowerUsage: 1000,
+    maxLevel: 1,
+    upgradeCostMultiplier: 10.0,
+    productionRateMultiplier: 3.0,
+    unlockRequirement: 'reality_engineering',
+    size: { width: 8, depth: 8 },
+    defaultColor: '#FF4500',
   },
 ];
 
