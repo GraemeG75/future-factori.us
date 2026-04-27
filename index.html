@@ -168,11 +168,47 @@
       </div>
     </div>
 
+    <!-- Finance screen (Contracts / Loans / Market Events) -->
+    <div id="finance-screen" class="screen hidden">
+      <div class="screen-header">
+        <span>FINANCE</span>
+        <button class="screen-close">&#10005;</button>
+      </div>
+      <div id="finance-content">
+        <div id="finance-tabs">
+          <button class="finance-tab active" data-tab="contracts">📋 Contracts</button>
+          <button class="finance-tab" data-tab="loans">💳 Loans</button>
+          <button class="finance-tab" data-tab="events">📊 Market Events</button>
+        </div>
+
+        <!-- Contracts panel -->
+        <div id="finance-tab-contracts" class="finance-tab-panel">
+          <div class="panel-section-label">ACTIVE CONTRACTS</div>
+          <div id="contracts-list"></div>
+        </div>
+
+        <!-- Loans panel -->
+        <div id="finance-tab-loans" class="finance-tab-panel hidden">
+          <div class="panel-section-label">TAKE A LOAN</div>
+          <div id="loan-tiers"></div>
+          <div class="panel-section-label" style="margin-top:12px;">OUTSTANDING LOANS</div>
+          <div id="loans-list"></div>
+        </div>
+
+        <!-- Market events panel -->
+        <div id="finance-tab-events" class="finance-tab-panel hidden">
+          <div class="panel-section-label">ACTIVE MARKET EVENTS</div>
+          <div id="market-events-list"></div>
+        </div>
+      </div>
+    </div>
+
     <!-- Bottom nav buttons -->
     <div id="bottom-nav">
       <button id="btn-research" class="nav-btn" title="Research Tree">&#128300; Research</button>
       <button id="btn-trade" class="nav-btn" title="Trading">&#8652; Trade</button>
       <button id="btn-routes" class="nav-btn" title="Routes">&#128644; Routes</button>
+      <button id="btn-finance" class="nav-btn" title="Finance">💳 Finance</button>
       <button id="btn-achievements" class="nav-btn" title="Achievements">🏆 Achievements</button>
       <button id="btn-menu" class="nav-btn" title="Menu">&#9776; Menu</button>
     </div>
