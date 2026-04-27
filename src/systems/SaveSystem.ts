@@ -22,6 +22,13 @@ const HARVESTER_SPOT_COUNTS: Record<string, number> = {
 /** Minimum world-unit separation between any two spots. */
 const SPOT_MIN_SEPARATION = 12;
 
+/** World dimensions must match what World.ts passes to createTerrain. */
+const TERRAIN_WIDTH = 500;
+const TERRAIN_DEPTH = 500;
+
+/** Minimum height a spot must have to be considered "on land" (sea plane sits at y ≈ -0.35). */
+const LAND_MIN_HEIGHT = 0.05;
+
 /** Candidate area half-size used for world generation (matches playable terrain extents). */
 const SPOT_WORLD_HALF_EXTENT = 180;
 
@@ -70,13 +77,13 @@ function getSpotHeight(typeId: string, terrainHeight: number, rng: () => number)
 function evaluateSpotFitness(typeId: string, sample: TerrainSample): number {
   switch (typeId) {
     case 'wood_harvester':
-      return scoreInRange(sample.height, -0.2, 0.65) * scoreInRange(1 - sample.slope, 0.35, 1.0) * scoreInRange(sample.moisture, 0.35, 1.0);
+      return scoreInRange(sample.height, 0.08, 0.65) * scoreInRange(1 - sample.slope, 0.35, 1.0) * scoreInRange(sample.moisture, 0.35, 1.0);
     case 'coal_mine':
       return scoreInRange(sample.height, 0.2, 1.35) * scoreInRange(sample.slope, 0.22, 1.0) * scoreInRange(1 - sample.moisture, 0.3, 1.0);
     case 'iron_mine':
       return scoreInRange(sample.height, 0.05, 1.1) * scoreInRange(sample.slope, 0.14, 0.8) * scoreInRange(1 - sample.flow, 0.2, 1.0);
     case 'water_pump':
-      return scoreInRange(sample.height, -0.9, 0.25) * scoreInRange(sample.flow, 0.32, 1.0) * scoreInRange(1 - sample.slope, 0.4, 1.0);
+      return scoreInRange(sample.height, 0.05, 0.22) * scoreInRange(sample.flow, 0.32, 1.0) * scoreInRange(1 - sample.slope, 0.4, 1.0);
     case 'silicon_extractor':
       return scoreInRange(sample.height, 0.25, 1.2) * scoreInRange(sample.slope, 0.2, 0.9) * scoreInRange(1 - sample.moisture, 0.35, 1.0);
     case 'uranium_extractor':
@@ -108,7 +115,8 @@ function pickSpotCandidate(
     const z = Math.round((rng() - 0.5) * (SPOT_WORLD_HALF_EXTENT * 2));
     if (isTooClose(existingSpots, x, z)) continue;
 
-    const sample = sampleTerrain(seed, x, z);
+    const sample = sampleTerrain(seed, x, z, TERRAIN_WIDTH, TERRAIN_DEPTH);
+    if (sample.height < LAND_MIN_HEIGHT) continue; // reject underwater/sea positions
     const baseScore = evaluateSpotFitness(typeId, sample);
     const jittered = baseScore + (rng() - 0.5) * 0.03;
 
@@ -125,7 +133,7 @@ function normalizeResourceSpots(spots: ResourceSpot[], worldSeed: number): Resou
   const rng = seededRng(worldSeed ^ 0x5f3759df);
   return spots.map((spot) => {
     const hasFlatLegacyY = Math.abs((spot.position?.y ?? 0) - 0) < 0.001;
-    const terrainHeight = sampleTerrainHeight(worldSeed, spot.position.x, spot.position.z);
+    const terrainHeight = sampleTerrainHeight(worldSeed, spot.position.x, spot.position.z, TERRAIN_WIDTH, TERRAIN_DEPTH);
     return {
       ...spot,
       position: {

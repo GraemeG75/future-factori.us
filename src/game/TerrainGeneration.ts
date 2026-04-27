@@ -3,6 +3,8 @@ export interface TerrainSample {
   moisture: number;
   slope: number;
   flow: number;
+  /** High-frequency micro noise [0,1] — used for per-vertex color variation. */
+  detail: number;
 }
 
 const TERRAIN_HEIGHT_SCALE = 2.2;
@@ -96,11 +98,13 @@ export function sampleTerrain(seed: number, x: number, z: number, width: number 
   const flow = clamp01(concavity * 1.8 + (1 - slope) * 0.25);
 
   const moisture = fbm(x * 0.03 + 1200, z * 0.03 + 1200, 3, seed + 211);
+  const detail = fbm(x * 0.38 + 2000, z * 0.38 + 2000, 2, seed + 317);
 
   return {
     height: h,
     moisture,
     slope,
-    flow
+    flow,
+    detail
   };
 }

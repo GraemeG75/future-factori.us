@@ -4,7 +4,6 @@ import { CameraController } from './CameraController';
 import { SelectionManager } from './SelectionManager';
 import { World } from './World';
 import { Effects } from '../graphics/Effects';
-import { DayNightCycle } from '../graphics/DayNightCycle';
 import { AudioSystem } from '../systems/AudioSystem';
 import * as ProductionSystem from '../systems/ProductionSystem';
 import * as RouteSystem from '../systems/RouteSystem';
@@ -34,7 +33,6 @@ export class Game {
   private selectionManager: SelectionManager;
   private world: World;
   private effects: Effects;
-  private dayNightCycle: DayNightCycle | null = null;
   private audio: AudioSystem;
   private state: GameState;
   private lastTimestamp: number = 0;
@@ -68,28 +66,27 @@ export class Game {
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-    this.scene.background = new THREE.Color(0x0a0a0f);
-    this.scene.fog = new THREE.FogExp2(0x0a0a0f, 0.008);
+    this.scene.background = new THREE.Color(0x7ab4d8);
+    this.scene.fog = new THREE.FogExp2(0x9dc8e0, 0.004);
 
     this.camera.position.set(20, 30, 20);
     this.camera.lookAt(0, 0, 0);
 
-    const ambient = new THREE.AmbientLight(0x404060, 0.5);
+    const ambient = new THREE.AmbientLight(0x8899bb, 0.75);
     this.scene.add(ambient);
 
-    const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
-    dirLight.position.set(50, 80, 50);
+    const dirLight = new THREE.DirectionalLight(0xfff4e0, 1.8);
+    dirLight.position.set(50, 80, 30);
     dirLight.castShadow = true;
-    dirLight.shadow.mapSize.width = 2048;
-    dirLight.shadow.mapSize.height = 2048;
+    dirLight.shadow.mapSize.width = 4096;
+    dirLight.shadow.mapSize.height = 4096;
     dirLight.shadow.camera.near = 0.5;
-    dirLight.shadow.camera.far = 300;
-    dirLight.shadow.camera.left = -100;
-    dirLight.shadow.camera.right = 100;
-    dirLight.shadow.camera.top = 100;
-    dirLight.shadow.camera.bottom = -100;
+    dirLight.shadow.camera.far = 600;
+    dirLight.shadow.camera.left = -250;
+    dirLight.shadow.camera.right = 250;
+    dirLight.shadow.camera.top = 250;
+    dirLight.shadow.camera.bottom = -250;
     this.scene.add(dirLight);
-    this.dayNightCycle = new DayNightCycle(ambient, dirLight, this.scene);
 
     this.applyState(this.state);
     this.render();
@@ -408,7 +405,6 @@ export class Game {
     this.cameraController.update(this.deltaTime);
     this.selectionManager.update();
     this.effects.update(this.deltaTime);
-    this.dayNightCycle?.update(this.deltaTime);
     this.renderer.render(this.scene, this.camera);
   }
 

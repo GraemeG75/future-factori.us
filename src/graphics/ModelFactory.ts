@@ -406,55 +406,186 @@ export class ModelFactory {
     return mesh;
   }
 
+  /**
+   * World-space 1024×1024 terrain texture.  Every pixel is coloured by the actual
+   * terrain biome at that world position — sandy shores, lush grass, rocky peaks, etc.
+   * No tiling artefacts; the texture maps 1:1 across the whole terrain mesh.
+   */
+  private static buildTerrainDetailTexture(seed: number, width: number, depth: number): THREE.CanvasTexture {
+    const TEX  = 1024;
+    const GRID = 64;
+
+    // Phase 1: sample terrain at GRID×GRID
+    const heights   = new Float32Array(GRID * GRID);
+    const moistures = new Float32Array(GRID * GRID);
+    const slopes    = new Float32Array(GRID * GRID);
+    const flows     = new Float32Array(GRID * GRID);
+    for (let gi = 0; gi < GRID; gi++) {
+      for (let gj = 0; gj < GRID; gj++) {
+        const wx = (gj / (GRID - 1) - 0.5) * width;
+        const wz = (gi / (GRID - 1) - 0.5) * depth;
+        const sp = sampleTerrain(seed, wx, wz, width, depth);
+        const id = gi * GRID + gj;
+        heights[id]   = sp.height;
+        moistures[id] = sp.moisture;
+        slopes[id]    = sp.slope;
+        flows[id]     = sp.flow;
+      }
+    }
+
+    // Phase 2: per-pixel biome ImageData
+    const canvas = document.createElement('canvas');
+    canvas.width  = TEX;
+    canvas.height = TEX;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return new THREE.CanvasTexture(canvas);
+
+    const imgData = ctx.createImageData(TEX, TEX);
+    const pxData  = imgData.data;
+
+    const h2d = (ix: number, iz: number, sd: number): number => {
+      let hv = Math.imul(ix, 374761393) ^ Math.imul(iz, 668265263) ^ Math.imul(sd, 700001);
+      hv = Math.imul(hv ^ (hv >>> 13), 1274126177);
+      hv ^= hv >>> 16;
+      return (hv >>> 0) / 4294967295;
+    };
+    const vn = (x: number, z: number, sd: number): number => {
+      const x0 = x | 0, z0 = z | 0;
+      const xf = x - x0, zf = z - z0;
+      const ux = xf * xf * (3 - 2 * xf);
+      const uz = zf * zf * (3 - 2 * zf);
+      const n00 = h2d(x0,     z0,     sd), n10 = h2d(x0 + 1, z0,     sd);
+      const n01 = h2d(x0,     z0 + 1, sd), n11 = h2d(x0 + 1, z0 + 1, sd);
+      return n00 + (n10 - n00) * ux + (n01 - n00) * uz + (n11 - n10 - n01 + n00) * ux * uz;
+    };
+    const clamp = (v: number, lo: number, hi: number) => (v < lo ? lo : v > hi ? hi : v);
+
+    for (let py = 0; py < TEX; py++) {
+      const v    = py / (TEX - 1);
+      const gz   = v * (GRID - 1);
+      const gz0  = Math.min(gz | 0, GRID - 2);
+      const tz   = gz - gz0;
+      const omtz = 1 - tz;
+      for (let px = 0; px < TEX; px++) {
+        const u    = px / (TEX - 1);
+        const gx   = u * (GRID - 1);
+        const gx0  = Math.min(gx | 0, GRID - 2);
+        const tx   = gx - gx0;
+        const omtx = 1 - tx;
+        const i00  = gz0 * GRID + gx0;
+        const w00 = omtx * omtz, w10 = tx * omtz, w01 = omtx * tz, w11 = tx * tz;
+        const h  = heights[i00]   * w00 + heights[i00 + 1]        * w10 + heights[i00 + GRID]   * w01 + heights[i00 + GRID + 1]   * w11;
+        const m  = moistures[i00] * w00 + moistures[i00 + 1]      * w10 + moistures[i00 + GRID] * w01 + moistures[i00 + GRID + 1] * w11;
+        const sl = slopes[i00]    * w00 + slopes[i00 + 1]         * w10 + slopes[i00 + GRID]    * w01 + slopes[i00 + GRID + 1]    * w11;
+        const fl = flows[i00]     * w00 + flows[i00 + 1]          * w10 + flows[i00 + GRID]     * w01 + flows[i00 + GRID + 1]     * w11;
+        const wx  = u * width;
+        const wz  = v * depth;
+        const mc  = vn(wx * 0.22,      wz * 0.22,      seed);
+        const mf  = vn(wx * 1.3 + 500, wz * 1.3 + 500, seed + 31);
+        const micro = mc * 0.6 + mf * 0.4;
+        let r: number, g: number, b: number;
+        if (h < 0.0) {
+          r = clamp( 62 + micro * 30, 0, 255);
+          g = clamp( 82 + micro * 28, 0, 255);
+          b = clamp( 72 + micro * 22, 0, 255);
+        } else if (h < 0.08) {
+          r = clamp(195 + micro * 50 - (1 - m) * 20, 0, 255);
+          g = clamp(170 + micro * 38 - (1 - m) * 14, 0, 255);
+          b = clamp(112 + micro * 28 - (1 - m) * 10, 0, 255);
+        } else if (h < 0.55) {
+          if (fl > 0.48) {
+            r = clamp( 78 + micro * 30 + m * 12, 0, 255);
+            g = clamp( 98 + micro * 28 + m * 18, 0, 255);
+            b = clamp( 62 + micro * 18 + m *  8, 0, 255);
+          } else if (m > 0.52) {
+            r = clamp( 55 + micro * 30 + m * 10, 0, 255);
+            g = clamp(128 + micro * 38 + m * 22, 0, 255);
+            b = clamp( 42 + micro * 18 + m *  8, 0, 255);
+          } else {
+            r = clamp(152 + micro * 38, 0, 255);
+            g = clamp(132 + micro * 30, 0, 255);
+            b = clamp( 70 + micro * 22, 0, 255);
+          }
+        } else if (h < 1.1) {
+          const t = (h - 0.55) / 0.55;
+          r = clamp(108 + t * 52 + micro * 32, 0, 255);
+          g = clamp( 98 + t * 30 + micro * 26, 0, 255);
+          b = clamp( 68 + t * 38 + micro * 20, 0, 255);
+        } else if (h < 1.7) {
+          r = clamp(155 + micro * 42, 0, 255);
+          g = clamp(145 + micro * 36, 0, 255);
+          b = clamp(130 + micro * 30, 0, 255);
+        } else {
+          r = clamp(225 + micro * 25, 0, 255);
+          g = clamp(230 + micro * 20, 0, 255);
+          b = clamp(240 + micro * 14, 0, 255);
+        }
+        if (sl > 0.40) {
+          const sr = clamp((sl - 0.40) / 0.45, 0, 1);
+          r = r + (clamp(148 + micro * 38, 0, 255) - r) * sr;
+          g = g + (clamp(138 + micro * 32, 0, 255) - g) * sr;
+          b = b + (clamp(122 + micro * 26, 0, 255) - b) * sr;
+        }
+        const idx = (py * TEX + px) << 2;
+        pxData[idx]     = r;
+        pxData[idx + 1] = g;
+        pxData[idx + 2] = b;
+        pxData[idx + 3] = 255;
+      }
+    }
+    ctx.putImageData(imgData, 0, 0);
+
+    // Phase 3: multiply-blend pebble/grain overlay
+    const rng = (i: number): number => {
+      let hv = Math.imul(i, 374761393) ^ Math.imul(seed, 700001);
+      hv = Math.imul(hv ^ (hv >>> 13), 1274126177);
+      hv ^= hv >>> 16;
+      return (hv >>> 0) / 4294967295;
+    };
+    ctx.globalCompositeOperation = 'multiply';
+    for (let i = 0; i < 3000; i++) {
+      const ppx = rng(i * 6 + 10000) * TEX;
+      const ppy = rng(i * 6 + 10001) * TEX;
+      const rx  = 1.0 + rng(i * 6 + 10002) * 4.5;
+      const ry  = rx * (0.40 + rng(i * 6 + 10003) * 0.55);
+      const ang = rng(i * 6 + 10004) * Math.PI;
+      const lum = 0.72 + rng(i * 6 + 10005) * 0.25;
+      const li  = Math.floor(lum * 255);
+      ctx.fillStyle = `rgb(${li},${li},${li})`;
+      ctx.beginPath();
+      ctx.ellipse(ppx, ppy, rx, ry, ang, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    for (let i = 0; i < 18000; i++) {
+      const ppx = rng(i * 3 + 60000) * TEX;
+      const ppy = rng(i * 3 + 60001) * TEX;
+      const lum = 0.82 + rng(i * 3 + 60002) * 0.18;
+      const li  = Math.floor(lum * 255);
+      ctx.fillStyle = `rgba(${li},${li},${li},0.45)`;
+      ctx.fillRect(ppx, ppy, 1.2, 1.2);
+    }
+    ctx.globalCompositeOperation = 'source-over';
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.wrapS = THREE.ClampToEdgeWrapping;
+    tex.wrapT = THREE.ClampToEdgeWrapping;
+    return tex;
+  }
+
   static createTerrain(width: number, depth: number, divisions: number, seed: number = 1337): THREE.Mesh {
     const geo = new THREE.PlaneGeometry(width, depth, divisions, divisions);
     geo.rotateX(-Math.PI / 2);
     const pos = geo.attributes['position'] as THREE.BufferAttribute | undefined;
     if (pos) {
-      const vertexCount = pos.count;
-      const colors = new Float32Array(vertexCount * 3);
-
-      for (let i = 0; i < vertexCount; i++) {
-        const x = pos.getX(i);
-        const z = pos.getZ(i);
-        const sample = sampleTerrain(seed, x, z, width, depth);
-        const h = sample.height;
-        const moisture = sample.moisture;
-        pos.setY(i, h);
-        const ci = i * 3;
-
-        if (h < -0.2) {
-          // Low/wet basins
-          colors[ci] = 0.08;
-          colors[ci + 1] = 0.16;
-          colors[ci + 2] = 0.17;
-        } else if (h < 0.35) {
-          // Fertile lowlands
-          const greenBoost = 0.05 + moisture * 0.08;
-          colors[ci] = 0.1;
-          colors[ci + 1] = 0.19 + greenBoost;
-          colors[ci + 2] = 0.11;
-        } else if (h < 0.85) {
-          // Mid elevations
-          colors[ci] = 0.18;
-          colors[ci + 1] = 0.2;
-          colors[ci + 2] = 0.14;
-        } else {
-          // High rocky ridges
-          colors[ci] = 0.24;
-          colors[ci + 1] = 0.23;
-          colors[ci + 2] = 0.22;
-        }
+      for (let i = 0; i < pos.count; i++) {
+        pos.setY(i, sampleTerrainHeight(seed, pos.getX(i), pos.getZ(i), width, depth));
       }
-
-      geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
       pos.needsUpdate = true;
       geo.computeVertexNormals();
     }
-
+    const worldTex = ModelFactory.buildTerrainDetailTexture(seed, width, depth);
     const mat = new THREE.MeshStandardMaterial({
-      vertexColors: true,
-      roughness: 0.92,
+      map: worldTex,
+      roughness: 0.88,
       metalness: 0.0
     });
     const mesh = new THREE.Mesh(geo, mat);
@@ -478,19 +609,13 @@ export class ModelFactory {
     for (let x = -hw; x <= hw; x += step) {
       for (let z = -hd; z < hd; z += step) {
         const nextZ = Math.min(hd, z + step);
-        points.push(
-          x, getGridHeight(x, z), z,
-          x, getGridHeight(x, nextZ), nextZ
-        );
+        points.push(x, getGridHeight(x, z), z, x, getGridHeight(x, nextZ), nextZ);
       }
     }
     for (let z = -hd; z <= hd; z += step) {
       for (let x = -hw; x < hw; x += step) {
         const nextX = Math.min(hw, x + step);
-        points.push(
-          x, getGridHeight(x, z), z,
-          nextX, getGridHeight(nextX, z), z
-        );
+        points.push(x, getGridHeight(x, z), z, nextX, getGridHeight(nextX, z), z);
       }
     }
     const geo = new THREE.BufferGeometry();
