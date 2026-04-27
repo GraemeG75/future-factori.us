@@ -2,7 +2,7 @@ export interface BuildingType {
   id: string;
   nameKey: string;
   descriptionKey: string;
-  category: 'harvester' | 'factory' | 'refinery' | 'storage' | 'research' | 'power' | 'trade' | 'prototype';
+  category: 'harvester' | 'factory' | 'refinery' | 'storage' | 'research' | 'power' | 'trade' | 'prototype' | 'infrastructure';
   baseCost: number;
   baseMaintenanceCostPerTick: number;
   basePowerUsage: number;
@@ -321,6 +321,37 @@ export const BUILDINGS: BuildingType[] = [
     unlockRequirement: 'reality_engineering',
     size: { width: 8, depth: 8 },
     defaultColor: '#FF4500'
+  },
+  // ---------------------------------------------------------------------------
+  // Cooling buildings — v0.8.0 Heat Management
+  // ---------------------------------------------------------------------------
+  {
+    id: 'radiator',
+    nameKey: 'buildings.radiator.name',
+    descriptionKey: 'buildings.radiator.description',
+    category: 'infrastructure',
+    baseCost: 800,
+    baseMaintenanceCostPerTick: 2,
+    basePowerUsage: 10,
+    maxLevel: 3,
+    upgradeCostMultiplier: 1.8,
+    productionRateMultiplier: 1.0,
+    size: { width: 2, depth: 2 },
+    defaultColor: '#88CCFF'
+  },
+  {
+    id: 'cooling_tower',
+    nameKey: 'buildings.cooling_tower.name',
+    descriptionKey: 'buildings.cooling_tower.description',
+    category: 'infrastructure',
+    baseCost: 2000,
+    baseMaintenanceCostPerTick: 5,
+    basePowerUsage: 25,
+    maxLevel: 3,
+    upgradeCostMultiplier: 2.0,
+    productionRateMultiplier: 1.0,
+    size: { width: 3, depth: 3 },
+    defaultColor: '#AADDFF'
   }
 ];
 

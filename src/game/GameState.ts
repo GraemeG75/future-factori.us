@@ -114,6 +114,10 @@ export interface GameState {
   scenarioScore: number;
   /** If true, resource deposits never deplete */
   sandboxMode: boolean;
+  /** Average heat level (0–100) across all exotic buildings. */
+  globalHeat: number;
+  /** How many consecutive ticks globalHeat has been above 90. */
+  heatCrisisTicks: number;
 }
 
 export interface BuildingInstance {
@@ -132,6 +136,8 @@ export interface BuildingInstance {
   outputBuffer: Record<string, number>;
   isPowered: boolean;
   assignedRouteIds: string[];
+  /** Thermal heat level 0–100; exotic buildings generate heat over time. */
+  heat: number;
 }
 
 export interface RouteInstance {
@@ -148,6 +154,8 @@ export interface RouteInstance {
   progress: number;
   isActive: boolean;
   costPerTrip: number;
+  /** 0 = manual, 1 = automation drone (doubles effective speed). */
+  automationLevel: number;
 }
 
 export interface ActiveResearch {

@@ -27,6 +27,8 @@ export class UiController {
   private selectedPartnerId: string | null = null;
   private activeFinanceTab: 'contracts' | 'loans' | 'events' = 'contracts';
   private alertTimers: Map<string, ReturnType<typeof setTimeout>> = new Map();
+  private lastMinimapTick: number = -999;
+  private minimapUnlocked: boolean = false;
 
   constructor(game: Game, i18n: I18n) {
     this.game = game;
@@ -97,6 +99,7 @@ export class UiController {
     }
 
     this.syncGameAlerts(state);
+    this.updateMinimap(state);
   }
 
   // ----------------------------------------------------------------
@@ -444,6 +447,50 @@ export class UiController {
       this.addAlert('info', 'Save deleted. New game started.');
     });
 
+    document.getElementById('btn-export-save')?.addEventListener('click', () => {
+      const json = this.game.exportSave();
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'future-factorius-save.json';
+      a.click();
+      URL.revokeObjectURL(url);
+      // Unlock achievement
+      const state = this.game.getState();
+      if (!state.unlockedAchievements.includes('save_exported')) {
+        state.unlockedAchievements.push('save_exported');
+        state.alerts.push({ id: crypto.randomUUID(), tick: state.tick, type: 'success', messageKey: 'alerts.achievement_unlocked', params: ['achievements.save_exported.name', '💾'] });
+      }
+      this.addAlert('success', 'Save exported as file.');
+    });
+
+    document.getElementById('btn-import-save')?.addEventListener('click', () => {
+      document.getElementById('import-file-input')?.click();
+    });
+
+    document.getElementById('import-file-input')?.addEventListener('change', (e) => {
+      const input = e.target as HTMLInputElement;
+      const file = input.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const text = ev.target?.result as string;
+        const ok = this.game.importSave(text);
+        const status = document.getElementById('save-status');
+        if (ok) {
+          if (status) status.textContent = 'Save imported successfully.';
+          this.addAlert('success', 'Save imported successfully.');
+          this.closeMenu();
+        } else {
+          if (status) status.textContent = 'Import failed: invalid save file.';
+          this.addAlert('error', 'Import failed: invalid save file.');
+        }
+        input.value = '';
+      };
+      reader.readAsText(file);
+    });
+
     document.getElementById('language-select')?.addEventListener('change', (e) => {
       const value = (e.target as HTMLSelectElement).value;
       this.i18n.setLocale(value);
@@ -551,6 +598,17 @@ export class UiController {
       if (pollDisplay) {
         pollDisplay.classList.toggle('pollution-high', state.pollution >= 50);
         pollDisplay.classList.toggle('pollution-critical', state.pollution >= 80);
+      }
+    }
+
+    // Heat display
+    const heatEl = document.getElementById('heat-value');
+    if (heatEl) {
+      heatEl.textContent = `${Math.floor(state.globalHeat ?? 0)}%`;
+      const heatDisplay = document.getElementById('heat-display');
+      if (heatDisplay) {
+        heatDisplay.classList.toggle('heat-warm', state.globalHeat >= 40 && state.globalHeat < 80);
+        heatDisplay.classList.toggle('heat-hot', state.globalHeat >= 80);
       }
     }
 
@@ -968,12 +1026,16 @@ export class UiController {
 
         const row = document.createElement('div');
         row.className = 'route-row';
+        const throughput = route.capacity > 0
+          ? `${((route.currentLoad / route.capacity) * 100).toFixed(0)}%`
+          : '0%';
         row.innerHTML = `
           <span class="rr-from">${fromName}</span>
           <span class="rr-arrow">→</span>
           <span class="rr-to">${toName}</span>
           <span class="rr-resource">${resLabel}</span>
           <span class="rr-status ${route.isActive ? 'active' : 'inactive'}">${route.isActive ? 'ACTIVE' : 'IDLE'}</span>
+          <span class="rr-throughput">${throughput}</span>
           <span class="rr-spacer"></span>
         `;
         const delBtn = document.createElement('button');
@@ -1381,7 +1443,24 @@ export class UiController {
       'harvester-buttons': ['harvester'],
       'factory-buttons': ['factory', 'refinery'],
       'infra-buttons': ['storage', 'research', 'power', 'trade'],
+      'cooling-buttons': ['infrastructure'],
       'prototype-buttons': ['prototype'],
+    };
+
+    // Build tooltip element (shared, positioned on mousemove)
+    let tooltip: HTMLDivElement | null = null;
+    let tooltipRafId = 0;
+    let pendingX = 0;
+    let pendingY = 0;
+
+    const ensureTooltip = (): HTMLDivElement => {
+      if (!tooltip) {
+        tooltip = document.createElement('div');
+        tooltip.className = 'build-tooltip';
+        tooltip.style.display = 'none';
+        document.body.appendChild(tooltip);
+      }
+      return tooltip;
     };
 
     for (const [containerId, catList] of Object.entries(categories)) {
@@ -1398,6 +1477,38 @@ export class UiController {
           <span class="build-btn-cost">$${bt.baseCost}</span>
         `;
         btn.title = this.i18n.t(bt.descriptionKey);
+
+        btn.addEventListener('mouseenter', () => {
+          const tt = ensureTooltip();
+          const powerLabel = bt.basePowerUsage < 0
+            ? `⚡ Produces ${Math.abs(bt.basePowerUsage)}`
+            : `⚡ Uses ${bt.basePowerUsage}`;
+          tt.innerHTML = `
+            <div class="tt-name">${this.i18n.t(bt.nameKey)}</div>
+            <div class="tt-cost">💰 $${bt.baseCost.toLocaleString()}</div>
+            <div class="tt-power">${powerLabel}</div>
+            <div class="tt-desc">${this.i18n.t(bt.descriptionKey)}</div>
+          `;
+          tt.style.display = 'block';
+        });
+
+        btn.addEventListener('mousemove', (e) => {
+          pendingX = e.clientX + 14;
+          pendingY = e.clientY - 10;
+          cancelAnimationFrame(tooltipRafId);
+          tooltipRafId = requestAnimationFrame(() => {
+            if (tooltip) {
+              tooltip.style.left = `${pendingX}px`;
+              tooltip.style.top = `${pendingY}px`;
+            }
+          });
+        });
+
+        btn.addEventListener('mouseleave', () => {
+          cancelAnimationFrame(tooltipRafId);
+          if (tooltip) tooltip.style.display = 'none';
+        });
+
         btn.addEventListener('click', () => {
           if (btn.classList.contains('locked')) return;
           if (this.buildModeActive && this.buildTypeId === bt.id) {
@@ -1520,6 +1631,69 @@ export class UiController {
     }
     ctx.stroke();
     return canvas;
+  }
+
+  private updateMinimap(state: GameState): void {
+    // Refresh minimap at most every 5 seconds (100 ticks at 20 tps)
+    if (state.tick - this.lastMinimapTick < 100) return;
+    this.lastMinimapTick = state.tick;
+
+    const canvas = document.getElementById('minimap-canvas') as HTMLCanvasElement | null;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const W = canvas.width;
+    const H = canvas.height;
+    const WORLD_HALF = 90; // visible range in world units
+
+    const toScreen = (wx: number, wz: number): [number, number] => {
+      const sx = ((wx + WORLD_HALF) / (WORLD_HALF * 2)) * W;
+      const sy = ((wz + WORLD_HALF) / (WORLD_HALF * 2)) * H;
+      return [sx, sy];
+    };
+
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = 'rgba(5, 10, 20, 0.9)';
+    ctx.fillRect(0, 0, W, H);
+
+    // Resource spots
+    ctx.fillStyle = '#334';
+    for (const spot of state.resourceSpots) {
+      const [sx, sy] = toScreen(spot.position.x, spot.position.z);
+      ctx.fillRect(sx - 2, sy - 2, 4, 4);
+    }
+
+    // Buildings colored by category
+    const categoryColor: Record<string, string> = {
+      harvester: '#44ff88',
+      factory: '#ff8800',
+      refinery: '#ffaa44',
+      storage: '#8888ff',
+      power: '#ffdd00',
+      research: '#4488ff',
+      trade: '#cc44ff',
+      prototype: '#00ffff',
+      infrastructure: '#88ccff',
+    };
+
+    for (const building of state.buildings) {
+      const [sx, sy] = toScreen(building.position.x, building.position.z);
+      const bt = BUILDINGS_MAP[building.typeId];
+      ctx.fillStyle = (bt && categoryColor[bt.category]) ?? '#aabbcc';
+      ctx.beginPath();
+      ctx.arc(sx, sy, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Unlock minimap_watcher achievement once
+    if (!this.minimapUnlocked && state.buildings.length >= 0) {
+      this.minimapUnlocked = true;
+      if (!state.unlockedAchievements.includes('minimap_watcher')) {
+        state.unlockedAchievements.push('minimap_watcher');
+        state.alerts.push({ id: crypto.randomUUID(), tick: state.tick, type: 'success', messageKey: 'alerts.achievement_unlocked', params: ['achievements.minimap_watcher.name', '🗺️'] });
+      }
+    }
   }
 
   private dismissAlert(id: string): void {

@@ -1759,3 +1759,200 @@ html, body {
     border: 1px solid @neon-red;
   }
 }
+
+// ----------------------------------------------------------
+// Loading Screen (v1.0.0)
+// ----------------------------------------------------------
+@keyframes loading-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+#loading-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: @bg-dark;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  font-family: @font-mono;
+  pointer-events: all;
+
+  &.hidden { display: none; }
+}
+
+#loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 3px solid rgba(0, 255, 204, 0.2);
+  border-top-color: @neon-cyan;
+  border-radius: 50%;
+  animation: loading-spin 0.8s linear infinite;
+  box-shadow: 0 0 12px rgba(0, 255, 204, 0.4);
+}
+
+#loading-text {
+  color: @text-bright;
+  font-size: 14px;
+  letter-spacing: 2px;
+  text-shadow: 0 0 10px rgba(0, 255, 204, 0.6);
+}
+
+// ----------------------------------------------------------
+// Heat Display (v0.8.0)
+// ----------------------------------------------------------
+#heat-display {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  background: rgba(255, 100, 0, 0.06);
+  border: 1px solid rgba(255, 100, 0, 0.25);
+  border-radius: @panel-radius;
+  padding: 4px 8px;
+  font-size: 12px;
+  color: @text-body;
+  cursor: default;
+  transition: @transition;
+
+  &.heat-warm {
+    border-color: rgba(255, 200, 0, 0.5);
+    color: #ffcc00;
+  }
+
+  &.heat-hot {
+    border-color: rgba(255, 60, 0, 0.6);
+    color: #ff4400;
+    box-shadow: 0 0 6px rgba(255, 60, 0, 0.3);
+  }
+}
+
+// ----------------------------------------------------------
+// Minimap (v0.9.0)
+// ----------------------------------------------------------
+#minimap-panel {
+  position: fixed;
+  bottom: 60px;
+  right: 8px;
+  z-index: @z-panels;
+  background: rgba(5, 10, 20, 0.85);
+  border: 1px solid @border-color;
+  border-radius: @panel-radius;
+  padding: 4px;
+  pointer-events: auto;
+  backdrop-filter: blur(4px);
+}
+
+#minimap-canvas {
+  display: block;
+  border-radius: 2px;
+}
+
+// ----------------------------------------------------------
+// Build tooltip (v0.9.0)
+// ----------------------------------------------------------
+.build-tooltip {
+  position: fixed;
+  z-index: 9999;
+  background: rgba(5, 10, 25, 0.96);
+  border: 1px solid @border-color;
+  border-radius: @panel-radius;
+  padding: 8px 10px;
+  font-family: @font-mono;
+  font-size: 11px;
+  color: @text-body;
+  pointer-events: none;
+  max-width: 200px;
+  box-shadow: 0 0 12px rgba(0, 255, 204, 0.15);
+
+  .tt-name { color: @neon-cyan; font-weight: bold; margin-bottom: 4px; }
+  .tt-cost { color: @neon-gold; }
+  .tt-power { color: @neon-blue; }
+  .tt-desc { color: @text-dim; margin-top: 4px; font-size: 10px; }
+}
+
+// ----------------------------------------------------------
+// Route throughput badge (v0.9.0)
+// ----------------------------------------------------------
+.rr-throughput {
+  font-size: 10px;
+  color: @neon-cyan;
+  background: rgba(0, 255, 204, 0.08);
+  border: 1px solid rgba(0, 255, 204, 0.2);
+  border-radius: 2px;
+  padding: 1px 5px;
+  flex-shrink: 0;
+}
+
+// ----------------------------------------------------------
+// Cooling category in build panel (v0.8.0)
+// ----------------------------------------------------------
+#cat-cooling .category-label {
+  color: #88ccff;
+  border-bottom-color: rgba(136, 204, 255, 0.3);
+}
+
+#cat-cooling .build-btn {
+  border-color: rgba(136, 204, 255, 0.3);
+  &:hover:not(.locked) {
+    background: rgba(136, 204, 255, 0.1);
+    border-color: #88ccff;
+    color: #88ccff;
+    box-shadow: 0 0 6px rgba(136, 204, 255, 0.25);
+  }
+}
+
+// ----------------------------------------------------------
+// Mobile Responsive (v1.0.0)
+// ----------------------------------------------------------
+@media (max-width: 768px) {
+  #top-bar {
+    flex-wrap: wrap;
+    height: auto;
+    padding: 6px 8px;
+    gap: 6px;
+  }
+
+  #game-title {
+    font-size: 11px;
+  }
+
+  #resource-bar {
+    order: 10;
+    width: 100%;
+  }
+
+  #build-panel {
+    width: 160px;
+
+    &.collapsed {
+      transform: translateX(-128px);
+    }
+  }
+
+  .build-btn {
+    font-size: 12px;
+    padding: 8px;
+  }
+
+  .nav-btn {
+    padding: 10px 10px;
+    font-size: 12px;
+  }
+
+  .action-btn, .menu-btn {
+    font-size: 14px;
+    padding: 10px 14px;
+  }
+
+  #info-panel {
+    width: 200px;
+  }
+
+  #minimap-panel {
+    display: none;
+  }
+}

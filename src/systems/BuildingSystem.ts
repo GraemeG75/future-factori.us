@@ -7,6 +7,9 @@ const BASE_HARVEST_RATE = 0.1;
 /** Max distance (world units) from a spot to snap a harvester placement. */
 const HARVESTER_SNAP_RADIUS = 8;
 
+/** Minimum distance (world units) between any two non-harvester buildings. */
+const MIN_BUILDING_SEPARATION = 4;
+
 /**
  * Attempts to place a building of the given type at the specified position.
  * Deducts the cost from cash. Returns the new BuildingInstance, or null if
@@ -25,6 +28,14 @@ export function placeBuilding(state: GameState, typeId: string, clickPosition: {
     targetSpot = findNearestUnoccupiedSpot(state, typeId, clickPosition);
     if (!targetSpot) return null;
     buildPosition = targetSpot.position;
+  } else {
+    // Collision detection: reject placement if too close to any existing building.
+    const tooClose = state.buildings.some((b) => {
+      const dx = b.position.x - clickPosition.x;
+      const dz = b.position.z - clickPosition.z;
+      return Math.sqrt(dx * dx + dz * dz) < MIN_BUILDING_SEPARATION;
+    });
+    if (tooClose) return null;
   }
 
   state.cash -= buildingType.baseCost;
@@ -41,7 +52,8 @@ export function placeBuilding(state: GameState, typeId: string, clickPosition: {
     inputBuffer: {},
     outputBuffer: {},
     isPowered: true,
-    assignedRouteIds: []
+    assignedRouteIds: [],
+    heat: 0
   };
 
   state.buildings.push(building);

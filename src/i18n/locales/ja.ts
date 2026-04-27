@@ -169,6 +169,14 @@ export const ja = {
       name: '現実鍛造機',
       description: 'The ultimate prototype: a device that can bend the laws of physics. Requires reality engineering.',
     },
+    radiator: {
+      name: '放熱器',
+      description: '近くの特殊建築の熱を放散します。過熱による効率低下を防ぎます。',
+    },
+    cooling_tower: {
+      name: '冷却塔',
+      description: '高性能冷却ユニット。広範囲の熱を大幅に低減します。',
+    },
   },
 
   recipes: {

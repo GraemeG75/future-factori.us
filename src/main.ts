@@ -12,6 +12,10 @@ if (!canvas) throw new Error('Canvas not found');
 const game = new Game(canvas);
 await game.init();
 
+// Hide loading screen once Three.js scene is initialized
+const loadingScreen = document.getElementById('loading-screen');
+if (loadingScreen) loadingScreen.classList.add('hidden');
+
 const ui = new UiController(game, i18n);
 ui.init();
 

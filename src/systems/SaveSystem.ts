@@ -1,8 +1,8 @@
-import type { GameState, BuildingInstance, ResourceSpot, Contract, Loan, MarketEvent } from '../game/GameState';
+import type { GameState, BuildingInstance, ResourceSpot, Contract, Loan, MarketEvent, RouteInstance } from '../game/GameState';
 import { initialiseDemand } from './EconomySystem';
 import { sampleTerrain, sampleTerrainHeight, type TerrainSample } from '../game/TerrainGeneration';
 
-export const SAVE_VERSION = 4;
+export const SAVE_VERSION = 5;
 export const SAVE_KEY = 'future_factorius_save';
 /** Starting cash for a fresh game. */
 export const STARTING_CASH = 2500;
@@ -229,6 +229,10 @@ export function migrate(data: unknown, fromVersion: number): GameState {
     state = migrateV3toV4(state);
   }
 
+  if (fromVersion < 5) {
+    state = migrateV4toV5(state);
+  }
+
   state.version = SAVE_VERSION;
   return state;
 }
@@ -264,6 +268,19 @@ function migrateV3toV4(state: GameState): GameState {
   if (!('scenarioStatus' in state)) (state as GameState).scenarioStatus = null;
   if (!('scenarioScore' in state)) (state as GameState).scenarioScore = 0;
   if (!('sandboxMode' in state)) (state as GameState).sandboxMode = false;
+  return state;
+}
+
+/** Patches a v4 state to add v0.8.0 fields (heat system). */
+function migrateV4toV5(state: GameState): GameState {
+  for (const building of state.buildings) {
+    if (!('heat' in building)) (building as BuildingInstance).heat = 0;
+  }
+  for (const route of state.routes) {
+    if (!('automationLevel' in route)) (route as RouteInstance).automationLevel = 0;
+  }
+  if (!('globalHeat' in state)) (state as GameState).globalHeat = 0;
+  if (!('heatCrisisTicks' in state)) (state as GameState).heatCrisisTicks = 0;
   return state;
 }
 
@@ -306,7 +323,9 @@ export function createNewGame(locale = 'en'): GameState {
     activeScenarioId: null,
     scenarioStatus: null,
     scenarioScore: 0,
-    sandboxMode: false
+    sandboxMode: false,
+    globalHeat: 0,
+    heatCrisisTicks: 0
   };
 
   state.resourceSpots = generateResourceSpots(state.worldSeed);
@@ -318,6 +337,30 @@ export function createNewGame(locale = 'en'): GameState {
 /** Autosaves the game state (alias for save with a distinct call-site name). */
 export function autosave(state: GameState): void {
   save(state);
+}
+
+/**
+ * Exports the current game state as a JSON string that can be saved to a file.
+ */
+export function exportSave(state: GameState): string {
+  return JSON.stringify(state, null, 2);
+}
+
+/**
+ * Imports a game state from a JSON string (e.g. loaded from a file).
+ * Returns a migrated GameState on success, or null if the input is invalid.
+ */
+export function importSave(json: string): GameState | null {
+  try {
+    const parsed: unknown = JSON.parse(json);
+    if (!isObject(parsed)) return null;
+    // Require at minimum a version field and a tick field to be considered a valid save.
+    if (typeof parsed['version'] !== 'number' || typeof parsed['tick'] !== 'number') return null;
+    const version = parsed['version'] as number;
+    return migrate(parsed, version);
+  } catch {
+    return null;
+  }
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -375,7 +418,9 @@ function coerceToGameState(raw: Record<string, unknown>): GameState {
         ? (raw['scenarioStatus'] as 'active' | 'won' | 'lost')
         : null,
     scenarioScore: typeof raw['scenarioScore'] === 'number' ? raw['scenarioScore'] : 0,
-    sandboxMode: raw['sandboxMode'] === true
+    sandboxMode: raw['sandboxMode'] === true,
+    globalHeat: typeof raw['globalHeat'] === 'number' ? raw['globalHeat'] : 0,
+    heatCrisisTicks: typeof raw['heatCrisisTicks'] === 'number' ? raw['heatCrisisTicks'] : 0
   };
 }
 

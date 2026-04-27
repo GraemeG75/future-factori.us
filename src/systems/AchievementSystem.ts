@@ -2,6 +2,7 @@ import { ACHIEVEMENTS } from '../data/achievements';
 import { BUILDINGS_MAP } from '../data/buildings';
 import { TECHNOLOGIES, TECHNOLOGIES_MAP } from '../data/research';
 import type { GameState } from '../game/GameState';
+import { HOT_BUILDING_IDS } from './HeatSystem';
 
 /**
  * Checks all achievement conditions against the current game state and
@@ -117,6 +118,32 @@ function isUnlocked(id: string, state: GameState): boolean {
         const bt = BUILDINGS_MAP[b.typeId];
         return bt?.category === 'prototype';
       });
+
+    // v0.8.0 achievements
+    case 'cooling_installed':
+      return state.buildings.some((b) => b.typeId === 'radiator' || b.typeId === 'cooling_tower');
+
+    case 'heat_crisis':
+      return (state.heatCrisisTicks ?? 0) >= 60;
+
+    case 'thermal_master': {
+      const hotActive = state.buildings.filter(
+        (b) => HOT_BUILDING_IDS.has(b.typeId) && b.isPowered,
+      ).length;
+      return hotActive >= 4 && state.globalHeat < 20;
+    }
+
+    // v0.9.0 achievements
+    case 'save_exported':
+      // Checked externally — set when the player exports a save file.
+      return state.unlockedAchievements.includes('save_exported');
+
+    case 'all_routes_active':
+      return state.routes.filter((r) => r.isActive).length >= 5;
+
+    case 'minimap_watcher':
+      // Checked externally — set when the minimap first renders.
+      return state.unlockedAchievements.includes('minimap_watcher');
 
     default:
       return false;
