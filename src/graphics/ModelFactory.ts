@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { RetroMaterials } from './RetroMaterials';
+import { sampleTerrain } from '../game/TerrainGeneration';
 
 export class ModelFactory {
   static createBuilding(typeId: string, level: number = 1): THREE.Group {
@@ -274,26 +275,81 @@ export class ModelFactory {
 
   static createResourceSpot(buildingTypeId: string): THREE.Group {
     const colorMap: Record<string, number> = {
-      wood_harvester: 0x33cc55,
-      coal_mine: 0x888888,
-      iron_mine: 0xcc5533,
-      water_pump: 0x3399ff
+      wood_harvester: 0x3aa84f,
+      coal_mine: 0x303236,
+      iron_mine: 0xa35a34,
+      water_pump: 0x2b87c9,
+      silicon_extractor: 0xa5acc9,
+      uranium_extractor: 0x72b843
     };
     const color = colorMap[buildingTypeId] ?? 0xffffff;
     const group = new THREE.Group();
 
-    // Glowing ground ring
-    const ringMat = RetroMaterials.neonGlow(color);
+    // Persistent terrain pad showing what resource belongs on this spot.
+    const padMat = new THREE.MeshStandardMaterial({
+      color,
+      roughness: 0.95,
+      metalness: 0.02,
+      transparent: true,
+      opacity: 0.85
+    });
+
+    let terrainPad: THREE.Mesh;
+    switch (buildingTypeId) {
+      case 'wood_harvester': {
+        terrainPad = new THREE.Mesh(new THREE.CylinderGeometry(1.45, 1.75, 0.65, 12), padMat);
+        terrainPad.position.y = 0.32;
+        break;
+      }
+      case 'coal_mine': {
+        terrainPad = new THREE.Mesh(new THREE.CylinderGeometry(1.55, 1.65, 0.3, 10), padMat);
+        terrainPad.position.y = 0.15;
+        break;
+      }
+      case 'iron_mine': {
+        terrainPad = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 1.7, 0.45, 8), padMat);
+        terrainPad.position.y = 0.22;
+        break;
+      }
+      case 'water_pump': {
+        terrainPad = new THREE.Mesh(new THREE.CylinderGeometry(1.65, 1.65, 0.16, 20), padMat);
+        terrainPad.position.y = -0.08;
+        break;
+      }
+      default: {
+        terrainPad = new THREE.Mesh(new THREE.CylinderGeometry(1.45, 1.6, 0.35, 12), padMat);
+        terrainPad.position.y = 0.17;
+        break;
+      }
+    }
+    terrainPad.name = 'spot_pad';
+    terrainPad.receiveShadow = true;
+    terrainPad.castShadow = true;
+
+    // Static ground ring (non-emissive) to avoid pulse/flicker perception.
+    const ringMat = new THREE.MeshBasicMaterial({
+      color,
+      transparent: true,
+      opacity: 0.85,
+      depthWrite: false
+    });
     const ring = new THREE.Mesh(new THREE.TorusGeometry(1.2, 0.1, 8, 24), ringMat);
     ring.rotation.x = Math.PI / 2;
-    ring.position.y = 0.05;
+    ring.position.y = 0.1;
+    ring.name = 'spot_hint';
 
     // Small floating indicator above the ring
-    const indicatorMat = RetroMaterials.neonGlow(color);
+    const indicatorMat = new THREE.MeshBasicMaterial({
+      color,
+      transparent: true,
+      opacity: 0.9,
+      depthWrite: false
+    });
     const indicator = new THREE.Mesh(new THREE.OctahedronGeometry(0.22, 0), indicatorMat);
     indicator.position.y = 1.0;
+    indicator.name = 'spot_hint';
 
-    group.add(ring, indicator);
+    group.add(terrainPad, ring, indicator);
     return group;
   }
 
@@ -313,7 +369,42 @@ export class ModelFactory {
     return new THREE.Mesh(geo, mat);
   }
 
-  static createTerrain(width: number, depth: number, divisions: number): THREE.Mesh {
+  static createSeaPlane(width: number, depth: number): THREE.Mesh {
+    // Slightly rippled sea with vertex color variation for a less flat look
+    const segs = 12;
+    const geo = new THREE.PlaneGeometry(width, depth, segs, segs);
+    geo.rotateX(-Math.PI / 2);
+    const pos = geo.attributes['position'] as THREE.BufferAttribute | undefined;
+    if (pos) {
+      const count = pos.count;
+      const colors = new Float32Array(count * 3);
+      for (let i = 0; i < count; i++) {
+        const x = pos.getX(i);
+        const z = pos.getZ(i);
+        // Subtle depth gradient: deeper (darker) toward center-ish
+        const dist = Math.sqrt((x / (width * 0.5)) ** 2 + (z / (depth * 0.5)) ** 2);
+        const shallow = Math.max(0, 1 - dist * 0.7);
+        const r = 0.02 + shallow * 0.02;
+        const g = 0.1 + shallow * 0.06;
+        const b = 0.2 + shallow * 0.08;
+        colors[i * 3] = r;
+        colors[i * 3 + 1] = g;
+        colors[i * 3 + 2] = b;
+      }
+      geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    }
+    const mat = new THREE.MeshStandardMaterial({
+      vertexColors: true,
+      roughness: 0.25,
+      metalness: 0.15
+    });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.y = -0.35;
+    mesh.receiveShadow = true;
+    return mesh;
+  }
+
+  static createTerrain(width: number, depth: number, divisions: number, seed: number = 1337): THREE.Mesh {
     const geo = new THREE.PlaneGeometry(width, depth, divisions, divisions);
     geo.rotateX(-Math.PI / 2);
     const pos = geo.attributes['position'] as THREE.BufferAttribute | undefined;
@@ -324,36 +415,33 @@ export class ModelFactory {
       for (let i = 0; i < vertexCount; i++) {
         const x = pos.getX(i);
         const z = pos.getZ(i);
-        const isEdge = Math.abs(x) > width * 0.48 || Math.abs(z) > depth * 0.48;
-
-        if (!isEdge) {
-          // Layered height using sine waves for smoother biome-like hills
-          const h =
-            Math.sin(x * 0.07) * 0.45 +
-            Math.sin(z * 0.055) * 0.35 +
-            Math.sin(x * 0.13 + z * 0.09) * 0.2 +
-            (Math.random() - 0.5) * 0.12;
-          pos.setY(i, h);
-        }
-
-        // Biome vertex colours based on distance from centre
-        const dist = Math.sqrt(x * x + z * z) / (Math.max(width, depth) * 0.5);
+        const sample = sampleTerrain(seed, x, z, width, depth);
+        const h = sample.height;
+        const moisture = sample.moisture;
+        pos.setY(i, h);
         const ci = i * 3;
-        if (dist > 0.72) {
-          // Outer rim: rocky grey
-          colors[ci] = 0.22;
-          colors[ci + 1] = 0.20;
-          colors[ci + 2] = 0.17;
-        } else if (dist > 0.42) {
-          // Mid ring: earthy dark green
-          colors[ci] = 0.09;
+
+        if (h < -0.2) {
+          // Low/wet basins
+          colors[ci] = 0.08;
           colors[ci + 1] = 0.16;
-          colors[ci + 2] = 0.09;
+          colors[ci + 2] = 0.17;
+        } else if (h < 0.35) {
+          // Fertile lowlands
+          const greenBoost = 0.05 + moisture * 0.08;
+          colors[ci] = 0.1;
+          colors[ci + 1] = 0.19 + greenBoost;
+          colors[ci + 2] = 0.11;
+        } else if (h < 0.85) {
+          // Mid elevations
+          colors[ci] = 0.18;
+          colors[ci + 1] = 0.2;
+          colors[ci + 2] = 0.14;
         } else {
-          // Central industrial zone: very dark with a slight teal tint
-          colors[ci] = 0.06;
-          colors[ci + 1] = 0.10;
-          colors[ci + 2] = 0.09;
+          // High rocky ridges
+          colors[ci] = 0.24;
+          colors[ci + 1] = 0.23;
+          colors[ci + 2] = 0.22;
         }
       }
 
@@ -365,16 +453,15 @@ export class ModelFactory {
     const mat = new THREE.MeshStandardMaterial({
       vertexColors: true,
       roughness: 0.92,
-      metalness: 0.0,
+      metalness: 0.0
     });
     const mesh = new THREE.Mesh(geo, mat);
     mesh.receiveShadow = true;
     return mesh;
   }
 
-  static createGridOverlay(width: number, depth: number): THREE.LineSegments {
+  static createGridOverlay(width: number, depth: number, step: number = 10): THREE.LineSegments {
     const points: number[] = [];
-    const step = 10;
     const hw = width / 2;
     const hd = depth / 2;
     for (let x = -hw; x <= hw; x += step) {

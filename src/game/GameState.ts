@@ -28,7 +28,10 @@ export interface Contract {
   penaltyCash: number;
   /** Tick at which the contract expires. */
   deadlineAtTick: number;
-  status: 'active' | 'completed' | 'failed';
+  /** offered: generated but not accepted | active: accepted and enforceable */
+  status: 'offered' | 'active' | 'completed' | 'failed' | 'expired';
+  /** Tick when the player accepted the contract (undefined for unaccepted offers). */
+  acceptedAtTick?: number;
 }
 
 /** A cash loan taken by the player. */

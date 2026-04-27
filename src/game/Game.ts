@@ -4,7 +4,6 @@ import { CameraController } from './CameraController';
 import { SelectionManager } from './SelectionManager';
 import { World } from './World';
 import { Effects } from '../graphics/Effects';
-import { DayNightCycle } from '../graphics/DayNightCycle';
 import { AudioSystem } from '../systems/AudioSystem';
 import * as ProductionSystem from '../systems/ProductionSystem';
 import * as RouteSystem from '../systems/RouteSystem';
@@ -33,7 +32,6 @@ export class Game {
   private selectionManager: SelectionManager;
   private world: World;
   private effects: Effects;
-  private dayNightCycle: DayNightCycle | null = null;
   private audio: AudioSystem;
   private state: GameState;
   private lastTimestamp: number = 0;
@@ -58,6 +56,9 @@ export class Game {
   }
 
   async init(): Promise<void> {
+    const canvas = this.renderer.domElement;
+    canvas.style.pointerEvents = 'none';
+
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.setPixelRatio(window.devicePixelRatio);
     this.renderer.shadowMap.enabled = true;
@@ -85,9 +86,8 @@ export class Game {
     dirLight.shadow.camera.bottom = -100;
     this.scene.add(dirLight);
 
-    this.dayNightCycle = new DayNightCycle(ambient, dirLight, this.scene);
-
     this.applyState(this.state);
+    this.render();
 
     window.addEventListener('resize', () => {
       this.camera.aspect = window.innerWidth / window.innerHeight;
@@ -95,8 +95,8 @@ export class Game {
       this.renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
-    const canvas = this.renderer.domElement;
     canvas.addEventListener('mousemove', (e) => this.selectionManager.onMouseMove(e, canvas));
+    canvas.addEventListener('contextmenu', (e) => e.preventDefault());
     canvas.addEventListener('click', (e) => {
       if (this.clickOverride) {
         this.clickOverride(e);
@@ -104,6 +104,8 @@ export class Game {
         this.selectionManager.onClick(e, canvas);
       }
     });
+
+    canvas.style.pointerEvents = 'auto';
 
     this.running = true;
     this.animFrameId = requestAnimationFrame((ts) => this.gameLoop(ts));
@@ -331,7 +333,7 @@ export class Game {
           tick: this.state.tick,
           type: 'success',
           messageKey: 'alerts.achievement_unlocked',
-          params: [ach?.nameKey ?? 'achievements.repair_crew.name', ach?.icon ?? '🔧'],
+          params: [ach?.nameKey ?? 'achievements.repair_crew.name', ach?.icon ?? '🔧']
         });
       }
       if (this.onStateChange) this.onStateChange(this.state);
@@ -384,7 +386,6 @@ export class Game {
     this.cameraController.update(this.deltaTime);
     this.selectionManager.update();
     this.effects.update(this.deltaTime);
-    if (this.dayNightCycle) this.dayNightCycle.update(this.deltaTime);
     this.renderer.render(this.scene, this.camera);
   }
 

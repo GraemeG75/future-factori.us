@@ -1,5 +1,6 @@
 import type { GameState, BuildingInstance, ResourceSpot, Contract, Loan, MarketEvent } from '../game/GameState';
 import { initialiseDemand } from './EconomySystem';
+import { sampleTerrain, sampleTerrainHeight, type TerrainSample } from '../game/TerrainGeneration';
 
 export const SAVE_VERSION = 4;
 export const SAVE_KEY = 'future_factorius_save';
@@ -21,6 +22,9 @@ const HARVESTER_SPOT_COUNTS: Record<string, number> = {
 /** Minimum world-unit separation between any two spots. */
 const SPOT_MIN_SEPARATION = 12;
 
+/** Candidate area half-size used for world generation (matches playable terrain extents). */
+const SPOT_WORLD_HALF_EXTENT = 180;
+
 /** Simple seeded LCG random number generator returning values in [0, 1). */
 function seededRng(seed: number): () => number {
   let s = seed | 0;
@@ -35,6 +39,104 @@ const DEPOSIT_MIN = 3000;
 /** Maximum deposit size (units) for any resource spot. */
 const DEPOSIT_MAX = 15000;
 
+const SPOT_HEIGHT_OFFSET: Record<string, { min: number; max: number }> = {
+  wood_harvester: { min: 0.35, max: 0.62 },
+  coal_mine: { min: 0.06, max: 0.22 },
+  iron_mine: { min: 0.18, max: 0.4 },
+  water_pump: { min: -0.28, max: -0.12 },
+  silicon_extractor: { min: 0.15, max: 0.36 },
+  uranium_extractor: { min: 0.24, max: 0.5 }
+};
+
+function clamp01(v: number): number {
+  return Math.min(1, Math.max(0, v));
+}
+
+function scoreInRange(value: number, min: number, max: number): number {
+  if (value < min || value > max) return 0;
+  const mid = (min + max) * 0.5;
+  const half = (max - min) * 0.5;
+  if (half <= 0) return 0;
+  return 1 - Math.abs(value - mid) / half;
+}
+
+function getSpotHeight(typeId: string, terrainHeight: number, rng: () => number): number {
+  const profile = SPOT_HEIGHT_OFFSET[typeId] ?? { min: 0.1, max: 0.3 };
+  const offset = profile.min + rng() * (profile.max - profile.min);
+  const y = terrainHeight + offset;
+  return Math.round(y * 100) / 100;
+}
+
+function evaluateSpotFitness(typeId: string, sample: TerrainSample): number {
+  switch (typeId) {
+    case 'wood_harvester':
+      return scoreInRange(sample.height, -0.2, 0.65) * scoreInRange(1 - sample.slope, 0.35, 1.0) * scoreInRange(sample.moisture, 0.35, 1.0);
+    case 'coal_mine':
+      return scoreInRange(sample.height, 0.2, 1.35) * scoreInRange(sample.slope, 0.22, 1.0) * scoreInRange(1 - sample.moisture, 0.3, 1.0);
+    case 'iron_mine':
+      return scoreInRange(sample.height, 0.05, 1.1) * scoreInRange(sample.slope, 0.14, 0.8) * scoreInRange(1 - sample.flow, 0.2, 1.0);
+    case 'water_pump':
+      return scoreInRange(sample.height, -0.9, 0.25) * scoreInRange(sample.flow, 0.32, 1.0) * scoreInRange(1 - sample.slope, 0.4, 1.0);
+    case 'silicon_extractor':
+      return scoreInRange(sample.height, 0.25, 1.2) * scoreInRange(sample.slope, 0.2, 0.9) * scoreInRange(1 - sample.moisture, 0.35, 1.0);
+    case 'uranium_extractor':
+      return scoreInRange(sample.height, 0.4, 1.5) * scoreInRange(sample.slope, 0.26, 1.0) * scoreInRange(sample.flow, 0.12, 0.9);
+    default:
+      return clamp01(sample.moisture * 0.5 + (1 - sample.slope) * 0.5);
+  }
+}
+
+function isTooClose(spots: ResourceSpot[], x: number, z: number): boolean {
+  return spots.some((s) => {
+    const dx = s.position.x - x;
+    const dz = s.position.z - z;
+    return Math.sqrt(dx * dx + dz * dz) < SPOT_MIN_SEPARATION;
+  });
+}
+
+function pickSpotCandidate(
+  seed: number,
+  typeId: string,
+  existingSpots: ResourceSpot[],
+  rng: () => number
+): { x: number; z: number; sample: TerrainSample } | null {
+  let best: { x: number; z: number; sample: TerrainSample; score: number } | null = null;
+  const maxAttempts = 260;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const x = Math.round((rng() - 0.5) * (SPOT_WORLD_HALF_EXTENT * 2));
+    const z = Math.round((rng() - 0.5) * (SPOT_WORLD_HALF_EXTENT * 2));
+    if (isTooClose(existingSpots, x, z)) continue;
+
+    const sample = sampleTerrain(seed, x, z);
+    const baseScore = evaluateSpotFitness(typeId, sample);
+    const jittered = baseScore + (rng() - 0.5) * 0.03;
+
+    if (!best || jittered > best.score) {
+      best = { x, z, sample, score: jittered };
+      if (best.score > 0.9) break;
+    }
+  }
+
+  return best ? { x: best.x, z: best.z, sample: best.sample } : null;
+}
+
+function normalizeResourceSpots(spots: ResourceSpot[], worldSeed: number): ResourceSpot[] {
+  const rng = seededRng(worldSeed ^ 0x5f3759df);
+  return spots.map((spot) => {
+    const hasFlatLegacyY = Math.abs((spot.position?.y ?? 0) - 0) < 0.001;
+    const terrainHeight = sampleTerrainHeight(worldSeed, spot.position.x, spot.position.z);
+    return {
+      ...spot,
+      position: {
+        x: spot.position.x,
+        y: hasFlatLegacyY ? getSpotHeight(spot.buildingTypeId, terrainHeight, rng) : spot.position.y,
+        z: spot.position.z
+      }
+    };
+  });
+}
+
 /** Deterministically generates resource spots from the world seed. */
 export function generateResourceSpots(seed: number): ResourceSpot[] {
   const rng = seededRng(seed);
@@ -42,28 +144,24 @@ export function generateResourceSpots(seed: number): ResourceSpot[] {
 
   for (const [typeId, count] of Object.entries(HARVESTER_SPOT_COUNTS)) {
     let placed = 0;
-    let attempts = 0;
-    while (placed < count && attempts < count * 30) {
-      attempts++;
-      const x = Math.round((rng() - 0.5) * 160); // -80 to +80
-      const z = Math.round((rng() - 0.5) * 160);
-      const tooClose = spots.some((s) => {
-        const dx = s.position.x - x;
-        const dz = s.position.z - z;
-        return Math.sqrt(dx * dx + dz * dz) < SPOT_MIN_SEPARATION;
+    while (placed < count) {
+      const candidate = pickSpotCandidate(seed, typeId, spots, rng);
+      if (!candidate) break;
+
+      const maxRemaining = Math.round(DEPOSIT_MIN + rng() * (DEPOSIT_MAX - DEPOSIT_MIN));
+      spots.push({
+        id: `spot_${typeId}_${placed}`,
+        buildingTypeId: typeId,
+        position: {
+          x: candidate.x,
+          y: getSpotHeight(typeId, candidate.sample.height, rng),
+          z: candidate.z
+        },
+        occupiedByBuildingId: null,
+        remaining: maxRemaining,
+        maxRemaining
       });
-      if (!tooClose) {
-        const maxRemaining = Math.round(DEPOSIT_MIN + rng() * (DEPOSIT_MAX - DEPOSIT_MIN));
-        spots.push({
-          id: `spot_${typeId}_${placed}`,
-          buildingTypeId: typeId,
-          position: { x, y: 0, z },
-          occupiedByBuildingId: null,
-          remaining: maxRemaining,
-          maxRemaining,
-        });
-        placed++;
-      }
+      placed++;
     }
   }
 
@@ -208,7 +306,7 @@ export function createNewGame(locale = 'en'): GameState {
     activeScenarioId: null,
     scenarioStatus: null,
     scenarioScore: 0,
-    sandboxMode: false,
+    sandboxMode: false
   };
 
   state.resourceSpots = generateResourceSpots(state.worldSeed);
@@ -232,6 +330,10 @@ function isObject(value: unknown): value is Record<string, unknown> {
  */
 function coerceToGameState(raw: Record<string, unknown>): GameState {
   const defaults = createNewGame();
+  const worldSeed = typeof raw['worldSeed'] === 'number' ? raw['worldSeed'] : defaults.worldSeed;
+  const resourceSpots = Array.isArray(raw['resourceSpots'])
+    ? normalizeResourceSpots(raw['resourceSpots'] as ResourceSpot[], worldSeed)
+    : generateResourceSpots(worldSeed);
 
   return {
     version: typeof raw['version'] === 'number' ? raw['version'] : defaults.version,
@@ -254,38 +356,26 @@ function coerceToGameState(raw: Record<string, unknown>): GameState {
     alerts: Array.isArray(raw['alerts']) ? raw['alerts'] : [],
     settings: isObject(raw['settings']) ? coerceSettings(raw['settings']) : defaults.settings,
     locale: typeof raw['locale'] === 'string' ? raw['locale'] : defaults.locale,
-    worldSeed: typeof raw['worldSeed'] === 'number' ? raw['worldSeed'] : defaults.worldSeed,
+    worldSeed,
     demand: isObject(raw['demand']) ? (raw['demand'] as Record<string, Record<string, number>>) : defaults.demand,
-    resourceSpots: Array.isArray(raw['resourceSpots'])
-      ? (raw['resourceSpots'] as ResourceSpot[])
-      : generateResourceSpots(typeof raw['worldSeed'] === 'number' ? raw['worldSeed'] : defaults.worldSeed),
+    resourceSpots,
     pollution: typeof raw['pollution'] === 'number' ? raw['pollution'] : 0,
-    unlockedAchievements: Array.isArray(raw['unlockedAchievements'])
-      ? (raw['unlockedAchievements'] as string[])
-      : [],
+    unlockedAchievements: Array.isArray(raw['unlockedAchievements']) ? (raw['unlockedAchievements'] as string[]) : [],
     contracts: Array.isArray(raw['contracts']) ? (raw['contracts'] as Contract[]) : [],
     loans: Array.isArray(raw['loans']) ? (raw['loans'] as Loan[]) : [],
-    priceHistory: isObject(raw['priceHistory'])
-      ? (raw['priceHistory'] as Record<string, Record<string, number[]>>)
-      : {},
-    activeMarketEvents: Array.isArray(raw['activeMarketEvents'])
-      ? (raw['activeMarketEvents'] as MarketEvent[])
-      : [],
+    priceHistory: isObject(raw['priceHistory']) ? (raw['priceHistory'] as Record<string, Record<string, number[]>>) : {},
+    activeMarketEvents: Array.isArray(raw['activeMarketEvents']) ? (raw['activeMarketEvents'] as MarketEvent[]) : [],
     researchSpecialization:
-      raw['researchSpecialization'] === 'energy' ||
-      raw['researchSpecialization'] === 'matter' ||
-      raw['researchSpecialization'] === 'biology'
+      raw['researchSpecialization'] === 'energy' || raw['researchSpecialization'] === 'matter' || raw['researchSpecialization'] === 'biology'
         ? (raw['researchSpecialization'] as 'energy' | 'matter' | 'biology')
         : null,
     activeScenarioId: typeof raw['activeScenarioId'] === 'string' ? raw['activeScenarioId'] : null,
     scenarioStatus:
-      raw['scenarioStatus'] === 'active' ||
-      raw['scenarioStatus'] === 'won' ||
-      raw['scenarioStatus'] === 'lost'
+      raw['scenarioStatus'] === 'active' || raw['scenarioStatus'] === 'won' || raw['scenarioStatus'] === 'lost'
         ? (raw['scenarioStatus'] as 'active' | 'won' | 'lost')
         : null,
     scenarioScore: typeof raw['scenarioScore'] === 'number' ? raw['scenarioScore'] : 0,
-    sandboxMode: raw['sandboxMode'] === true,
+    sandboxMode: raw['sandboxMode'] === true
   };
 }
 

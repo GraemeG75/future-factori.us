@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 const MIN_RADIUS = 5;
-const MAX_RADIUS = 80;
+const MAX_RADIUS = 220;
 const MIN_PHI = 0.1;
 const MAX_PHI = Math.PI / 2 - 0.1;
 const PAN_SPEED = 10;
@@ -154,7 +154,7 @@ export class CameraController {
     this.camera.position.set(
       this.target.x + this.radius * sinPhi * sinTheta,
       this.target.y + this.radius * cosPhi,
-      this.target.z + this.radius * sinPhi * cosTheta,
+      this.target.z + this.radius * sinPhi * cosTheta
     );
     this.camera.lookAt(this.target);
   }

@@ -17,6 +17,7 @@ export class World {
   private buildingAnimations: BuildingAnimations;
   private spotMarkers: Map<string, THREE.Group> = new Map();
   private terrain: THREE.Object3D | null = null;
+  private sea: THREE.Object3D | null = null;
   private grid: THREE.Object3D | null = null;
 
   constructor(scene: THREE.Scene) {
@@ -27,10 +28,13 @@ export class World {
   init(gameState: GameState): void {
     this.clearDynamicContent();
 
-    this.terrain = ModelFactory.createTerrain(200, 200, 20);
+    this.sea = ModelFactory.createSeaPlane(900, 900);
+    this.scene.add(this.sea);
+
+    this.terrain = ModelFactory.createTerrain(500, 500, 60, gameState.worldSeed);
     this.scene.add(this.terrain);
 
-    this.grid = ModelFactory.createGridOverlay(200, 200);
+    this.grid = ModelFactory.createGridOverlay(500, 500, 25);
     this.scene.add(this.grid);
 
     this.initSpotMarkers(gameState.resourceSpots);
@@ -60,6 +64,10 @@ export class World {
     }
     this.spotMarkers.clear();
 
+    if (this.sea) {
+      this.scene.remove(this.sea);
+      this.sea = null;
+    }
     if (this.terrain) {
       this.scene.remove(this.terrain);
       this.terrain = null;
@@ -87,7 +95,10 @@ export class World {
     for (const spot of spots) {
       const group = ModelFactory.createResourceSpot(spot.buildingTypeId);
       group.position.set(spot.position.x, spot.position.y, spot.position.z);
-      group.visible = spot.occupiedByBuildingId === null;
+      const showPlacementHint = spot.occupiedByBuildingId === null;
+      group.traverse((child) => {
+        if (child.name === 'spot_hint') child.visible = showPlacementHint;
+      });
       this.scene.add(group);
       this.spotMarkers.set(spot.id, group);
     }
@@ -97,7 +108,11 @@ export class World {
   syncSpotMarkers(spots: ResourceSpot[]): void {
     for (const spot of spots) {
       const marker = this.spotMarkers.get(spot.id);
-      if (marker) marker.visible = spot.occupiedByBuildingId === null;
+      if (!marker) continue;
+      const showPlacementHint = spot.occupiedByBuildingId === null;
+      marker.traverse((child) => {
+        if (child.name === 'spot_hint') child.visible = showPlacementHint;
+      });
     }
   }
 

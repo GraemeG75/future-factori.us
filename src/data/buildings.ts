@@ -22,12 +22,12 @@ export const BUILDINGS: BuildingType[] = [
     category: 'harvester',
     baseCost: 100,
     baseMaintenanceCostPerTick: 1,
-    basePowerUsage: 5,
+    basePowerUsage: 0,
     maxLevel: 5,
     upgradeCostMultiplier: 2.0,
     productionRateMultiplier: 1.5,
     size: { width: 2, depth: 2 },
-    defaultColor: '#8B5E3C',
+    defaultColor: '#8B5E3C'
   },
   {
     id: 'coal_mine',
@@ -41,7 +41,7 @@ export const BUILDINGS: BuildingType[] = [
     upgradeCostMultiplier: 2.0,
     productionRateMultiplier: 1.5,
     size: { width: 2, depth: 2 },
-    defaultColor: '#2C2C2C',
+    defaultColor: '#2C2C2C'
   },
   {
     id: 'iron_mine',
@@ -55,7 +55,7 @@ export const BUILDINGS: BuildingType[] = [
     upgradeCostMultiplier: 2.0,
     productionRateMultiplier: 1.5,
     size: { width: 2, depth: 2 },
-    defaultColor: '#8B4513',
+    defaultColor: '#8B4513'
   },
   {
     id: 'water_pump',
@@ -69,7 +69,7 @@ export const BUILDINGS: BuildingType[] = [
     upgradeCostMultiplier: 1.8,
     productionRateMultiplier: 1.5,
     size: { width: 1, depth: 1 },
-    defaultColor: '#1E90FF',
+    defaultColor: '#1E90FF'
   },
   {
     id: 'basic_factory',
@@ -83,7 +83,7 @@ export const BUILDINGS: BuildingType[] = [
     upgradeCostMultiplier: 2.2,
     productionRateMultiplier: 1.4,
     size: { width: 3, depth: 3 },
-    defaultColor: '#DAA520',
+    defaultColor: '#DAA520'
   },
   {
     id: 'smelter',
@@ -97,7 +97,7 @@ export const BUILDINGS: BuildingType[] = [
     upgradeCostMultiplier: 2.2,
     productionRateMultiplier: 1.4,
     size: { width: 3, depth: 3 },
-    defaultColor: '#708090',
+    defaultColor: '#708090'
   },
   {
     id: 'circuit_fab',
@@ -112,7 +112,7 @@ export const BUILDINGS: BuildingType[] = [
     productionRateMultiplier: 1.4,
     unlockRequirement: 'silicon_extraction',
     size: { width: 3, depth: 2 },
-    defaultColor: '#228B22',
+    defaultColor: '#228B22'
   },
   {
     id: 'refinery',
@@ -126,7 +126,7 @@ export const BUILDINGS: BuildingType[] = [
     upgradeCostMultiplier: 2.0,
     productionRateMultiplier: 1.4,
     size: { width: 3, depth: 2 },
-    defaultColor: '#FF8C00',
+    defaultColor: '#FF8C00'
   },
   {
     id: 'storage_depot',
@@ -140,7 +140,7 @@ export const BUILDINGS: BuildingType[] = [
     upgradeCostMultiplier: 1.8,
     productionRateMultiplier: 2.0,
     size: { width: 4, depth: 4 },
-    defaultColor: '#BDB76B',
+    defaultColor: '#BDB76B'
   },
   {
     id: 'research_center',
@@ -154,7 +154,7 @@ export const BUILDINGS: BuildingType[] = [
     upgradeCostMultiplier: 2.5,
     productionRateMultiplier: 1.5,
     size: { width: 3, depth: 3 },
-    defaultColor: '#4169E1',
+    defaultColor: '#4169E1'
   },
   {
     id: 'trading_terminal',
@@ -168,7 +168,7 @@ export const BUILDINGS: BuildingType[] = [
     upgradeCostMultiplier: 2.0,
     productionRateMultiplier: 1.3,
     size: { width: 2, depth: 2 },
-    defaultColor: '#9370DB',
+    defaultColor: '#9370DB'
   },
   {
     id: 'power_plant',
@@ -182,7 +182,7 @@ export const BUILDINGS: BuildingType[] = [
     upgradeCostMultiplier: 2.0,
     productionRateMultiplier: 1.5,
     size: { width: 3, depth: 3 },
-    defaultColor: '#FFD700',
+    defaultColor: '#FFD700'
   },
   {
     id: 'silicon_extractor',
@@ -197,7 +197,7 @@ export const BUILDINGS: BuildingType[] = [
     productionRateMultiplier: 1.5,
     unlockRequirement: 'silicon_extraction',
     size: { width: 2, depth: 2 },
-    defaultColor: '#C0C0C0',
+    defaultColor: '#C0C0C0'
   },
   {
     id: 'uranium_extractor',
@@ -212,7 +212,7 @@ export const BUILDINGS: BuildingType[] = [
     productionRateMultiplier: 1.4,
     unlockRequirement: 'uranium_mining',
     size: { width: 3, depth: 3 },
-    defaultColor: '#7FFF00',
+    defaultColor: '#7FFF00'
   },
   {
     id: 'exotic_lab',
@@ -227,7 +227,7 @@ export const BUILDINGS: BuildingType[] = [
     productionRateMultiplier: 1.3,
     unlockRequirement: 'plasma_tech',
     size: { width: 4, depth: 4 },
-    defaultColor: '#FF00FF',
+    defaultColor: '#FF00FF'
   },
   // ---------------------------------------------------------------------------
   // Prototype buildings — require advanced multi-tech research
@@ -245,7 +245,7 @@ export const BUILDINGS: BuildingType[] = [
     productionRateMultiplier: 1.2,
     unlockRequirement: 'antimatter_containment',
     size: { width: 5, depth: 5 },
-    defaultColor: '#00FFFF',
+    defaultColor: '#00FFFF'
   },
   {
     id: 'fusion_plant',
@@ -260,7 +260,7 @@ export const BUILDINGS: BuildingType[] = [
     productionRateMultiplier: 1.0,
     unlockRequirement: 'fusion_reactor',
     size: { width: 6, depth: 6 },
-    defaultColor: '#FFD700',
+    defaultColor: '#FFD700'
   },
   {
     id: 'bio_reactor',
@@ -275,7 +275,7 @@ export const BUILDINGS: BuildingType[] = [
     productionRateMultiplier: 1.3,
     unlockRequirement: 'advanced_biotech',
     size: { width: 4, depth: 4 },
-    defaultColor: '#00FA9A',
+    defaultColor: '#00FA9A'
   },
   {
     id: 'singularity_tap',
@@ -290,7 +290,7 @@ export const BUILDINGS: BuildingType[] = [
     productionRateMultiplier: 1.5,
     unlockRequirement: 'singularity_engine',
     size: { width: 7, depth: 7 },
-    defaultColor: '#9400D3',
+    defaultColor: '#9400D3'
   },
   {
     id: 'mind_matrix',
@@ -305,7 +305,7 @@ export const BUILDINGS: BuildingType[] = [
     productionRateMultiplier: 2.0,
     unlockRequirement: 'consciousness_upload',
     size: { width: 6, depth: 6 },
-    defaultColor: '#FF69B4',
+    defaultColor: '#FF69B4'
   },
   {
     id: 'reality_forge',
@@ -320,10 +320,8 @@ export const BUILDINGS: BuildingType[] = [
     productionRateMultiplier: 3.0,
     unlockRequirement: 'reality_engineering',
     size: { width: 8, depth: 8 },
-    defaultColor: '#FF4500',
-  },
+    defaultColor: '#FF4500'
+  }
 ];
 
-export const BUILDINGS_MAP: Record<string, BuildingType> = Object.fromEntries(
-  BUILDINGS.map((b) => [b.id, b]),
-);
+export const BUILDINGS_MAP: Record<string, BuildingType> = Object.fromEntries(BUILDINGS.map((b) => [b.id, b]));
