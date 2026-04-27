@@ -587,7 +587,7 @@ export const en = {
       description: 'Have 5 or more routes all active simultaneously.',
     },
     minimap_watcher: {
-      name: 'Bird\'s Eye View',
+      name: "Bird's Eye View",
       description: 'Open the minimap for the first time.',
     },
   },

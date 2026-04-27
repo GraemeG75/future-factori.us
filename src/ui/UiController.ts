@@ -1686,8 +1686,8 @@ export class UiController {
       ctx.fill();
     }
 
-    // Unlock minimap_watcher achievement once
-    if (!this.minimapUnlocked && state.buildings.length >= 0) {
+    // Unlock minimap_watcher achievement once player has at least 3 buildings
+    if (!this.minimapUnlocked && state.buildings.length >= 3) {
       this.minimapUnlocked = true;
       if (!state.unlockedAchievements.includes('minimap_watcher')) {
         state.unlockedAchievements.push('minimap_watcher');
