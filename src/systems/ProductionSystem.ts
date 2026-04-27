@@ -61,12 +61,12 @@ export function tick(state: GameState, deltaSeconds: number): void {
           (s) => s.occupiedByBuildingId === building.id,
         );
         if (spot !== undefined && spot.remaining <= 0) {
-          // Deposit exhausted — harvester cannot produce
-          continue;
+          // Deposit exhausted — harvester cannot produce (unless sandbox mode)
+          if (!state.sandboxMode) continue;
         }
         if (spot !== undefined) {
-          const actualAmount = Math.min(amount, spot.remaining);
-          spot.remaining -= actualAmount;
+          const actualAmount = state.sandboxMode ? amount : Math.min(amount, spot.remaining);
+          if (!state.sandboxMode) spot.remaining -= actualAmount;
           addResource(state, resourceId, actualAmount);
           // Alert when deposit is nearly depleted
           if (spot.remaining > 0 && spot.remaining / spot.maxRemaining < LOW_DEPOSIT_THRESHOLD) {

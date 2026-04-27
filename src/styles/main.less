@@ -1605,3 +1605,155 @@ html, body {
   border-radius: 2px;
   opacity: 0.8;
 }
+
+// Language selector
+#language-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+
+  label {
+    font-size: 12px;
+    color: @text-dim;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  select {
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid @border-color;
+    color: @text-body;
+    padding: 4px 8px;
+    border-radius: @panel-radius;
+    font-size: 12px;
+    cursor: pointer;
+
+    &:hover { border-color: @neon-blue; }
+  }
+}
+
+// Scenarios screen
+#scenarios-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+#scenarios-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.scenario-card {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid @border-color;
+  border-radius: @panel-radius;
+  padding: 12px 14px;
+  transition: border-color 0.2s;
+
+  &:hover { border-color: @neon-blue; }
+  &.active { border-color: @neon-green; background: rgba(0, 255, 128, 0.04); }
+}
+
+.scenario-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.scenario-name {
+  font-size: 14px;
+  font-weight: bold;
+  color: @neon-blue;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.scenario-multiplier {
+  font-size: 11px;
+  color: @neon-gold;
+}
+
+.scenario-desc {
+  font-size: 11px;
+  color: @text-dim;
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+.scenario-meta {
+  display: flex;
+  gap: 16px;
+  font-size: 11px;
+  color: @text-dim;
+  margin-bottom: 8px;
+}
+
+.scenario-start-btn {
+  margin-top: 6px;
+  width: 100%;
+}
+
+#scenario-active-panel {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(0, 255, 128, 0.3);
+  border-radius: @panel-radius;
+  padding: 12px 14px;
+}
+
+#scenario-name {
+  font-size: 15px;
+  font-weight: bold;
+  color: @neon-blue;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.scenario-objective {
+  font-size: 12px;
+  color: @text-body;
+  padding: 4px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .obj-check { font-size: 14px; }
+}
+
+#scenario-score {
+  margin-top: 8px;
+  font-size: 12px;
+  color: @neon-gold;
+}
+
+#scenario-time-left {
+  font-size: 12px;
+  color: @text-dim;
+  margin-top: 4px;
+}
+
+.scenario-result {
+  margin-top: 10px;
+  font-size: 16px;
+  font-weight: bold;
+  text-align: center;
+  padding: 8px;
+  border-radius: @panel-radius;
+
+  &.won {
+    color: @neon-green;
+    background: rgba(0, 255, 128, 0.1);
+    border: 1px solid @neon-green;
+  }
+
+  &.lost {
+    color: @neon-red;
+    background: rgba(255, 50, 50, 0.1);
+    border: 1px solid @neon-red;
+  }
+}

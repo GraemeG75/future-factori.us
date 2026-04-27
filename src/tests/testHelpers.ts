@@ -57,6 +57,10 @@ export function createTestGameState(overrides: Partial<GameState> = {}): GameSta
     priceHistory: {},
     activeMarketEvents: [],
     researchSpecialization: null,
+    activeScenarioId: null,
+    scenarioStatus: null,
+    scenarioScore: 0,
+    sandboxMode: false,
     ...overrides
   };
   initialiseDemand(state);

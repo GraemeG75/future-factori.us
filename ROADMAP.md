@@ -90,23 +90,23 @@
 
 ---
 
-## v0.6.0 — Additional Languages
+## v0.6.0 — Additional Languages ✅
 
-- [ ] French locale
-- [ ] German locale
-- [ ] Spanish locale
-- [ ] Japanese locale
-- [ ] Chinese (Simplified) locale
-- [ ] Language selector in settings menu
+- [x] French locale
+- [x] German locale
+- [x] Spanish locale
+- [x] Japanese locale
+- [x] Chinese (Simplified) locale
+- [x] Language selector in settings menu
 
 ---
 
-## v0.7.0 — Campaign / Scenario Mode
+## v0.7.0 — Campaign / Scenario Mode ✅
 
-- [ ] Tutorial mission (guided gameplay)
-- [ ] Scenario challenges (time limits, resource constraints)
-- [ ] Sandbox mode (unlimited starting resources)
-- [ ] Leaderboard/score system
+- [x] Tutorial mission (guided gameplay)
+- [x] Scenario challenges (time limits, resource constraints)
+- [x] Sandbox mode (unlimited starting resources)
+- [x] Leaderboard/score system
 
 ---
 

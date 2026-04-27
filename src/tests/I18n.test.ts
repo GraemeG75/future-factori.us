@@ -74,4 +74,79 @@ describe('I18n', () => {
     i18n.setLocale('xx');
     expect(i18n.getLocale()).toBe('en');
   });
+
+  it('setLocale fr - returns French string for resource key', () => {
+    i18n.setLocale('fr');
+    expect(i18n.getLocale()).toBe('fr');
+    const result = i18n.t('resources.wood.name');
+    expect(typeof result).toBe('string');
+    expect(result.length).toBeGreaterThan(0);
+    expect(result).not.toBe('resources.wood.name');
+  });
+
+  it('setLocale de - returns German string for resource key', () => {
+    i18n.setLocale('de');
+    expect(i18n.getLocale()).toBe('de');
+    const result = i18n.t('resources.wood.name');
+    expect(typeof result).toBe('string');
+    expect(result.length).toBeGreaterThan(0);
+    expect(result).not.toBe('resources.wood.name');
+  });
+
+  it('setLocale es - returns Spanish string for resource key', () => {
+    i18n.setLocale('es');
+    expect(i18n.getLocale()).toBe('es');
+    const result = i18n.t('resources.wood.name');
+    expect(typeof result).toBe('string');
+    expect(result.length).toBeGreaterThan(0);
+    expect(result).not.toBe('resources.wood.name');
+  });
+
+  it('setLocale ja - returns Japanese string for resource key', () => {
+    i18n.setLocale('ja');
+    expect(i18n.getLocale()).toBe('ja');
+    const result = i18n.t('resources.wood.name');
+    expect(typeof result).toBe('string');
+    expect(result.length).toBeGreaterThan(0);
+    expect(result).not.toBe('resources.wood.name');
+  });
+
+  it('setLocale zh - returns Chinese string for resource key', () => {
+    i18n.setLocale('zh');
+    expect(i18n.getLocale()).toBe('zh');
+    const result = i18n.t('resources.wood.name');
+    expect(typeof result).toBe('string');
+    expect(result.length).toBeGreaterThan(0);
+    expect(result).not.toBe('resources.wood.name');
+  });
+
+  it('locale fr has scenario keys defined', () => {
+    i18n.setLocale('fr');
+    const name = i18n.t('scenarios.tutorial.name');
+    expect(name).not.toBe('scenarios.tutorial.name');
+  });
+
+  it('locale de has scenario keys defined', () => {
+    i18n.setLocale('de');
+    const name = i18n.t('scenarios.tutorial.name');
+    expect(name).not.toBe('scenarios.tutorial.name');
+  });
+
+  it('locale es has scenario keys defined', () => {
+    i18n.setLocale('es');
+    const name = i18n.t('scenarios.tutorial.name');
+    expect(name).not.toBe('scenarios.tutorial.name');
+  });
+
+  it('locale ja has scenario keys defined', () => {
+    i18n.setLocale('ja');
+    const name = i18n.t('scenarios.tutorial.name');
+    expect(name).not.toBe('scenarios.tutorial.name');
+  });
+
+  it('locale zh has scenario keys defined', () => {
+    i18n.setLocale('zh');
+    const name = i18n.t('scenarios.tutorial.name');
+    expect(name).not.toBe('scenarios.tutorial.name');
+  });
 });

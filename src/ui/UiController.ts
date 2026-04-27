@@ -7,11 +7,13 @@ import { RECIPES } from '../data/recipes';
 import { TECHNOLOGIES } from '../data/research';
 import { TRADE_PARTNERS, TRADE_PARTNERS_MAP } from '../data/tradePartners';
 import { ACHIEVEMENTS } from '../data/achievements';
+import { SCENARIOS, SCENARIOS_MAP } from '../data/scenarios';
 import * as EconomySystem from '../systems/EconomySystem';
 import * as BuildingSystem from '../systems/BuildingSystem';
 import * as ContractSystem from '../systems/ContractSystem';
 import * as LoanSystem from '../systems/LoanSystem';
 import * as ResearchSystem from '../systems/ResearchSystem';
+import * as ScenarioSystem from '../systems/ScenarioSystem';
 
 const ALERT_DISMISS_MS = 5000;
 
@@ -48,6 +50,9 @@ export class UiController {
     this.attachFinanceScreen();
     this.attachSpecializationButtons();
     this.setupSelectionCallback();
+    // Set language selector to current locale
+    const langSelect = document.getElementById('language-select') as HTMLSelectElement | null;
+    if (langSelect) langSelect.value = this.game.getState().locale;
   }
   update(state: GameState): void {
     this.updateTopBar(state);
@@ -84,6 +89,11 @@ export class UiController {
     const financeScreen = document.getElementById('finance-screen');
     if (financeScreen && !financeScreen.classList.contains('hidden')) {
       this.updateFinanceScreen(state);
+    }
+
+    const scenariosScreen = document.getElementById('scenarios-screen');
+    if (scenariosScreen && !scenariosScreen.classList.contains('hidden')) {
+      this.updateScenariosScreen(state);
     }
 
     this.syncGameAlerts(state);
@@ -165,6 +175,19 @@ export class UiController {
 
   closeFinance(): void {
     document.getElementById('finance-screen')?.classList.add('hidden');
+  }
+
+  openScenarios(): void {
+    this.closeAllScreens();
+    const el = document.getElementById('scenarios-screen');
+    if (el) {
+      el.classList.remove('hidden');
+      this.updateScenariosScreen(this.game.getState());
+    }
+  }
+
+  closeScenarios(): void {
+    document.getElementById('scenarios-screen')?.classList.add('hidden');
   }
 
   // ----------------------------------------------------------------
@@ -361,6 +384,10 @@ export class UiController {
       const screen = document.getElementById('achievements-screen');
       if (screen?.classList.contains('hidden')) { this.openAchievements(); } else { this.closeAchievements(); }
     });
+    document.getElementById('btn-scenarios')?.addEventListener('click', () => {
+      const screen = document.getElementById('scenarios-screen');
+      if (screen?.classList.contains('hidden')) { this.openScenarios(); } else { this.closeScenarios(); }
+    });
     document.getElementById('btn-finance')?.addEventListener('click', () => {
       const screen = document.getElementById('finance-screen');
       if (screen?.classList.contains('hidden')) { this.openFinance(); } else { this.closeFinance(); }
@@ -415,6 +442,13 @@ export class UiController {
       if (status) status.textContent = 'Save deleted.';
       this.closeMenu();
       this.addAlert('info', 'Save deleted. New game started.');
+    });
+
+    document.getElementById('language-select')?.addEventListener('change', (e) => {
+      const value = (e.target as HTMLSelectElement).value;
+      this.i18n.setLocale(value);
+      this.game.getState().locale = value;
+      this.game.saveGame();
     });
   }
 
@@ -1511,6 +1545,111 @@ export class UiController {
         const msg = this.i18n.t(alert.messageKey, ...(alert.params ?? []));
         this.addAlert(alert.type, msg);
       }
+    }
+  }
+
+  private updateScenariosScreen(state: GameState): void {
+    const listEl = document.getElementById('scenarios-list');
+    const activePanel = document.getElementById('scenario-active-panel');
+
+    if (!listEl) return;
+
+    // Show scenario cards
+    listEl.innerHTML = '';
+    for (const scenario of SCENARIOS) {
+      const card = document.createElement('div');
+      card.className = 'scenario-card';
+      if (state.activeScenarioId === scenario.id) card.classList.add('active');
+
+      const name = this.i18n.t(scenario.nameKey);
+      const desc = this.i18n.t(scenario.descriptionKey);
+      const objCount = scenario.objectives.length;
+      const multiplier = scenario.scoreMultiplier;
+      const timeLimit = scenario.timeLimitTicks !== null
+        ? `${Math.round(scenario.timeLimitTicks / 20)}s`
+        : '∞';
+
+      card.innerHTML = `
+        <div class="scenario-card-header">
+          <span class="scenario-name">${name}</span>
+          <span class="scenario-multiplier">${multiplier}x score</span>
+        </div>
+        <div class="scenario-desc">${desc}</div>
+        <div class="scenario-meta">
+          <span>${objCount} objectives</span>
+          <span>Time: ${timeLimit}</span>
+        </div>
+      `;
+
+      if (state.activeScenarioId !== scenario.id || state.scenarioStatus !== 'active') {
+        const startBtn = document.createElement('button');
+        startBtn.className = 'menu-btn scenario-start-btn';
+        startBtn.textContent = this.i18n.t('scenarios.ui.startScenario');
+        startBtn.addEventListener('click', () => {
+          this.game.startScenario(scenario.id);
+          this.updateScenariosScreen(this.game.getState());
+        });
+        card.appendChild(startBtn);
+      }
+
+      listEl.appendChild(card);
+    }
+
+    // Show active scenario panel
+    if (!activePanel) return;
+    if (state.activeScenarioId) {
+      activePanel.classList.remove('hidden');
+      const nameEl = document.getElementById('scenario-name');
+      const objListEl = document.getElementById('scenario-objectives-list');
+      const scoreEl = document.getElementById('scenario-score');
+      const timeLeftEl = document.getElementById('scenario-time-left');
+      const resultEl = document.getElementById('scenario-result');
+
+      const scenario = SCENARIOS_MAP[state.activeScenarioId];
+
+      if (nameEl && scenario) nameEl.textContent = this.i18n.t(scenario.nameKey);
+
+      if (objListEl && scenario) {
+        objListEl.innerHTML = '';
+        for (const obj of scenario.objectives) {
+          const item = document.createElement('div');
+          item.className = 'scenario-objective';
+          const done = ScenarioSystem.checkObjective(state, obj);
+          item.innerHTML = `<span class="obj-check">${done ? '✅' : '⬜'}</span> ${this.i18n.t(obj.descriptionKey)}`;
+          objListEl.appendChild(item);
+        }
+      }
+
+      if (scoreEl) {
+        const score = ScenarioSystem.calculateScore(state);
+        scoreEl.textContent = this.i18n.t('scenarios.ui.current_score', String(score));
+      }
+
+      if (timeLeftEl && scenario) {
+        if (scenario.timeLimitTicks !== null) {
+          const remaining = Math.max(0, scenario.timeLimitTicks - state.tick);
+          const secs = Math.round(remaining / 20);
+          timeLeftEl.textContent = this.i18n.t('scenarios.ui.timeLeft', String(secs));
+        } else {
+          timeLeftEl.textContent = '';
+        }
+      }
+
+      if (resultEl) {
+        if (state.scenarioStatus === 'won') {
+          resultEl.classList.remove('hidden');
+          resultEl.className = 'scenario-result won';
+          resultEl.textContent = this.i18n.t('scenarios.ui.completed');
+        } else if (state.scenarioStatus === 'lost') {
+          resultEl.classList.remove('hidden');
+          resultEl.className = 'scenario-result lost';
+          resultEl.textContent = this.i18n.t('scenarios.ui.failed');
+        } else {
+          resultEl.classList.add('hidden');
+        }
+      }
+    } else {
+      activePanel.classList.add('hidden');
     }
   }
 }

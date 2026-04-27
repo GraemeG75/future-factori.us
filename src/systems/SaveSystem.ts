@@ -1,7 +1,7 @@
 import type { GameState, BuildingInstance, ResourceSpot, Contract, Loan, MarketEvent } from '../game/GameState';
 import { initialiseDemand } from './EconomySystem';
 
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 export const SAVE_KEY = 'future_factorius_save';
 /** Starting cash for a fresh game. */
 export const STARTING_CASH = 2500;
@@ -127,6 +127,10 @@ export function migrate(data: unknown, fromVersion: number): GameState {
     state = migrateV2toV3(state);
   }
 
+  if (fromVersion < 4) {
+    state = migrateV3toV4(state);
+  }
+
   state.version = SAVE_VERSION;
   return state;
 }
@@ -153,6 +157,15 @@ function migrateV2toV3(state: GameState): GameState {
   if (!('priceHistory' in state)) (state as GameState).priceHistory = {};
   if (!('activeMarketEvents' in state)) (state as GameState).activeMarketEvents = [];
   if (!('researchSpecialization' in state)) (state as GameState).researchSpecialization = null;
+  return state;
+}
+
+/** Patches a v3 state to add v0.6.0 / v0.7.0 fields. */
+function migrateV3toV4(state: GameState): GameState {
+  if (!('activeScenarioId' in state)) (state as GameState).activeScenarioId = null;
+  if (!('scenarioStatus' in state)) (state as GameState).scenarioStatus = null;
+  if (!('scenarioScore' in state)) (state as GameState).scenarioScore = 0;
+  if (!('sandboxMode' in state)) (state as GameState).sandboxMode = false;
   return state;
 }
 
@@ -192,6 +205,10 @@ export function createNewGame(locale = 'en'): GameState {
     priceHistory: {},
     activeMarketEvents: [],
     researchSpecialization: null,
+    activeScenarioId: null,
+    scenarioStatus: null,
+    scenarioScore: 0,
+    sandboxMode: false,
   };
 
   state.resourceSpots = generateResourceSpots(state.worldSeed);
@@ -260,6 +277,15 @@ function coerceToGameState(raw: Record<string, unknown>): GameState {
       raw['researchSpecialization'] === 'biology'
         ? (raw['researchSpecialization'] as 'energy' | 'matter' | 'biology')
         : null,
+    activeScenarioId: typeof raw['activeScenarioId'] === 'string' ? raw['activeScenarioId'] : null,
+    scenarioStatus:
+      raw['scenarioStatus'] === 'active' ||
+      raw['scenarioStatus'] === 'won' ||
+      raw['scenarioStatus'] === 'lost'
+        ? (raw['scenarioStatus'] as 'active' | 'won' | 'lost')
+        : null,
+    scenarioScore: typeof raw['scenarioScore'] === 'number' ? raw['scenarioScore'] : 0,
+    sandboxMode: raw['sandboxMode'] === true,
   };
 }
 
