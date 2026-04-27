@@ -39,10 +39,7 @@ export class SelectionManager {
 
   private getNormalizedMouseCoords(e: MouseEvent, canvas: HTMLCanvasElement): THREE.Vector2 {
     const rect = canvas.getBoundingClientRect();
-    return new THREE.Vector2(
-      ((e.clientX - rect.left) / rect.width) * 2 - 1,
-      -((e.clientY - rect.top) / rect.height) * 2 + 1,
-    );
+    return new THREE.Vector2(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1);
   }
 
   private pickBuilding(mouseCoords: THREE.Vector2): string | null {
@@ -104,6 +101,12 @@ export class SelectionManager {
     this.selected = null;
     if (this.selectionRing) this.selectionRing.visible = false;
     if (this.onSelectCallback) this.onSelectCallback(null);
+  }
+
+  reset(): void {
+    this.clearSelection();
+    this.hovered = null;
+    this.buildingMeshMap.clear();
   }
 
   update(): void {

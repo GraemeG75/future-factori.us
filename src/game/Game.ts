@@ -87,12 +87,7 @@ export class Game {
 
     this.dayNightCycle = new DayNightCycle(ambient, dirLight, this.scene);
 
-    this.world.init(this.state);
-
-    for (const building of this.state.buildings) {
-      const mesh = this.world.getBuildingMesh(building.id);
-      if (mesh) this.selectionManager.registerBuilding(building.id, mesh);
-    }
+    this.applyState(this.state);
 
     window.addEventListener('resize', () => {
       this.camera.aspect = window.innerWidth / window.innerHeight;
@@ -115,8 +110,8 @@ export class Game {
   }
 
   newGame(): void {
-    this.state = SaveSystem.createNewGame();
-    this.world.init(this.state);
+    this.applyState(SaveSystem.createNewGame());
+    if (this.onStateChange) this.onStateChange(this.state);
   }
 
   saveGame(): void {
@@ -126,13 +121,15 @@ export class Game {
   loadGame(): boolean {
     const loaded = SaveSystem.load();
     if (!loaded) return false;
-    this.state = loaded;
+    this.applyState(loaded);
+    if (this.onStateChange) this.onStateChange(this.state);
     return true;
   }
 
   resetGame(): void {
     SaveSystem.deleteSave();
-    this.state = SaveSystem.createNewGame();
+    this.applyState(SaveSystem.createNewGame());
+    if (this.onStateChange) this.onStateChange(this.state);
   }
 
   pause(): void {
@@ -208,6 +205,18 @@ export class Game {
 
   setOnStateChange(cb: (state: GameState) => void): void {
     this.onStateChange = cb;
+  }
+
+  private applyState(state: GameState): void {
+    this.state = state;
+    this.selectionManager.reset();
+    this.world.init(this.state);
+
+    for (const building of this.state.buildings) {
+      const mesh = this.world.getBuildingMesh(building.id);
+      if (mesh) this.selectionManager.registerBuilding(building.id, mesh);
+    }
+    this.world.syncSpotMarkers(this.state.resourceSpots);
   }
 
   setClickOverride(handler: ((e: MouseEvent) => void) | null): void {

@@ -16,6 +16,8 @@ export class World {
   private routeEndpoints: Map<string, { from: THREE.Vector3; to: THREE.Vector3 }> = new Map();
   private buildingAnimations: BuildingAnimations;
   private spotMarkers: Map<string, THREE.Group> = new Map();
+  private terrain: THREE.Object3D | null = null;
+  private grid: THREE.Object3D | null = null;
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
@@ -23,11 +25,13 @@ export class World {
   }
 
   init(gameState: GameState): void {
-    const terrain = ModelFactory.createTerrain(200, 200, 20);
-    this.scene.add(terrain);
+    this.clearDynamicContent();
 
-    const grid = ModelFactory.createGridOverlay(200, 200);
-    this.scene.add(grid);
+    this.terrain = ModelFactory.createTerrain(200, 200, 20);
+    this.scene.add(this.terrain);
+
+    this.grid = ModelFactory.createGridOverlay(200, 200);
+    this.scene.add(this.grid);
 
     this.initSpotMarkers(gameState.resourceSpots);
 
@@ -41,6 +45,28 @@ export class World {
       if (from && to) {
         this.addRouteLine(route, from, to);
       }
+    }
+  }
+
+  private clearDynamicContent(): void {
+    for (const buildingId of this.buildingMeshes.keys()) {
+      this.removeBuildingMesh(buildingId);
+    }
+    for (const routeId of this.routeLines.keys()) {
+      this.removeRouteLine(routeId);
+    }
+    for (const marker of this.spotMarkers.values()) {
+      this.scene.remove(marker);
+    }
+    this.spotMarkers.clear();
+
+    if (this.terrain) {
+      this.scene.remove(this.terrain);
+      this.terrain = null;
+    }
+    if (this.grid) {
+      this.scene.remove(this.grid);
+      this.grid = null;
     }
   }
 
@@ -172,6 +198,7 @@ export class World {
   }
 
   dispose(): void {
+    this.clearDynamicContent();
     this.buildingAnimations.dispose();
   }
 }
