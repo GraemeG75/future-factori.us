@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { RetroMaterials } from './RetroMaterials';
 import { sampleTerrain, sampleTerrainHeight } from '../game/TerrainGeneration';
 
+const GRID_HEIGHT_OFFSET = 0.08;
+
 export class ModelFactory {
   static createBuilding(typeId: string, level: number = 1): THREE.Group {
     const group = new THREE.Group();
@@ -469,7 +471,7 @@ export class ModelFactory {
       const key = `${x},${z}`;
       const cached = heightCache.get(key);
       if (cached !== undefined) return cached;
-      const height = sampleTerrainHeight(seed, x, z, width, depth) + 0.08;
+      const height = sampleTerrainHeight(seed, x, z, width, depth) + GRID_HEIGHT_OFFSET;
       heightCache.set(key, height);
       return height;
     };

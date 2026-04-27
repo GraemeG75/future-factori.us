@@ -10,11 +10,12 @@ const HARVESTER_SNAP_RADIUS = 8;
 
 /** Minimum distance (world units) between any two non-harvester buildings. */
 const MIN_BUILDING_SEPARATION = 4;
+const TERRAIN_HEIGHT_PRECISION = 100;
 
 function getTerrainAnchoredPosition(state: GameState, position: { x: number; y: number; z: number }) {
   return {
     x: position.x,
-    y: Math.round(sampleTerrainHeight(state.worldSeed, position.x, position.z) * 100) / 100,
+    y: Math.round(sampleTerrainHeight(state.worldSeed, position.x, position.z) * TERRAIN_HEIGHT_PRECISION) / TERRAIN_HEIGHT_PRECISION,
     z: position.z
   };
 }
