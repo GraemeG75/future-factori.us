@@ -11,6 +11,7 @@ import * as EconomySystem from '../systems/EconomySystem';
 import * as BuildingSystem from '../systems/BuildingSystem';
 import * as ContractSystem from '../systems/ContractSystem';
 import * as LoanSystem from '../systems/LoanSystem';
+import * as ResearchSystem from '../systems/ResearchSystem';
 
 const ALERT_DISMISS_MS = 5000;
 
@@ -45,6 +46,7 @@ export class UiController {
     this.attachRoutesScreen();
     this.attachKeyboardShortcuts();
     this.attachFinanceScreen();
+    this.attachSpecializationButtons();
     this.setupSelectionCallback();
   }
   update(state: GameState): void {
@@ -749,10 +751,20 @@ export class UiController {
         else if (isAvailable) card.classList.add('available');
         else card.classList.add('locked');
 
+        const specBadge = tech.specialization
+          ? `<div class="tech-spec-badge spec-${tech.specialization}">${tech.specialization.toUpperCase()}</div>`
+          : '';
+        const synergyLabel = tech.synergyWith && tech.synergyBonus
+          ? `<div class="tech-synergy">⚡ Synergy: +${Math.round((tech.synergyBonus - 1) * 100)}% production</div>`
+          : '';
+
         card.innerHTML = `
           <div class="tech-name">${this.i18n.t(tech.nameKey)}</div>
           <div class="tech-tier-badge">TIER ${tech.tier}</div>
+          ${specBadge}
+          <div class="tech-desc">${this.i18n.t(tech.descriptionKey)}</div>
           <div class="tech-cost">$${tech.moneyCost.toLocaleString()} · ${tech.researchPoints}pts</div>
+          ${synergyLabel}
         `;
 
         if (isResearching && state.activeResearch) {
@@ -802,6 +814,8 @@ export class UiController {
       if (activeInfoEl) activeInfoEl.textContent = 'No active research';
       if (fillEl) fillEl.style.width = '0%';
     }
+
+    this.updateSpecializationPanel(state);
   }
 
   private updateTradeScreen(state: GameState): void {
@@ -1062,6 +1076,60 @@ export class UiController {
     });
   }
 
+  private attachSpecializationButtons(): void {
+    document.querySelectorAll('.spec-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const spec = (btn as HTMLElement).dataset['spec'] as 'energy' | 'matter' | 'biology' | '';
+        this.game.setResearchSpecialization(spec === '' ? null : spec);
+        this.updateSpecializationPanel(this.game.getState());
+      });
+    });
+  }
+
+  private updateSpecializationPanel(state: GameState): void {
+    const infoEl = document.getElementById('specialization-info');
+    const synEl = document.getElementById('synergy-bonuses');
+
+    const effective = ResearchSystem.getEffectiveSpecialization(state);
+    const explicit = state.researchSpecialization;
+
+    if (infoEl) {
+      if (effective) {
+        const label = explicit ? `${effective.toUpperCase()} (manual)` : `${effective.toUpperCase()} (auto-detected)`;
+        infoEl.textContent = `Active: ${label}`;
+      } else {
+        infoEl.textContent = 'None — research a specialization tech to unlock bonuses.';
+      }
+    }
+
+    // Sync active button highlight
+    document.querySelectorAll('.spec-btn').forEach((btn) => {
+      const spec = (btn as HTMLElement).dataset['spec'];
+      btn.classList.toggle('active', spec === (explicit ?? ''));
+    });
+
+    // Show active synergy bonuses
+    if (synEl) {
+      synEl.innerHTML = '';
+      let hasBonus = false;
+      for (const tech of TECHNOLOGIES) {
+        if (!tech.synergyWith || !tech.synergyBonus) continue;
+        if (!state.completedResearch.includes(tech.id)) continue;
+        if (!tech.synergyWith.every((sid) => state.completedResearch.includes(sid))) continue;
+        hasBonus = true;
+        const pct = Math.round((tech.synergyBonus - 1) * 100);
+        const specLabel = tech.specialization ? ` [${tech.specialization}]` : '';
+        const row = document.createElement('div');
+        row.className = 'synergy-bonus-row';
+        row.innerHTML = `⚡ <strong>${this.i18n.t(tech.nameKey)}</strong>${specLabel}: +${pct}% production`;
+        synEl.appendChild(row);
+      }
+      if (!hasBonus) {
+        synEl.innerHTML = '<span class="synergy-none">No synergy bonuses active yet.</span>';
+      }
+    }
+  }
+
   private updateFinanceScreen(state: GameState): void {
     if (this.activeFinanceTab === 'contracts') this.renderContractsTab(state);
     else if (this.activeFinanceTab === 'loans') this.renderLoansTab(state);
@@ -1278,7 +1346,8 @@ export class UiController {
     const categories: Record<string, string[]> = {
       'harvester-buttons': ['harvester'],
       'factory-buttons': ['factory', 'refinery'],
-      'infra-buttons': ['storage', 'research', 'power', 'trade']
+      'infra-buttons': ['storage', 'research', 'power', 'trade'],
+      'prototype-buttons': ['prototype'],
     };
 
     for (const [containerId, catList] of Object.entries(categories)) {

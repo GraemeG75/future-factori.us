@@ -425,6 +425,21 @@ html, body {
   margin-bottom: 12px;
 }
 
+#cat-prototypes .category-label {
+  color: #ff99cc;
+  border-bottom-color: rgba(255, 153, 204, 0.3);
+}
+
+#cat-prototypes .build-btn {
+  border-color: rgba(255, 153, 204, 0.3);
+  &:hover:not(.locked) {
+    background: rgba(255, 153, 204, 0.12);
+    border-color: #ff99cc;
+    color: #ff99cc;
+    box-shadow: 0 0 6px rgba(255, 153, 204, 0.25);
+  }
+}
+
 .category-label {
   font-size: 9px;
   letter-spacing: 2px;
@@ -894,6 +909,97 @@ html, body {
       background: linear-gradient(90deg, @neon-gold, @neon-cyan);
       transition: width 0.5s ease;
     }
+  }
+
+  .tech-desc {
+    font-size: 10px;
+    color: @text-dim;
+    line-height: 1.4;
+    margin: 4px 0;
+    font-style: italic;
+  }
+
+  .tech-spec-badge {
+    display: inline-block;
+    font-size: 8px;
+    letter-spacing: 1px;
+    padding: 2px 5px;
+    border-radius: 2px;
+    margin-bottom: 4px;
+    font-weight: bold;
+    &.spec-energy  { background: rgba(255, 204, 0, 0.2);  color: @neon-gold;  border: 1px solid rgba(255, 204, 0, 0.4); }
+    &.spec-matter  { background: rgba(0, 255, 204, 0.15); color: @neon-cyan;  border: 1px solid rgba(0, 255, 204, 0.4); }
+    &.spec-biology { background: rgba(68, 255, 136, 0.15); color: @neon-green; border: 1px solid rgba(68, 255, 136, 0.4); }
+  }
+
+  .tech-synergy {
+    font-size: 9px;
+    color: #ff99cc;
+    margin-top: 4px;
+  }
+}
+
+#research-specialization-panel {
+  flex-shrink: 0;
+  padding: 12px 16px;
+  background: rgba(0, 255, 204, 0.04);
+  border: 1px solid @border-color;
+  border-radius: @panel-radius;
+  margin-top: 8px;
+}
+
+#specialization-info {
+  font-size: 11px;
+  color: @text-body;
+  margin-bottom: 8px;
+}
+
+#specialization-buttons {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+
+  .spec-btn {
+    background: rgba(0, 255, 204, 0.06);
+    border: 1px solid @border-color;
+    border-radius: @panel-radius;
+    color: @text-body;
+    font-family: @font-mono;
+    font-size: 10px;
+    padding: 4px 10px;
+    cursor: pointer;
+    transition: @transition;
+
+    &:hover {
+      border-color: @neon-cyan;
+      color: @neon-cyan;
+    }
+
+    &.active {
+      border-color: @neon-cyan;
+      background: rgba(0, 255, 204, 0.15);
+      color: @neon-cyan;
+      box-shadow: 0 0 6px rgba(0, 255, 204, 0.25);
+    }
+  }
+}
+
+#synergy-bonuses {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  .synergy-bonus-row {
+    font-size: 10px;
+    color: #ff99cc;
+    padding: 3px 0;
+  }
+
+  .synergy-none {
+    font-size: 10px;
+    color: @text-dim;
+    font-style: italic;
   }
 }
 
