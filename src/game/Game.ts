@@ -18,14 +18,10 @@ import * as EventSystem from '../systems/EventSystem';
 import * as SaveSystem from '../systems/SaveSystem';
 import * as ScenarioSystem from '../systems/ScenarioSystem';
 import * as HeatSystem from '../systems/HeatSystem';
-import { TICK_RATE } from '../systems/EconomySystem';
 import { BUILDINGS_MAP } from '../data/buildings';
 import { ACHIEVEMENTS_MAP } from '../data/achievements';
-import { LOAN_TIERS } from '../systems/LoanSystem';
-
-const TICK_INTERVAL = 1 / TICK_RATE;
-const SHADOW_BIAS = -0.00015;
-const SHADOW_NORMAL_BIAS = 0.025;
+import { TICK_RATE, TICK_INTERVAL, SHADOW_BIAS, SHADOW_NORMAL_BIAS } from '../consts/simulation';
+import { LOAN_TIERS } from '../consts/loans';
 
 export class Game {
   private renderer: THREE.WebGLRenderer;

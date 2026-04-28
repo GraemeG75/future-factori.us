@@ -1,3 +1,5 @@
+import { TERRAIN_HEIGHT_SCALE } from '../consts/terrain';
+
 export interface TerrainSample {
   height: number;
   moisture: number;
@@ -25,8 +27,6 @@ export interface TerrainHeightmap {
   voxelHeight: number;
   cells: HeightmapCell[];
 }
-
-const TERRAIN_HEIGHT_SCALE = 9.0;
 
 function clamp01(v: number): number {
   return Math.min(1, Math.max(0, v));

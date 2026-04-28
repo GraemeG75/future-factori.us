@@ -1,16 +1,17 @@
 import * as THREE from 'three';
 import { RetroMaterials } from './RetroMaterials';
 import { buildTerrainHeightmap, sampleTerrainHeight, type HeightmapCell, type TerrainHeightmap } from '../game/TerrainGeneration';
-
-const GRID_HEIGHT_OFFSET = 0.08;
-const VOXEL_HEIGHT = 0.04;
-const TERRAIN_BASE_HEIGHT = -20.0;
-const TERRAIN_TEXTURE_REPEAT = 2.1;
-const MIN_TERRAIN_COLUMNS = 180;
-const MIN_TERRAIN_ROWS = 180;
-const TERRAIN_SIDE_COLOR_BRIGHTNESS = 0.62;
-const TERRAIN_SIDE_SATURATION_OFFSET = -0.03;
-const TERRAIN_SIDE_LIGHTNESS_OFFSET = -0.05;
+import {
+  GRID_HEIGHT_OFFSET,
+  VOXEL_HEIGHT,
+  TERRAIN_BASE_HEIGHT,
+  TERRAIN_TEXTURE_REPEAT,
+  MIN_TERRAIN_COLUMNS,
+  MIN_TERRAIN_ROWS,
+  TERRAIN_SIDE_COLOR_BRIGHTNESS,
+  TERRAIN_SIDE_SATURATION_OFFSET,
+  TERRAIN_SIDE_LIGHTNESS_OFFSET
+} from '../consts/terrain';
 
 export class ModelFactory {
   private static terrainTexture: THREE.CanvasTexture | null = null;

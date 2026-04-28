@@ -1,29 +1,13 @@
 import type { BuildingInstance, GameState } from '../game/GameState';
+import {
+  HOT_BUILDING_IDS,
+  COOLING_BUILDING_IDS,
+  HEAT_GENERATION_PER_TICK,
+  HEAT_NATURAL_DECAY_PER_TICK,
+  HEAT_PENALTY_THRESHOLD
+} from '../consts/heat';
 
-/** Building type ids that generate heat during production. */
-export const HOT_BUILDING_IDS = new Set([
-  'quantum_forge',
-  'fusion_plant',
-  'bio_reactor',
-  'singularity_tap',
-  'mind_matrix',
-  'reality_forge',
-]);
-
-/** Building type ids that actively cool nearby buildings. */
-const COOLING_BUILDING_IDS: Record<string, { range: number; coolingPerTick: number }> = {
-  radiator: { range: 15, coolingPerTick: 5 },
-  cooling_tower: { range: 30, coolingPerTick: 12 },
-};
-
-/** Heat generated per tick by a hot building that is actively powered. */
-const HEAT_GENERATION_PER_TICK = 0.8;
-
-/** Natural heat decay per tick for every building. */
-const HEAT_NATURAL_DECAY_PER_TICK = 2;
-
-/** Heat threshold above which efficiency penalty begins. */
-const HEAT_PENALTY_THRESHOLD = 80;
+export { HOT_BUILDING_IDS };
 
 /**
  * Returns an efficiency penalty multiplier in [0, 0.5] for a building's heat.

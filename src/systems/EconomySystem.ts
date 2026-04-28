@@ -2,26 +2,10 @@ import { RESOURCES_MAP } from '../data/resources';
 import { TRADE_PARTNERS_MAP } from '../data/tradePartners';
 import type { GameState } from '../game/GameState';
 import { getEventPriceModifier } from './EventSystem';
+import { TICK_RATE, AUTOSAVE_TICKS, MAINTENANCE_INTERVAL, PRICE_HISTORY_LENGTH, PRICE_SAMPLE_INTERVAL } from '../consts/simulation';
+import { DEMAND_DRIFT, DEMAND_MIN, DEMAND_MAX } from '../consts/economy';
 
-/** Game ticks per real second. */
-export const TICK_RATE = 20;
-/** Number of ticks between autosaves (~1 minute at 20 tps). */
-export const AUTOSAVE_TICKS = 1200;
-/** Demand is updated every this many ticks (1 game second). */
-export const MAINTENANCE_INTERVAL = 20;
-
-/** Maximum random demand shift per update call. */
-const DEMAND_DRIFT = 0.05;
-/** Minimum demand floor. */
-const DEMAND_MIN = 0.1;
-/** Maximum demand ceiling. */
-const DEMAND_MAX = 1.0;
-
-/** Maximum number of historical price entries kept per resource per partner. */
-export const PRICE_HISTORY_LENGTH = 20;
-
-/** How often (in ticks) price history is sampled. */
-const PRICE_SAMPLE_INTERVAL = 600; // every 30 s
+export { TICK_RATE, AUTOSAVE_TICKS, MAINTENANCE_INTERVAL, PRICE_HISTORY_LENGTH };
 
 /**
  * Economy tick: applies demand fluctuation, samples price history.

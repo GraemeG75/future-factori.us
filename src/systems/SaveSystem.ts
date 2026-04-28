@@ -1,36 +1,26 @@
 import type { GameState, BuildingInstance, ResourceSpot, Contract, Loan, MarketEvent, RouteInstance } from '../game/GameState';
 import { initialiseDemand } from './EconomySystem';
 import { sampleTerrain, sampleTerrainHeight, type TerrainSample } from '../game/TerrainGeneration';
+import {
+  SAVE_VERSION,
+  SAVE_KEY,
+  STARTING_CASH,
+  HARVESTER_SPOT_COUNTS,
+  SPOT_MIN_SEPARATION,
+  TERRAIN_WIDTH,
+  TERRAIN_DEPTH,
+  LAND_MIN_HEIGHT,
+  SPOT_WORLD_HALF_EXTENT,
+  DEPOSIT_MIN,
+  DEPOSIT_MAX,
+  SPOT_HEIGHT_OFFSET
+} from '../consts/save';
 
-export const SAVE_VERSION = 5;
-export const SAVE_KEY = 'future_factorius_save';
-/** Starting cash for a fresh game. */
-export const STARTING_CASH = 2500;
+export { SAVE_VERSION, SAVE_KEY, STARTING_CASH };
 
 // ---------------------------------------------------------------------------
 // Resource spot generation
 // ---------------------------------------------------------------------------
-
-/** Harvester type -> number of spots to generate in the world. */
-const HARVESTER_SPOT_COUNTS: Record<string, number> = {
-  wood_harvester: 6,
-  coal_mine: 4,
-  iron_mine: 4,
-  water_pump: 3
-};
-
-/** Minimum world-unit separation between any two spots. */
-const SPOT_MIN_SEPARATION = 12;
-
-/** World dimensions must match what World.ts passes to createTerrain. */
-const TERRAIN_WIDTH = 500;
-const TERRAIN_DEPTH = 500;
-
-/** Minimum height a spot must have to be considered "on land" (sea plane sits at y ≈ -0.35). */
-const LAND_MIN_HEIGHT = 0.05;
-
-/** Candidate area half-size used for world generation (matches playable terrain extents). */
-const SPOT_WORLD_HALF_EXTENT = 180;
 
 /** Simple seeded LCG random number generator returning values in [0, 1). */
 function seededRng(seed: number): () => number {
@@ -40,20 +30,6 @@ function seededRng(seed: number): () => number {
     return (s >>> 0) / 4294967296;
   };
 }
-
-/** Minimum deposit size (units) for any resource spot. */
-const DEPOSIT_MIN = 3000;
-/** Maximum deposit size (units) for any resource spot. */
-const DEPOSIT_MAX = 15000;
-
-const SPOT_HEIGHT_OFFSET: Record<string, { min: number; max: number }> = {
-  wood_harvester: { min: 0.35, max: 0.62 },
-  coal_mine: { min: 0.06, max: 0.22 },
-  iron_mine: { min: 0.18, max: 0.4 },
-  water_pump: { min: -0.28, max: -0.12 },
-  silicon_extractor: { min: 0.15, max: 0.36 },
-  uranium_extractor: { min: 0.24, max: 0.5 }
-};
 
 function clamp01(v: number): number {
   return Math.min(1, Math.max(0, v));

@@ -1,21 +1,15 @@
 import { RESOURCES_MAP } from '../data/resources';
 import { TRADE_PARTNERS, TRADE_PARTNERS_MAP } from '../data/tradePartners';
 import type { Contract, GameState } from '../game/GameState';
-
-/** How often (in ticks) to attempt generating a new contract. */
-const CONTRACT_GENERATION_INTERVAL = 600; // every 30 s at 20 tps
-/** Maximum number of simultaneously active contracts. */
-const MAX_ACTIVE_CONTRACTS = 5;
-/** Contract duration in ticks. */
-const CONTRACT_DURATION_TICKS = 6000; // 5 minutes at 20 tps
-/** Reward multiplier relative to sell price * amount. */
-const REWARD_MULTIPLIER = 1.4;
-/** Penalty as a fraction of the reward. */
-const PENALTY_FRACTION = 0.5;
-/** Minimum amount to demand per contract. */
-const CONTRACT_MIN_AMOUNT = 10;
-/** Maximum amount to demand per contract. */
-const CONTRACT_MAX_AMOUNT = 80;
+import {
+  CONTRACT_GENERATION_INTERVAL,
+  MAX_ACTIVE_CONTRACTS,
+  CONTRACT_DURATION_TICKS,
+  REWARD_MULTIPLIER,
+  PENALTY_FRACTION,
+  CONTRACT_MIN_AMOUNT,
+  CONTRACT_MAX_AMOUNT
+} from '../consts/contracts';
 
 /**
  * Advances contract logic: checks for expired contracts and attempts to

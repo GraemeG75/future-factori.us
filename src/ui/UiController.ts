@@ -894,7 +894,8 @@ export class UiController {
           card.addEventListener('click', () => {
             const ok = this.game.startResearch(tech.id);
             if (!ok) {
-              this.addAlert('warning', this.i18n.t('messages.insufficientFunds'));
+              const hasResearchCenter = state.buildings.some((building) => building.typeId === 'research_center');
+              this.addAlert('warning', hasResearchCenter ? this.i18n.t('messages.insufficientFunds') : 'Build a Research Center first.');
             } else {
               this.addAlert('info', `Researching: ${this.i18n.t(tech.nameKey)}`);
             }

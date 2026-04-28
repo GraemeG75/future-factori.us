@@ -1,21 +1,7 @@
 import type { Loan, GameState } from '../game/GameState';
+import { TICKS_PER_YEAR, LOAN_TIERS, MAX_LOANS, INTEREST_INTERVAL } from '../consts/loans';
 
-/** Ticks per "year" for interest calculation (at 20 tps × 60 s × 20 min). */
-const TICKS_PER_YEAR = 20 * 60 * 20; // ~24 000 ticks ≈ 20 real minutes
-
-/** Available loan tiers: principal → { annualRate, durationTicks }. */
-export const LOAN_TIERS = [
-  { principal: 1000, annualInterestRate: 0.05, durationTicks: TICKS_PER_YEAR / 4, label: '1k — 5% p.a. (5 min)' },
-  { principal: 5000, annualInterestRate: 0.08, durationTicks: TICKS_PER_YEAR / 2, label: '5k — 8% p.a. (10 min)' },
-  { principal: 20000, annualInterestRate: 0.12, durationTicks: TICKS_PER_YEAR, label: '20k — 12% p.a. (20 min)' },
-  { principal: 100000, annualInterestRate: 0.20, durationTicks: TICKS_PER_YEAR * 2, label: '100k — 20% p.a. (40 min)' },
-] as const;
-
-/** Maximum number of outstanding loans. */
-const MAX_LOANS = 3;
-
-/** How often (in ticks) interest is applied (~every 5 real-seconds). */
-const INTEREST_INTERVAL = 100;
+export { LOAN_TIERS };
 
 /**
  * Applies periodic interest to all outstanding loans and alerts the player
@@ -42,7 +28,7 @@ export function tick(state: GameState): void {
         tick: state.tick,
         type: 'error',
         messageKey: 'alerts.loan_overdue',
-        params: [String(Math.ceil(loan.remainingBalance))],
+        params: [String(Math.ceil(loan.remainingBalance))]
       });
     }
   }
@@ -65,7 +51,7 @@ export function takeLoan(state: GameState, tierIndex: number): boolean {
     remainingBalance: tier.principal,
     annualInterestRate: tier.annualInterestRate,
     takenAtTick: state.tick,
-    dueAtTick: state.tick + tier.durationTicks,
+    dueAtTick: state.tick + tier.durationTicks
   };
 
   state.loans.push(loan);
@@ -76,7 +62,7 @@ export function takeLoan(state: GameState, tierIndex: number): boolean {
     tick: state.tick,
     type: 'info',
     messageKey: 'alerts.loan_taken',
-    params: [String(tier.principal)],
+    params: [String(tier.principal)]
   });
 
   return true;
@@ -101,7 +87,7 @@ export function repayLoan(state: GameState, loanId: string): number {
       tick: state.tick,
       type: 'success',
       messageKey: 'alerts.loan_repaid',
-      params: [String(loan.principal)],
+      params: [String(loan.principal)]
     });
   }
 

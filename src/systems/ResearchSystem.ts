@@ -1,9 +1,7 @@
 import { TECHNOLOGIES, TECHNOLOGIES_MAP } from '../data/research';
 import type { Technology } from '../data/research';
 import type { GameState } from '../game/GameState';
-
-/** Base research points generated per research_center level per second. */
-const BASE_RP_PER_SECOND = 1;
+import { BASE_RP_PER_SECOND } from '../consts/production';
 
 /**
  * Advances the active research by the research points generated this tick.
@@ -32,6 +30,7 @@ export function tick(state: GameState, deltaSeconds: number): void {
 export function startResearch(state: GameState, technologyId: string): boolean {
   if (state.activeResearch) return false;
   if (isUnlocked(state, technologyId)) return false;
+  if (!hasBuiltResearchCenter(state)) return false;
 
   const technology = TECHNOLOGIES_MAP[technologyId];
   if (!technology) return false;
@@ -47,7 +46,7 @@ export function startResearch(state: GameState, technologyId: string): boolean {
   state.activeResearch = {
     technologyId,
     progress: 0,
-    startedAt: state.tick,
+    startedAt: state.tick
   };
   return true;
 }
@@ -94,7 +93,7 @@ export function applyUnlocks(state: GameState, technology: Technology): void {
     tick: state.tick,
     type: 'success',
     messageKey: 'alerts.research_complete',
-    params: [technology.nameKey, unlockNames],
+    params: [technology.nameKey, unlockNames]
   });
 }
 
@@ -148,9 +147,11 @@ export function getEffectiveSpecialization(state: GameState): 'energy' | 'matter
 // ---------------------------------------------------------------------------
 
 function calcResearchPointsPerSecond(state: GameState): number {
-  return state.buildings
-    .filter((b) => b.typeId === 'research_center' && b.isPowered)
-    .reduce((sum, b) => sum + BASE_RP_PER_SECOND * b.level, 0);
+  return state.buildings.filter((b) => b.typeId === 'research_center' && b.isPowered).reduce((sum, b) => sum + BASE_RP_PER_SECOND * b.level, 0);
+}
+
+function hasBuiltResearchCenter(state: GameState): boolean {
+  return state.buildings.some((building) => building.typeId === 'research_center');
 }
 
 function completeResearch(state: GameState, technology: Technology): void {

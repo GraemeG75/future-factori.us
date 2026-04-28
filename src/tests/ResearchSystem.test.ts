@@ -6,7 +6,7 @@ import {
   getAvailableTechnologies,
   tick,
   getSynergyBonus,
-  getEffectiveSpecialization,
+  getEffectiveSpecialization
 } from '../systems/ResearchSystem';
 import { createTestGameState, createTestBuilding } from './testHelpers';
 import type { GameState } from '../game/GameState';
@@ -25,19 +25,28 @@ describe('ResearchSystem', () => {
     expect(result).toBe(false);
   });
 
+  it('startResearch fails if no research center has been built', () => {
+    const result = startResearch(state, 'silicon_extraction');
+    expect(result).toBe(false);
+    expect(state.activeResearch).toBeNull();
+  });
+
   it('startResearch fails if insufficient money', () => {
+    state.buildings.push(createTestBuilding('research_center'));
     state.cash = 0;
     const result = startResearch(state, 'silicon_extraction');
     expect(result).toBe(false);
   });
 
   it('startResearch succeeds for tier 1 tech with no prerequisites', () => {
+    state.buildings.push(createTestBuilding('research_center'));
     const result = startResearch(state, 'silicon_extraction');
     expect(result).toBe(true);
     expect(state.activeResearch?.technologyId).toBe('silicon_extraction');
   });
 
   it('startResearch deducts money cost', () => {
+    state.buildings.push(createTestBuilding('research_center'));
     const cashBefore = state.cash;
     const tech = TECHNOLOGIES_MAP['silicon_extraction'];
     startResearch(state, 'silicon_extraction');
@@ -82,6 +91,7 @@ describe('ResearchSystem', () => {
   });
 
   it('cancelResearch stops active research', () => {
+    state.buildings.push(createTestBuilding('research_center'));
     startResearch(state, 'silicon_extraction');
     expect(state.activeResearch).not.toBeNull();
     cancelResearch(state);
@@ -103,18 +113,14 @@ describe('ResearchSystem', () => {
       // plasma_tech (synergyWith: dark_matter_research, synergyBonus: 1.2)
       // dark_matter_research (synergyWith: quantum_physics, synergyBonus: 1.25)
       // Complete plasma_tech + dark_matter_research → plasma_tech synergy fires
-      state.completedResearch = [
-        'silicon_extraction', 'uranium_mining', 'plasma_tech', 'dark_matter_research',
-      ];
+      state.completedResearch = ['silicon_extraction', 'uranium_mining', 'plasma_tech', 'dark_matter_research'];
       const bonus = getSynergyBonus(state);
       expect(bonus).toBeGreaterThan(1.0);
     });
 
     it('filters by specialization when provided', () => {
       // Complete plasma_tech + dark_matter_research
-      state.completedResearch = [
-        'silicon_extraction', 'uranium_mining', 'plasma_tech', 'dark_matter_research',
-      ];
+      state.completedResearch = ['silicon_extraction', 'uranium_mining', 'plasma_tech', 'dark_matter_research'];
       // plasma_tech specialization is 'energy'; dark_matter is 'matter'
       const energyBonus = getSynergyBonus(state, 'energy');
       const matterBonus = getSynergyBonus(state, 'matter');

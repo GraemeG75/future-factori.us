@@ -4,9 +4,7 @@ import { ModelFactory } from '../graphics/ModelFactory';
 import { RetroMaterials } from '../graphics/RetroMaterials';
 import { BuildingAnimations } from '../graphics/BuildingAnimations';
 import { BUILDINGS_MAP } from '../data/buildings';
-
-/** Number of cargo capsules spread across each route. */
-const CARGO_COUNT = 3;
+import { CARGO_COUNT } from '../consts/buildings';
 
 export class World {
   private scene: THREE.Scene;

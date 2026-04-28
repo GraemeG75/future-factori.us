@@ -5,31 +5,14 @@ import type { BuildingInstance, GameState } from '../game/GameState';
 import { addResource, getStorageCapacity } from './ResourceSystem';
 import { getHarvestRate } from './BuildingSystem';
 import { getHealthEfficiency } from './MaintenanceSystem';
-
-/** Base research points generated per research center per level per second. */
-const BASE_RP_PER_SECOND = 1;
-
-/** Pollution (0–100) added to the global level per production-building second of operation. */
-const POLLUTION_PER_BUILDING_SECOND = 0.002;
-
-/** Pollution decay rate per second (natural environmental recovery). */
-const POLLUTION_DECAY_PER_SECOND = 0.001;
-
-/** Fraction of remaining/maxRemaining below which a low-deposit alert fires. */
-const LOW_DEPOSIT_THRESHOLD = 0.1;
-
-/** Minimum ticks between repeat low-deposit alerts for the same spot. */
-const DEPOSIT_ALERT_COOLDOWN_TICKS = 600;
-
-/** Maps harvester building type ids to the resource id they produce. */
-const HARVESTER_RESOURCE_MAP: Record<string, string> = {
-  wood_harvester: 'wood',
-  coal_mine: 'coal',
-  iron_mine: 'iron_ore',
-  water_pump: 'water',
-  silicon_extractor: 'silicon',
-  uranium_extractor: 'uranium',
-};
+import {
+  BASE_RP_PER_SECOND,
+  POLLUTION_PER_BUILDING_SECOND,
+  POLLUTION_DECAY_PER_SECOND,
+  LOW_DEPOSIT_THRESHOLD,
+  DEPOSIT_ALERT_COOLDOWN_TICKS,
+  HARVESTER_RESOURCE_MAP
+} from '../consts/production';
 
 /**
  * Advances all factory production, harvester generation, and research point
@@ -57,9 +40,7 @@ export function tick(state: GameState, deltaSeconds: number): void {
         const amount = rate * 20 * deltaSeconds * healthEff;
 
         // Resource scarcity: find the occupied spot and deplete it
-        const spot = state.resourceSpots.find(
-          (s) => s.occupiedByBuildingId === building.id,
-        );
+        const spot = state.resourceSpots.find((s) => s.occupiedByBuildingId === building.id);
         if (spot !== undefined && spot.remaining <= 0) {
           // Deposit exhausted — harvester cannot produce (unless sandbox mode)
           if (!state.sandboxMode) continue;
@@ -71,10 +52,7 @@ export function tick(state: GameState, deltaSeconds: number): void {
           // Alert when deposit is nearly depleted
           if (spot.remaining > 0 && spot.remaining / spot.maxRemaining < LOW_DEPOSIT_THRESHOLD) {
             const alreadyWarned = state.alerts.some(
-              (a) =>
-                a.messageKey === 'alerts.deposit_low' &&
-                a.params?.[0] === spot.id &&
-                state.tick - a.tick < DEPOSIT_ALERT_COOLDOWN_TICKS,
+              (a) => a.messageKey === 'alerts.deposit_low' && a.params?.[0] === spot.id && state.tick - a.tick < DEPOSIT_ALERT_COOLDOWN_TICKS
             );
             if (!alreadyWarned) {
               state.alerts.push({
@@ -82,7 +60,7 @@ export function tick(state: GameState, deltaSeconds: number): void {
                 tick: state.tick,
                 type: 'warning',
                 messageKey: 'alerts.deposit_low',
-                params: [spot.id, resourceId],
+                params: [spot.id, resourceId]
               });
             }
           }
@@ -106,8 +84,7 @@ export function tick(state: GameState, deltaSeconds: number): void {
       if (!recipe) continue;
 
       // Speed bonus from building level + health efficiency
-      const speedMultiplier =
-        Math.pow(buildingType.productionRateMultiplier, building.level - 1) * healthEff;
+      const speedMultiplier = Math.pow(buildingType.productionRateMultiplier, building.level - 1) * healthEff;
       const progressDelta = (deltaSeconds * speedMultiplier) / recipe.processingTimeSeconds;
       building.productionProgress += progressDelta;
 
@@ -119,8 +96,7 @@ export function tick(state: GameState, deltaSeconds: number): void {
 
         // Move outputs to outputBuffer
         for (const output of recipe.outputs) {
-          building.outputBuffer[output.resourceId] =
-            (building.outputBuffer[output.resourceId] ?? 0) + output.amount;
+          building.outputBuffer[output.resourceId] = (building.outputBuffer[output.resourceId] ?? 0) + output.amount;
         }
 
         // Flush outputBuffer to global inventory where capacity allows
@@ -138,11 +114,7 @@ export function tick(state: GameState, deltaSeconds: number): void {
  * Loads the first batch of inputs from the global inventory into the inputBuffer.
  * Returns false if the recipe is incompatible, locked, or inputs are unavailable.
  */
-export function startProduction(
-  state: GameState,
-  buildingId: string,
-  recipeId: string,
-): boolean {
+export function startProduction(state: GameState, buildingId: string, recipeId: string): boolean {
   const building = state.buildings.find((b) => b.id === buildingId);
   if (!building) return false;
 
@@ -212,8 +184,7 @@ export function getProductionRate(building: BuildingInstance, recipe: Recipe): n
 function tryLoadInputs(state: GameState, building: BuildingInstance, recipe: Recipe): boolean {
   // Check that every input is available
   for (const input of recipe.inputs) {
-    const available = (state.inventory[input.resourceId] ?? 0) +
-      (building.inputBuffer[input.resourceId] ?? 0);
+    const available = (state.inventory[input.resourceId] ?? 0) + (building.inputBuffer[input.resourceId] ?? 0);
     if (available < input.amount) return false;
   }
 
