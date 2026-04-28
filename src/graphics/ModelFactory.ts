@@ -1,9 +1,9 @@
 import * as THREE from 'three';
 import { RetroMaterials } from './RetroMaterials';
-import { buildTerrainHeightmap, sampleTerrainHeight, type HeightmapCell } from '../game/TerrainGeneration';
+import { buildTerrainHeightmap, sampleTerrainHeight, type HeightmapCell, type TerrainHeightmap } from '../game/TerrainGeneration';
 
 const GRID_HEIGHT_OFFSET = 0.08;
-const VOXEL_HEIGHT = 0.08;
+const VOXEL_HEIGHT = 0.04;
 const TERRAIN_BASE_HEIGHT = -20.0;
 const TERRAIN_TEXTURE_REPEAT = 2.1;
 const MIN_TERRAIN_COLUMNS = 180;
@@ -100,7 +100,7 @@ export class ModelFactory {
 
   private static getTerrainTexture(): THREE.CanvasTexture {
     if (!ModelFactory.terrainTexture) {
-      ModelFactory.terrainTexture = ModelFactory.buildNoiseTexture(182, 62, 0.11);
+      ModelFactory.terrainTexture = ModelFactory.buildNoiseTexture(148, 100, 0.18);
     }
     return ModelFactory.terrainTexture;
   }
@@ -145,10 +145,7 @@ export class ModelFactory {
     }
   }
 
-  private static buildVoxelTerrainGeometry(width: number, depth: number, divisions: number, seed: number): THREE.BufferGeometry {
-    const columns = Math.max(divisions * 2, MIN_TERRAIN_COLUMNS);
-    const rows = Math.max(Math.round((depth / width) * columns), MIN_TERRAIN_ROWS);
-    const heightmap = buildTerrainHeightmap(seed, width, depth, columns, rows, VOXEL_HEIGHT);
+  private static buildGeometryFromHeightmap(heightmap: TerrainHeightmap): THREE.BufferGeometry {
     const positions: number[] = [];
     const normals: number[] = [];
     const colors: number[] = [];
@@ -683,13 +680,16 @@ export class ModelFactory {
       metalness: 0.28
     });
     const mesh = new THREE.Mesh(geo, mat);
-    mesh.position.y = 0;
+    mesh.position.y = -3.5;
     mesh.receiveShadow = true;
     return mesh;
   }
 
   static createTerrain(width: number, depth: number, divisions: number, seed: number = 1337): THREE.Mesh {
-    const geo = ModelFactory.buildVoxelTerrainGeometry(width, depth, divisions, seed);
+    const columns = Math.max(divisions * 2, MIN_TERRAIN_COLUMNS);
+    const rows = Math.max(Math.round((depth / width) * columns), MIN_TERRAIN_ROWS);
+    const heightmap = buildTerrainHeightmap(seed, width, depth, columns, rows, VOXEL_HEIGHT);
+    const geo = ModelFactory.buildGeometryFromHeightmap(heightmap);
     const terrainTexture = ModelFactory.getTerrainTexture();
     terrainTexture.repeat.set(22, 22);
     const mat = new THREE.MeshStandardMaterial({
@@ -705,7 +705,37 @@ export class ModelFactory {
     const mesh = new THREE.Mesh(geo, mat);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
+    mesh.userData['heightmap'] = heightmap;
     return mesh;
+  }
+
+  static flattenTerrainAt(terrainMesh: THREE.Mesh, worldX: number, worldZ: number, radius: number = 5): void {
+    const heightmap = terrainMesh.userData['heightmap'] as TerrainHeightmap | undefined;
+    if (!heightmap) return;
+
+    const centerCol = Math.min(heightmap.columns - 1, Math.max(0, Math.floor((worldX + heightmap.width * 0.5) / heightmap.cellWidth)));
+    const centerRow = Math.min(heightmap.rows - 1, Math.max(0, Math.floor((worldZ + heightmap.depth * 0.5) / heightmap.cellDepth)));
+    const centerCell = heightmap.cells[centerRow * heightmap.columns + centerCol];
+    if (!centerCell) return;
+    const targetHeight = centerCell.quantizedHeight;
+
+    const colRadius = Math.ceil(radius / heightmap.cellWidth);
+    const rowRadius = Math.ceil(radius / heightmap.cellDepth);
+    for (let dr = -rowRadius; dr <= rowRadius; dr++) {
+      for (let dc = -colRadius; dc <= colRadius; dc++) {
+        const col = centerCol + dc;
+        const row = centerRow + dr;
+        if (col < 0 || row < 0 || col >= heightmap.columns || row >= heightmap.rows) continue;
+        const cell = heightmap.cells[row * heightmap.columns + col];
+        if (!cell) continue;
+        const dist = Math.sqrt((cell.x - worldX) ** 2 + (cell.z - worldZ) ** 2);
+        if (dist <= radius) cell.quantizedHeight = targetHeight;
+      }
+    }
+
+    const newGeo = ModelFactory.buildGeometryFromHeightmap(heightmap);
+    terrainMesh.geometry.dispose();
+    terrainMesh.geometry = newGeo;
   }
 
   static createGridOverlay(width: number, depth: number, step: number = 10, seed: number = 1337): THREE.LineSegments {

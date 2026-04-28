@@ -318,6 +318,12 @@ export class Game {
     return ok;
   }
 
+  acceptContract(contractId: string): boolean {
+    const ok = ContractSystem.acceptContract(this.state, contractId);
+    if (ok && this.onStateChange) this.onStateChange(this.state);
+    return ok;
+  }
+
   takeLoan(tierIndex: number): boolean {
     const ok = LoanSystem.takeLoan(this.state, tierIndex);
     if (ok && this.onStateChange) this.onStateChange(this.state);
