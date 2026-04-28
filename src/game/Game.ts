@@ -5,6 +5,7 @@ import { SelectionManager } from './SelectionManager';
 import { World } from './World';
 import { Effects } from '../graphics/Effects';
 import { AudioSystem } from '../systems/AudioSystem';
+import { DayNightCycle } from '../graphics/DayNightCycle';
 import * as ProductionSystem from '../systems/ProductionSystem';
 import * as RouteSystem from '../systems/RouteSystem';
 import * as EconomySystem from '../systems/EconomySystem';
@@ -34,6 +35,7 @@ export class Game {
   private world: World;
   private effects: Effects;
   private audio: AudioSystem;
+  private dayNightCycle: DayNightCycle | null = null;
   private state: GameState;
   private lastTimestamp: number = 0;
   private tickAccumulator: number = 0;
@@ -65,17 +67,23 @@ export class Game {
     this.renderer.setPixelRatio(window.devicePixelRatio);
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = 1.15;
+    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
 
-    this.scene.background = new THREE.Color(0x7ab4d8);
-    this.scene.fog = new THREE.FogExp2(0x9dc8e0, 0.004);
+    this.scene.background = new THREE.Color(0x8db4da);
+    this.scene.fog = new THREE.FogExp2(0x7ca5d0, 0.0033);
 
     this.camera.position.set(20, 30, 20);
     this.camera.lookAt(0, 0, 0);
 
-    const ambient = new THREE.AmbientLight(0x8899bb, 0.75);
+    const ambient = new THREE.AmbientLight(0x6d78a8, 0.38);
     this.scene.add(ambient);
 
-    const dirLight = new THREE.DirectionalLight(0xfff4e0, 1.8);
+    const hemisphere = new THREE.HemisphereLight(0xa8d8ff, 0x22311e, 0.9);
+    this.scene.add(hemisphere);
+
+    const dirLight = new THREE.DirectionalLight(0xfff2d6, 2.15);
     dirLight.position.set(50, 80, 30);
     dirLight.castShadow = true;
     dirLight.shadow.mapSize.width = 4096;
@@ -86,7 +94,19 @@ export class Game {
     dirLight.shadow.camera.right = 250;
     dirLight.shadow.camera.top = 250;
     dirLight.shadow.camera.bottom = -250;
+    dirLight.shadow.bias = -0.00015;
+    dirLight.shadow.normalBias = 0.025;
     this.scene.add(dirLight);
+
+    const rimLight = new THREE.DirectionalLight(0x8ed8ff, 0.5);
+    rimLight.position.set(-90, 45, -30);
+    this.scene.add(rimLight);
+
+    const bloomLight = new THREE.PointLight(0x6dcbff, 1.1, 320, 2);
+    bloomLight.position.set(0, 40, 0);
+    this.scene.add(bloomLight);
+
+    this.dayNightCycle = new DayNightCycle(ambient, dirLight, this.scene);
 
     this.applyState(this.state);
     this.render();
@@ -402,6 +422,7 @@ export class Game {
   }
 
   private render(): void {
+    this.dayNightCycle?.update(this.deltaTime);
     this.cameraController.update(this.deltaTime);
     this.selectionManager.update();
     this.effects.update(this.deltaTime);

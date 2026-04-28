@@ -7,6 +7,25 @@ export interface TerrainSample {
   detail: number;
 }
 
+export interface HeightmapCell extends TerrainSample {
+  column: number;
+  row: number;
+  x: number;
+  z: number;
+  quantizedHeight: number;
+}
+
+export interface TerrainHeightmap {
+  width: number;
+  depth: number;
+  columns: number;
+  rows: number;
+  cellWidth: number;
+  cellDepth: number;
+  voxelHeight: number;
+  cells: HeightmapCell[];
+}
+
 const TERRAIN_HEIGHT_SCALE = 2.2;
 
 function clamp01(v: number): number {
@@ -59,6 +78,11 @@ function fbm(x: number, z: number, octaves: number, seed: number): number {
   return norm > 0 ? sum / norm : 0;
 }
 
+export function quantizeTerrainHeight(height: number, voxelHeight: number): number {
+  if (voxelHeight <= 0) return height;
+  return Math.round(height / voxelHeight) * voxelHeight;
+}
+
 export function sampleTerrainHeight(seed: number, x: number, z: number, width: number = 200, depth: number = 200): number {
   const warpX = x + (fbm(x * 0.025, z * 0.025, 3, seed + 91) - 0.5) * 16;
   const warpZ = z + (fbm(x * 0.025 + 200, z * 0.025 + 200, 3, seed + 137) - 0.5) * 16;
@@ -106,5 +130,47 @@ export function sampleTerrain(seed: number, x: number, z: number, width: number 
     slope,
     flow,
     detail
+  };
+}
+
+export function buildTerrainHeightmap(
+  seed: number,
+  width: number,
+  depth: number,
+  columns: number,
+  rows: number = columns,
+  voxelHeight: number = 0.16
+): TerrainHeightmap {
+  const safeColumns = Math.max(1, Math.floor(columns));
+  const safeRows = Math.max(1, Math.floor(rows));
+  const cellWidth = width / safeColumns;
+  const cellDepth = depth / safeRows;
+  const cells: HeightmapCell[] = [];
+
+  for (let row = 0; row < safeRows; row++) {
+    const z = -depth * 0.5 + cellDepth * 0.5 + row * cellDepth;
+    for (let column = 0; column < safeColumns; column++) {
+      const x = -width * 0.5 + cellWidth * 0.5 + column * cellWidth;
+      const sample = sampleTerrain(seed, x, z, width, depth);
+      cells.push({
+        ...sample,
+        column,
+        row,
+        x,
+        z,
+        quantizedHeight: quantizeTerrainHeight(sample.height, voxelHeight)
+      });
+    }
+  }
+
+  return {
+    width,
+    depth,
+    columns: safeColumns,
+    rows: safeRows,
+    cellWidth,
+    cellDepth,
+    voxelHeight,
+    cells
   };
 }
