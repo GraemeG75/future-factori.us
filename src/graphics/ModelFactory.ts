@@ -102,14 +102,14 @@ export class ModelFactory {
     if (!ModelFactory.terrainTexture) {
       ModelFactory.terrainTexture = ModelFactory.buildNoiseTexture(200, 34, 0.04);
     }
-    return ModelFactory.terrainTexture.clone();
+    return ModelFactory.terrainTexture;
   }
 
   private static getWaterTexture(): THREE.CanvasTexture {
     if (!ModelFactory.waterTexture) {
       ModelFactory.waterTexture = ModelFactory.buildNoiseTexture(188, 28, 0.08);
     }
-    return ModelFactory.waterTexture.clone();
+    return ModelFactory.waterTexture;
   }
 
   private static pushQuad(
@@ -160,7 +160,9 @@ export class ModelFactory {
     const normalWest = new THREE.Vector3(-1, 0, 0);
     const getCell = (column: number, row: number): HeightmapCell | null => {
       if (column < 0 || row < 0 || column >= heightmap.columns || row >= heightmap.rows) return null;
-      return heightmap.cells[row * heightmap.columns + column] ?? null;
+      const index = row * heightmap.columns + column;
+      if (index < 0 || index >= heightmap.cells.length) return null;
+      return heightmap.cells[index] ?? null;
     };
 
     for (const cell of heightmap.cells) {

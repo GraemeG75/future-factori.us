@@ -15,8 +15,11 @@ describe('TerrainGeneration', () => {
     expect(mapA.rows).toBe(8);
     expect(mapA.cells).toHaveLength(96);
     expect(mapA.cells).toEqual(mapB.cells);
+    expect(mapA.cells.length).toBeGreaterThan(0);
 
-    const centerCell = mapA.cells[Math.floor(mapA.cells.length / 2)]!;
+    const centerCell = mapA.cells[Math.floor(mapA.cells.length / 2)];
+    if (!centerCell) throw new Error('Expected heightmap to contain a center cell');
+
     expect(centerCell.height).toBeCloseTo(sampleTerrainHeight(42, centerCell.x, centerCell.z, 120, 80), 8);
     expect(centerCell.quantizedHeight / mapA.voxelHeight).toBeCloseTo(Math.round(centerCell.quantizedHeight / mapA.voxelHeight), 8);
   });
