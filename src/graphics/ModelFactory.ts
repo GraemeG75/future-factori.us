@@ -6,6 +6,11 @@ const GRID_HEIGHT_OFFSET = 0.08;
 const VOXEL_HEIGHT = 0.16;
 const TERRAIN_BASE_HEIGHT = -4.8;
 const TERRAIN_TEXTURE_REPEAT = 3.2;
+const MIN_TERRAIN_COLUMNS = 96;
+const MIN_TERRAIN_ROWS = 96;
+const TERRAIN_SIDE_COLOR_BRIGHTNESS = 0.62;
+const TERRAIN_SIDE_SATURATION_OFFSET = -0.03;
+const TERRAIN_SIDE_LIGHTNESS_OFFSET = -0.05;
 
 export class ModelFactory {
   private static terrainTexture: THREE.CanvasTexture | null = null;
@@ -141,8 +146,8 @@ export class ModelFactory {
   }
 
   private static buildVoxelTerrainGeometry(width: number, depth: number, divisions: number, seed: number): THREE.BufferGeometry {
-    const columns = Math.max(divisions * 2, 96);
-    const rows = Math.max(Math.round((depth / width) * columns), 96);
+    const columns = Math.max(divisions * 2, MIN_TERRAIN_COLUMNS);
+    const rows = Math.max(Math.round((depth / width) * columns), MIN_TERRAIN_ROWS);
     const heightmap = buildTerrainHeightmap(seed, width, depth, columns, rows, VOXEL_HEIGHT);
     const positions: number[] = [];
     const normals: number[] = [];
@@ -160,7 +165,10 @@ export class ModelFactory {
 
     for (const cell of heightmap.cells) {
       const topColor = ModelFactory.getTerrainTopColor(cell);
-      const sideColor = topColor.clone().multiplyScalar(0.62).offsetHSL(0, -0.03, -0.05);
+      const sideColor = topColor
+        .clone()
+        .multiplyScalar(TERRAIN_SIDE_COLOR_BRIGHTNESS)
+        .offsetHSL(0, TERRAIN_SIDE_SATURATION_OFFSET, TERRAIN_SIDE_LIGHTNESS_OFFSET);
       const x0 = cell.x - heightmap.cellWidth * 0.5;
       const x1 = cell.x + heightmap.cellWidth * 0.5;
       const z0 = cell.z - heightmap.cellDepth * 0.5;

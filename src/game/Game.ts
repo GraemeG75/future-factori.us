@@ -25,6 +25,8 @@ import { ACHIEVEMENTS_MAP } from '../data/achievements';
 import { LOAN_TIERS } from '../systems/LoanSystem';
 
 const TICK_INTERVAL = 1 / TICK_RATE;
+const SHADOW_BIAS = -0.00015;
+const SHADOW_NORMAL_BIAS = 0.025;
 
 export class Game {
   private renderer: THREE.WebGLRenderer;
@@ -94,8 +96,8 @@ export class Game {
     dirLight.shadow.camera.right = 250;
     dirLight.shadow.camera.top = 250;
     dirLight.shadow.camera.bottom = -250;
-    dirLight.shadow.bias = -0.00015;
-    dirLight.shadow.normalBias = 0.025;
+    dirLight.shadow.bias = SHADOW_BIAS;
+    dirLight.shadow.normalBias = SHADOW_NORMAL_BIAS;
     this.scene.add(dirLight);
 
     const rimLight = new THREE.DirectionalLight(0x8ed8ff, 0.5);
