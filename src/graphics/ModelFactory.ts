@@ -1,10 +1,282 @@
 import * as THREE from 'three';
 import { RetroMaterials } from './RetroMaterials';
-import { sampleTerrain, sampleTerrainHeight } from '../game/TerrainGeneration';
-
-const GRID_HEIGHT_OFFSET = 0.08;
+import { buildTerrainHeightmap, sampleTerrainHeight, type HeightmapCell, type TerrainHeightmap } from '../game/TerrainGeneration';
+import {
+  GRID_HEIGHT_OFFSET,
+  VOXEL_HEIGHT,
+  TERRAIN_BASE_HEIGHT,
+  TERRAIN_TEXTURE_REPEAT,
+  MIN_TERRAIN_COLUMNS,
+  MIN_TERRAIN_ROWS,
+  TERRAIN_SIDE_COLOR_BRIGHTNESS,
+  TERRAIN_SIDE_SATURATION_OFFSET,
+  TERRAIN_SIDE_LIGHTNESS_OFFSET
+} from '../consts/terrain';
 
 export class ModelFactory {
+  private static terrainTexture: THREE.CanvasTexture | null = null;
+  private static waterTexture: THREE.CanvasTexture | null = null;
+
+  private static colorFromRgb(r: number, g: number, b: number): THREE.Color {
+    return new THREE.Color(r / 255, g / 255, b / 255);
+  }
+
+  private static mixColor(a: THREE.Color, b: THREE.Color, t: number): THREE.Color {
+    return a.clone().lerp(b, THREE.MathUtils.clamp(t, 0, 1));
+  }
+
+  private static getTerrainTopColor(cell: HeightmapCell): THREE.Color {
+    const warmSand = ModelFactory.colorFromRgb(212, 186, 126);
+    const moss = ModelFactory.colorFromRgb(93, 145, 72);
+    const lush = ModelFactory.colorFromRgb(58, 126, 68);
+    const scrub = ModelFactory.colorFromRgb(122, 112, 70);
+    const rock = ModelFactory.colorFromRgb(136, 128, 120);
+    const snow = ModelFactory.colorFromRgb(225, 232, 242);
+    const wetland = ModelFactory.colorFromRgb(82, 120, 76);
+
+    const moistureBlend = cell.moisture * 0.55 + cell.flow * 0.45;
+    let color: THREE.Color;
+
+    if (cell.quantizedHeight < -0.09) {
+      color = ModelFactory.mixColor(ModelFactory.colorFromRgb(82, 92, 106), ModelFactory.colorFromRgb(116, 128, 136), moistureBlend);
+    } else if (cell.quantizedHeight < 0.34) {
+      color = ModelFactory.mixColor(warmSand, ModelFactory.colorFromRgb(192, 168, 108), cell.detail);
+    } else if (cell.quantizedHeight < 1.7) {
+      if (cell.flow > 0.48) {
+        color = ModelFactory.mixColor(wetland, moss, cell.detail);
+      } else if (cell.moisture > 0.55) {
+        color = ModelFactory.mixColor(moss, lush, cell.detail);
+      } else {
+        color = ModelFactory.mixColor(scrub, ModelFactory.colorFromRgb(146, 120, 74), cell.detail * 0.7);
+      }
+    } else if (cell.quantizedHeight < 3.4) {
+      color = ModelFactory.mixColor(rock, ModelFactory.colorFromRgb(166, 150, 132), cell.detail * 0.8);
+    } else {
+      color = ModelFactory.mixColor(snow, ModelFactory.colorFromRgb(188, 196, 208), cell.detail * 0.65);
+    }
+
+    if (cell.slope > 0.38) {
+      color.lerp(rock, Math.min(0.8, (cell.slope - 0.38) / 0.45));
+    }
+
+    if (cell.flow > 0.62 && cell.quantizedHeight > 0.1 && cell.quantizedHeight < 2.1) {
+      color.lerp(ModelFactory.colorFromRgb(86, 126, 92), 0.2);
+    }
+
+    return color.offsetHSL(0, 0, (cell.detail - 0.5) * 0.08);
+  }
+
+  private static buildNoiseTexture(base: number, range: number, accentChance: number = 0): THREE.CanvasTexture {
+    const size = 128;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return new THREE.CanvasTexture(canvas);
+
+    const image = ctx.createImageData(size, size);
+    for (let y = 0; y < size; y++) {
+      for (let x = 0; x < size; x++) {
+        const idx = (y * size + x) * 4;
+        const wave = Math.sin((x + y) * 0.18) * 0.5 + Math.cos((x - y) * 0.11) * 0.5;
+        const grain = ((x * 13 + y * 17 + x * y * 3) % 97) / 96;
+        const sparkle = ((x * 7 + y * 19) % 31) / 30;
+        let value = base + wave * range * 0.35 + grain * range * 0.65;
+        if (accentChance > 0 && sparkle > 1 - accentChance) value += range * 0.8;
+        const channel = Math.max(0, Math.min(255, Math.round(value)));
+        image.data[idx] = channel;
+        image.data[idx + 1] = channel;
+        image.data[idx + 2] = channel;
+        image.data[idx + 3] = 255;
+      }
+    }
+
+    ctx.putImageData(image, 0, 0);
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.colorSpace = THREE.SRGBColorSpace;
+    return texture;
+  }
+
+  private static getTerrainTexture(): THREE.CanvasTexture {
+    if (!ModelFactory.terrainTexture) {
+      ModelFactory.terrainTexture = ModelFactory.buildNoiseTexture(148, 100, 0.18);
+    }
+    return ModelFactory.terrainTexture;
+  }
+
+  private static getWaterTexture(): THREE.CanvasTexture {
+    if (!ModelFactory.waterTexture) {
+      ModelFactory.waterTexture = ModelFactory.buildNoiseTexture(188, 28, 0.08);
+    }
+    return ModelFactory.waterTexture;
+  }
+
+  private static pushQuad(
+    positions: number[],
+    normals: number[],
+    colors: number[],
+    uvs: number[],
+    a: THREE.Vector3,
+    b: THREE.Vector3,
+    c: THREE.Vector3,
+    d: THREE.Vector3,
+    normal: THREE.Vector3,
+    color: THREE.Color,
+    uvScaleX: number,
+    uvScaleY: number
+  ): void {
+    const vertices = [a, b, c, a, c, d];
+    const quadUvs = [
+      [0, 0],
+      [uvScaleX, 0],
+      [uvScaleX, uvScaleY],
+      [0, 0],
+      [uvScaleX, uvScaleY],
+      [0, uvScaleY]
+    ] as const;
+
+    for (let i = 0; i < vertices.length; i++) {
+      const vertex = vertices[i]!;
+      positions.push(vertex.x, vertex.y, vertex.z);
+      normals.push(normal.x, normal.y, normal.z);
+      colors.push(color.r, color.g, color.b);
+      uvs.push(quadUvs[i]![0], quadUvs[i]![1]);
+    }
+  }
+
+  private static buildGeometryFromHeightmap(heightmap: TerrainHeightmap): THREE.BufferGeometry {
+    const positions: number[] = [];
+    const normals: number[] = [];
+    const colors: number[] = [];
+    const uvs: number[] = [];
+    const normalUp = new THREE.Vector3(0, 1, 0);
+    const normalNorth = new THREE.Vector3(0, 0, -1);
+    const normalSouth = new THREE.Vector3(0, 0, 1);
+    const normalEast = new THREE.Vector3(1, 0, 0);
+    const normalWest = new THREE.Vector3(-1, 0, 0);
+    const getCell = (column: number, row: number): HeightmapCell | null => {
+      if (column < 0 || row < 0 || column >= heightmap.columns || row >= heightmap.rows) return null;
+      const index = row * heightmap.columns + column;
+      if (index < 0 || index >= heightmap.cells.length) return null;
+      return heightmap.cells[index] ?? null;
+    };
+
+    for (const cell of heightmap.cells) {
+      const topColor = ModelFactory.getTerrainTopColor(cell);
+      const sideColor = topColor
+        .clone()
+        .multiplyScalar(TERRAIN_SIDE_COLOR_BRIGHTNESS)
+        .offsetHSL(0, TERRAIN_SIDE_SATURATION_OFFSET, TERRAIN_SIDE_LIGHTNESS_OFFSET);
+      const x0 = cell.x - heightmap.cellWidth * 0.5;
+      const x1 = cell.x + heightmap.cellWidth * 0.5;
+      const z0 = cell.z - heightmap.cellDepth * 0.5;
+      const z1 = cell.z + heightmap.cellDepth * 0.5;
+      const topY = cell.quantizedHeight;
+
+      ModelFactory.pushQuad(
+        positions,
+        normals,
+        colors,
+        uvs,
+        new THREE.Vector3(x0, topY, z0),
+        new THREE.Vector3(x0, topY, z1),
+        new THREE.Vector3(x1, topY, z1),
+        new THREE.Vector3(x1, topY, z0),
+        normalUp,
+        topColor,
+        heightmap.cellWidth / TERRAIN_TEXTURE_REPEAT,
+        heightmap.cellDepth / TERRAIN_TEXTURE_REPEAT
+      );
+
+      // North wall (faces -Z): a→b goes up, a→d goes +X → cross product = -Z ✓
+      const northHeight = getCell(cell.column, cell.row - 1)?.quantizedHeight ?? TERRAIN_BASE_HEIGHT;
+      if (topY > northHeight) {
+        ModelFactory.pushQuad(
+          positions,
+          normals,
+          colors,
+          uvs,
+          new THREE.Vector3(x0, TERRAIN_BASE_HEIGHT, z0),
+          new THREE.Vector3(x0, topY, z0),
+          new THREE.Vector3(x1, topY, z0),
+          new THREE.Vector3(x1, TERRAIN_BASE_HEIGHT, z0),
+          normalNorth,
+          sideColor,
+          (topY - TERRAIN_BASE_HEIGHT) / TERRAIN_TEXTURE_REPEAT,
+          heightmap.cellWidth / TERRAIN_TEXTURE_REPEAT
+        );
+      }
+
+      // South wall (faces +Z): a→b goes up, a→d goes -X → cross product = +Z ✓
+      const southHeight = getCell(cell.column, cell.row + 1)?.quantizedHeight ?? TERRAIN_BASE_HEIGHT;
+      if (topY > southHeight) {
+        ModelFactory.pushQuad(
+          positions,
+          normals,
+          colors,
+          uvs,
+          new THREE.Vector3(x1, TERRAIN_BASE_HEIGHT, z1),
+          new THREE.Vector3(x1, topY, z1),
+          new THREE.Vector3(x0, topY, z1),
+          new THREE.Vector3(x0, TERRAIN_BASE_HEIGHT, z1),
+          normalSouth,
+          sideColor,
+          (topY - TERRAIN_BASE_HEIGHT) / TERRAIN_TEXTURE_REPEAT,
+          heightmap.cellWidth / TERRAIN_TEXTURE_REPEAT
+        );
+      }
+
+      // East wall (faces +X): a→b goes up, a→d goes +Z → cross product = +X ✓
+      const eastHeight = getCell(cell.column + 1, cell.row)?.quantizedHeight ?? TERRAIN_BASE_HEIGHT;
+      if (topY > eastHeight) {
+        ModelFactory.pushQuad(
+          positions,
+          normals,
+          colors,
+          uvs,
+          new THREE.Vector3(x1, TERRAIN_BASE_HEIGHT, z0),
+          new THREE.Vector3(x1, topY, z0),
+          new THREE.Vector3(x1, topY, z1),
+          new THREE.Vector3(x1, TERRAIN_BASE_HEIGHT, z1),
+          normalEast,
+          sideColor,
+          (topY - TERRAIN_BASE_HEIGHT) / TERRAIN_TEXTURE_REPEAT,
+          heightmap.cellDepth / TERRAIN_TEXTURE_REPEAT
+        );
+      }
+
+      // West wall (faces -X): a→b goes up, a→d goes -Z → cross product = -X ✓
+      const westHeight = getCell(cell.column - 1, cell.row)?.quantizedHeight ?? TERRAIN_BASE_HEIGHT;
+      if (topY > westHeight) {
+        ModelFactory.pushQuad(
+          positions,
+          normals,
+          colors,
+          uvs,
+          new THREE.Vector3(x0, TERRAIN_BASE_HEIGHT, z1),
+          new THREE.Vector3(x0, topY, z1),
+          new THREE.Vector3(x0, topY, z0),
+          new THREE.Vector3(x0, TERRAIN_BASE_HEIGHT, z0),
+          normalWest,
+          sideColor,
+          (topY - TERRAIN_BASE_HEIGHT) / TERRAIN_TEXTURE_REPEAT,
+          heightmap.cellDepth / TERRAIN_TEXTURE_REPEAT
+        );
+      }
+    }
+
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+    geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+    geometry.computeBoundingBox();
+    geometry.computeBoundingSphere();
+    return geometry;
+  }
+
   static createBuilding(typeId: string, level: number = 1): THREE.Group {
     const group = new THREE.Group();
     const mat = RetroMaterials.forBuilding(typeId);
@@ -372,9 +644,8 @@ export class ModelFactory {
   }
 
   static createSeaPlane(width: number, depth: number): THREE.Mesh {
-    // Slightly rippled sea with vertex color variation for a less flat look
-    const segs = 12;
-    const geo = new THREE.PlaneGeometry(width, depth, segs, segs);
+    const segments = 72;
+    const geo = new THREE.PlaneGeometry(width, depth, segments, segments);
     geo.rotateX(-Math.PI / 2);
     const pos = geo.attributes['position'] as THREE.BufferAttribute | undefined;
     if (pos) {
@@ -383,214 +654,89 @@ export class ModelFactory {
       for (let i = 0; i < count; i++) {
         const x = pos.getX(i);
         const z = pos.getZ(i);
-        // Subtle depth gradient: deeper (darker) toward center-ish
-        const dist = Math.sqrt((x / (width * 0.5)) ** 2 + (z / (depth * 0.5)) ** 2);
-        const shallow = Math.max(0, 1 - dist * 0.7);
-        const r = 0.02 + shallow * 0.02;
-        const g = 0.1 + shallow * 0.06;
-        const b = 0.2 + shallow * 0.08;
-        colors[i * 3] = r;
-        colors[i * 3 + 1] = g;
-        colors[i * 3 + 2] = b;
+        const radial = Math.min(1, Math.sqrt((x / (width * 0.5)) ** 2 + (z / (depth * 0.5)) ** 2));
+        const ripple = Math.sin(x * 0.045 + z * 0.025) * 0.08 + Math.cos(z * 0.06 - x * 0.03) * 0.05;
+        pos.setY(i, -0.42 + ripple * 0.22);
+        const deep = 1 - radial * 0.75;
+        colors[i * 3] = 0.04 + deep * 0.06;
+        colors[i * 3 + 1] = 0.18 + deep * 0.14;
+        colors[i * 3 + 2] = 0.28 + deep * 0.24;
       }
+      pos.needsUpdate = true;
       geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+      geo.computeVertexNormals();
     }
+
+    const waterTexture = ModelFactory.getWaterTexture();
+    waterTexture.repeat.set(18, 18);
     const mat = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
       vertexColors: true,
-      roughness: 0.25,
-      metalness: 0.15
+      map: waterTexture,
+      transparent: true,
+      opacity: 0.9,
+      emissive: new THREE.Color(0x0f4a63),
+      emissiveIntensity: 0.22,
+      roughness: 0.22,
+      metalness: 0.28
     });
     const mesh = new THREE.Mesh(geo, mat);
-    mesh.position.y = -0.35;
+    mesh.position.y = -3.5;
     mesh.receiveShadow = true;
     return mesh;
-  }
-
-  /**
-   * World-space 1024×1024 terrain texture.  Every pixel is coloured by the actual
-   * terrain biome at that world position — sandy shores, lush grass, rocky peaks, etc.
-   * No tiling artefacts; the texture maps 1:1 across the whole terrain mesh.
-   */
-  private static buildTerrainDetailTexture(seed: number, width: number, depth: number): THREE.CanvasTexture {
-    const TEX  = 1024;
-    const GRID = 64;
-
-    // Phase 1: sample terrain at GRID×GRID
-    const heights   = new Float32Array(GRID * GRID);
-    const moistures = new Float32Array(GRID * GRID);
-    const slopes    = new Float32Array(GRID * GRID);
-    const flows     = new Float32Array(GRID * GRID);
-    for (let gi = 0; gi < GRID; gi++) {
-      for (let gj = 0; gj < GRID; gj++) {
-        const wx = (gj / (GRID - 1) - 0.5) * width;
-        const wz = (gi / (GRID - 1) - 0.5) * depth;
-        const sp = sampleTerrain(seed, wx, wz, width, depth);
-        const id = gi * GRID + gj;
-        heights[id]   = sp.height;
-        moistures[id] = sp.moisture;
-        slopes[id]    = sp.slope;
-        flows[id]     = sp.flow;
-      }
-    }
-
-    // Phase 2: per-pixel biome ImageData
-    const canvas = document.createElement('canvas');
-    canvas.width  = TEX;
-    canvas.height = TEX;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return new THREE.CanvasTexture(canvas);
-
-    const imgData = ctx.createImageData(TEX, TEX);
-    const pxData  = imgData.data;
-
-    const h2d = (ix: number, iz: number, sd: number): number => {
-      let hv = Math.imul(ix, 374761393) ^ Math.imul(iz, 668265263) ^ Math.imul(sd, 700001);
-      hv = Math.imul(hv ^ (hv >>> 13), 1274126177);
-      hv ^= hv >>> 16;
-      return (hv >>> 0) / 4294967295;
-    };
-    const vn = (x: number, z: number, sd: number): number => {
-      const x0 = x | 0, z0 = z | 0;
-      const xf = x - x0, zf = z - z0;
-      const ux = xf * xf * (3 - 2 * xf);
-      const uz = zf * zf * (3 - 2 * zf);
-      const n00 = h2d(x0,     z0,     sd), n10 = h2d(x0 + 1, z0,     sd);
-      const n01 = h2d(x0,     z0 + 1, sd), n11 = h2d(x0 + 1, z0 + 1, sd);
-      return n00 + (n10 - n00) * ux + (n01 - n00) * uz + (n11 - n10 - n01 + n00) * ux * uz;
-    };
-    const clamp = (v: number, lo: number, hi: number) => (v < lo ? lo : v > hi ? hi : v);
-
-    for (let py = 0; py < TEX; py++) {
-      const v    = py / (TEX - 1);
-      const gz   = v * (GRID - 1);
-      const gz0  = Math.min(gz | 0, GRID - 2);
-      const tz   = gz - gz0;
-      const omtz = 1 - tz;
-      for (let px = 0; px < TEX; px++) {
-        const u    = px / (TEX - 1);
-        const gx   = u * (GRID - 1);
-        const gx0  = Math.min(gx | 0, GRID - 2);
-        const tx   = gx - gx0;
-        const omtx = 1 - tx;
-        const i00  = gz0 * GRID + gx0;
-        const w00 = omtx * omtz, w10 = tx * omtz, w01 = omtx * tz, w11 = tx * tz;
-        const h  = heights[i00]   * w00 + heights[i00 + 1]        * w10 + heights[i00 + GRID]   * w01 + heights[i00 + GRID + 1]   * w11;
-        const m  = moistures[i00] * w00 + moistures[i00 + 1]      * w10 + moistures[i00 + GRID] * w01 + moistures[i00 + GRID + 1] * w11;
-        const sl = slopes[i00]    * w00 + slopes[i00 + 1]         * w10 + slopes[i00 + GRID]    * w01 + slopes[i00 + GRID + 1]    * w11;
-        const fl = flows[i00]     * w00 + flows[i00 + 1]          * w10 + flows[i00 + GRID]     * w01 + flows[i00 + GRID + 1]     * w11;
-        const wx  = u * width;
-        const wz  = v * depth;
-        const mc  = vn(wx * 0.22,      wz * 0.22,      seed);
-        const mf  = vn(wx * 1.3 + 500, wz * 1.3 + 500, seed + 31);
-        const micro = mc * 0.6 + mf * 0.4;
-        let r: number, g: number, b: number;
-        if (h < 0.0) {
-          r = clamp( 62 + micro * 30, 0, 255);
-          g = clamp( 82 + micro * 28, 0, 255);
-          b = clamp( 72 + micro * 22, 0, 255);
-        } else if (h < 0.08) {
-          r = clamp(195 + micro * 50 - (1 - m) * 20, 0, 255);
-          g = clamp(170 + micro * 38 - (1 - m) * 14, 0, 255);
-          b = clamp(112 + micro * 28 - (1 - m) * 10, 0, 255);
-        } else if (h < 0.55) {
-          if (fl > 0.48) {
-            r = clamp( 78 + micro * 30 + m * 12, 0, 255);
-            g = clamp( 98 + micro * 28 + m * 18, 0, 255);
-            b = clamp( 62 + micro * 18 + m *  8, 0, 255);
-          } else if (m > 0.52) {
-            r = clamp( 55 + micro * 30 + m * 10, 0, 255);
-            g = clamp(128 + micro * 38 + m * 22, 0, 255);
-            b = clamp( 42 + micro * 18 + m *  8, 0, 255);
-          } else {
-            r = clamp(152 + micro * 38, 0, 255);
-            g = clamp(132 + micro * 30, 0, 255);
-            b = clamp( 70 + micro * 22, 0, 255);
-          }
-        } else if (h < 1.1) {
-          const t = (h - 0.55) / 0.55;
-          r = clamp(108 + t * 52 + micro * 32, 0, 255);
-          g = clamp( 98 + t * 30 + micro * 26, 0, 255);
-          b = clamp( 68 + t * 38 + micro * 20, 0, 255);
-        } else if (h < 1.7) {
-          r = clamp(155 + micro * 42, 0, 255);
-          g = clamp(145 + micro * 36, 0, 255);
-          b = clamp(130 + micro * 30, 0, 255);
-        } else {
-          r = clamp(225 + micro * 25, 0, 255);
-          g = clamp(230 + micro * 20, 0, 255);
-          b = clamp(240 + micro * 14, 0, 255);
-        }
-        if (sl > 0.40) {
-          const sr = clamp((sl - 0.40) / 0.45, 0, 1);
-          r = r + (clamp(148 + micro * 38, 0, 255) - r) * sr;
-          g = g + (clamp(138 + micro * 32, 0, 255) - g) * sr;
-          b = b + (clamp(122 + micro * 26, 0, 255) - b) * sr;
-        }
-        const idx = (py * TEX + px) << 2;
-        pxData[idx]     = r;
-        pxData[idx + 1] = g;
-        pxData[idx + 2] = b;
-        pxData[idx + 3] = 255;
-      }
-    }
-    ctx.putImageData(imgData, 0, 0);
-
-    // Phase 3: multiply-blend pebble/grain overlay
-    const rng = (i: number): number => {
-      let hv = Math.imul(i, 374761393) ^ Math.imul(seed, 700001);
-      hv = Math.imul(hv ^ (hv >>> 13), 1274126177);
-      hv ^= hv >>> 16;
-      return (hv >>> 0) / 4294967295;
-    };
-    ctx.globalCompositeOperation = 'multiply';
-    for (let i = 0; i < 3000; i++) {
-      const ppx = rng(i * 6 + 10000) * TEX;
-      const ppy = rng(i * 6 + 10001) * TEX;
-      const rx  = 1.0 + rng(i * 6 + 10002) * 4.5;
-      const ry  = rx * (0.40 + rng(i * 6 + 10003) * 0.55);
-      const ang = rng(i * 6 + 10004) * Math.PI;
-      const lum = 0.72 + rng(i * 6 + 10005) * 0.25;
-      const li  = Math.floor(lum * 255);
-      ctx.fillStyle = `rgb(${li},${li},${li})`;
-      ctx.beginPath();
-      ctx.ellipse(ppx, ppy, rx, ry, ang, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    for (let i = 0; i < 18000; i++) {
-      const ppx = rng(i * 3 + 60000) * TEX;
-      const ppy = rng(i * 3 + 60001) * TEX;
-      const lum = 0.82 + rng(i * 3 + 60002) * 0.18;
-      const li  = Math.floor(lum * 255);
-      ctx.fillStyle = `rgba(${li},${li},${li},0.45)`;
-      ctx.fillRect(ppx, ppy, 1.2, 1.2);
-    }
-    ctx.globalCompositeOperation = 'source-over';
-    const tex = new THREE.CanvasTexture(canvas);
-    tex.wrapS = THREE.ClampToEdgeWrapping;
-    tex.wrapT = THREE.ClampToEdgeWrapping;
-    return tex;
   }
 
   static createTerrain(width: number, depth: number, divisions: number, seed: number = 1337): THREE.Mesh {
-    const geo = new THREE.PlaneGeometry(width, depth, divisions, divisions);
-    geo.rotateX(-Math.PI / 2);
-    const pos = geo.attributes['position'] as THREE.BufferAttribute | undefined;
-    if (pos) {
-      for (let i = 0; i < pos.count; i++) {
-        pos.setY(i, sampleTerrainHeight(seed, pos.getX(i), pos.getZ(i), width, depth));
-      }
-      pos.needsUpdate = true;
-      geo.computeVertexNormals();
-    }
-    const worldTex = ModelFactory.buildTerrainDetailTexture(seed, width, depth);
+    const columns = Math.max(divisions * 2, MIN_TERRAIN_COLUMNS);
+    const rows = Math.max(Math.round((depth / width) * columns), MIN_TERRAIN_ROWS);
+    const heightmap = buildTerrainHeightmap(seed, width, depth, columns, rows, VOXEL_HEIGHT);
+    const geo = ModelFactory.buildGeometryFromHeightmap(heightmap);
+    const terrainTexture = ModelFactory.getTerrainTexture();
+    terrainTexture.repeat.set(22, 22);
     const mat = new THREE.MeshStandardMaterial({
-      map: worldTex,
-      roughness: 0.88,
-      metalness: 0.0
+      color: 0xffffff,
+      vertexColors: true,
+      map: terrainTexture,
+      flatShading: true,
+      emissive: new THREE.Color(0x111111),
+      emissiveIntensity: 0.16,
+      roughness: 0.92,
+      metalness: 0.04
     });
     const mesh = new THREE.Mesh(geo, mat);
+    mesh.castShadow = true;
     mesh.receiveShadow = true;
+    mesh.userData['heightmap'] = heightmap;
     return mesh;
+  }
+
+  static flattenTerrainAt(terrainMesh: THREE.Mesh, worldX: number, worldZ: number, radius: number = 5): void {
+    const heightmap = terrainMesh.userData['heightmap'] as TerrainHeightmap | undefined;
+    if (!heightmap) return;
+
+    const centerCol = Math.min(heightmap.columns - 1, Math.max(0, Math.floor((worldX + heightmap.width * 0.5) / heightmap.cellWidth)));
+    const centerRow = Math.min(heightmap.rows - 1, Math.max(0, Math.floor((worldZ + heightmap.depth * 0.5) / heightmap.cellDepth)));
+    const centerCell = heightmap.cells[centerRow * heightmap.columns + centerCol];
+    if (!centerCell) return;
+    const targetHeight = centerCell.quantizedHeight;
+
+    const colRadius = Math.ceil(radius / heightmap.cellWidth);
+    const rowRadius = Math.ceil(radius / heightmap.cellDepth);
+    for (let dr = -rowRadius; dr <= rowRadius; dr++) {
+      for (let dc = -colRadius; dc <= colRadius; dc++) {
+        const col = centerCol + dc;
+        const row = centerRow + dr;
+        if (col < 0 || row < 0 || col >= heightmap.columns || row >= heightmap.rows) continue;
+        const cell = heightmap.cells[row * heightmap.columns + col];
+        if (!cell) continue;
+        const dist = Math.sqrt((cell.x - worldX) ** 2 + (cell.z - worldZ) ** 2);
+        if (dist <= radius) cell.quantizedHeight = targetHeight;
+      }
+    }
+
+    const newGeo = ModelFactory.buildGeometryFromHeightmap(heightmap);
+    terrainMesh.geometry.dispose();
+    terrainMesh.geometry = newGeo;
   }
 
   static createGridOverlay(width: number, depth: number, step: number = 10, seed: number = 1337): THREE.LineSegments {

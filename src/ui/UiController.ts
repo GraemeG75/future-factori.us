@@ -385,15 +385,27 @@ export class UiController {
     });
     document.getElementById('btn-achievements')?.addEventListener('click', () => {
       const screen = document.getElementById('achievements-screen');
-      if (screen?.classList.contains('hidden')) { this.openAchievements(); } else { this.closeAchievements(); }
+      if (screen?.classList.contains('hidden')) {
+        this.openAchievements();
+      } else {
+        this.closeAchievements();
+      }
     });
     document.getElementById('btn-scenarios')?.addEventListener('click', () => {
       const screen = document.getElementById('scenarios-screen');
-      if (screen?.classList.contains('hidden')) { this.openScenarios(); } else { this.closeScenarios(); }
+      if (screen?.classList.contains('hidden')) {
+        this.openScenarios();
+      } else {
+        this.closeScenarios();
+      }
     });
     document.getElementById('btn-finance')?.addEventListener('click', () => {
       const screen = document.getElementById('finance-screen');
-      if (screen?.classList.contains('hidden')) { this.openFinance(); } else { this.closeFinance(); }
+      if (screen?.classList.contains('hidden')) {
+        this.openFinance();
+      } else {
+        this.closeFinance();
+      }
     });
     document.getElementById('btn-menu')?.addEventListener('click', () => {
       const screen = document.getElementById('save-screen');
@@ -460,7 +472,13 @@ export class UiController {
       const state = this.game.getState();
       if (!state.unlockedAchievements.includes('save_exported')) {
         state.unlockedAchievements.push('save_exported');
-        state.alerts.push({ id: crypto.randomUUID(), tick: state.tick, type: 'success', messageKey: 'alerts.achievement_unlocked', params: ['achievements.save_exported.name', '💾'] });
+        state.alerts.push({
+          id: crypto.randomUUID(),
+          tick: state.tick,
+          type: 'success',
+          messageKey: 'alerts.achievement_unlocked',
+          params: ['achievements.save_exported.name', '💾']
+        });
       }
       this.addAlert('success', 'Save exported as file.');
     });
@@ -678,8 +696,13 @@ export class UiController {
     if (statusEl) {
       let statusText = 'Status: Active';
       let statusColor = '';
-      if (!building.isPowered) { statusText = 'Status: No Power'; statusColor = '#ff4444'; }
-      else if (building.health <= 0) { statusText = 'Status: Broken'; statusColor = '#ff6600'; }
+      if (!building.isPowered) {
+        statusText = 'Status: No Power';
+        statusColor = '#ff4444';
+      } else if (building.health <= 0) {
+        statusText = 'Status: Broken';
+        statusColor = '#ff6600';
+      }
       statusEl.textContent = statusText;
       statusEl.style.color = statusColor;
     }
@@ -796,9 +819,7 @@ export class UiController {
       const atFullHealth = building.health >= 100;
       const canAffordRepair = state.cash >= repairCost;
       repairBtn.disabled = atFullHealth || !canAffordRepair;
-      repairBtn.textContent = atFullHealth
-        ? '🔧 Full Health'
-        : `🔧 Repair ($${Math.floor(repairCost)})`;
+      repairBtn.textContent = atFullHealth ? '🔧 Full Health' : `🔧 Repair ($${Math.floor(repairCost)})`;
     }
   }
 
@@ -846,9 +867,10 @@ export class UiController {
         const specBadge = tech.specialization
           ? `<div class="tech-spec-badge spec-${tech.specialization}">${tech.specialization.toUpperCase()}</div>`
           : '';
-        const synergyLabel = tech.synergyWith && tech.synergyBonus
-          ? `<div class="tech-synergy">⚡ Synergy: +${Math.round((tech.synergyBonus - 1) * 100)}% production</div>`
-          : '';
+        const synergyLabel =
+          tech.synergyWith && tech.synergyBonus
+            ? `<div class="tech-synergy">⚡ Synergy: +${Math.round((tech.synergyBonus - 1) * 100)}% production</div>`
+            : '';
 
         card.innerHTML = `
           <div class="tech-name">${this.i18n.t(tech.nameKey)}</div>
@@ -872,7 +894,8 @@ export class UiController {
           card.addEventListener('click', () => {
             const ok = this.game.startResearch(tech.id);
             if (!ok) {
-              this.addAlert('warning', this.i18n.t('messages.insufficientFunds'));
+              const hasResearchCenter = state.buildings.some((building) => building.typeId === 'research_center');
+              this.addAlert('warning', hasResearchCenter ? this.i18n.t('messages.insufficientFunds') : 'Build a Research Center first.');
             } else {
               this.addAlert('info', `Researching: ${this.i18n.t(tech.nameKey)}`);
             }
@@ -1026,9 +1049,7 @@ export class UiController {
 
         const row = document.createElement('div');
         row.className = 'route-row';
-        const throughput = route.capacity > 0
-          ? `${((route.currentLoad / route.capacity) * 100).toFixed(0)}%`
-          : '0%';
+        const throughput = route.capacity > 0 ? `${((route.currentLoad / route.capacity) * 100).toFixed(0)}%` : '0%';
         row.innerHTML = `
           <span class="rr-from">${fromName}</span>
           <span class="rr-arrow">→</span>
@@ -1238,8 +1259,56 @@ export class UiController {
     list.innerHTML = '';
 
     const active = ContractSystem.getActiveContracts(state);
-    if (active.length === 0) {
-      list.innerHTML = '<div class="finance-empty">No active contracts. Check back soon!</div>';
+    const offered = ContractSystem.getOfferedContracts(state);
+    if (active.length === 0 && offered.length === 0) {
+      list.innerHTML = '<div class="finance-empty">No contracts available. Check back soon!</div>';
+    }
+
+    // --- Offered contracts (accept or ignore) ---
+    if (offered.length > 0) {
+      const offerLabel = document.createElement('div');
+      offerLabel.className = 'panel-section-label';
+      offerLabel.textContent = 'AVAILABLE OFFERS';
+      list.appendChild(offerLabel);
+    }
+    for (const contract of offered) {
+      const res = RESOURCES_MAP[contract.resourceId];
+      const resName = res ? `${res.icon} ${this.i18n.t(res.nameKey)}` : contract.resourceId;
+      const partner = TRADE_PARTNERS_MAP[contract.partnerId];
+      const partnerName = partner ? this.i18n.t(partner.nameKey) : contract.partnerId;
+      const ticksLeft = ContractSystem.getContractTicksRemaining(state, contract);
+      const secsLeft = Math.ceil(ticksLeft / 20);
+
+      const card = document.createElement('div');
+      card.className = 'contract-card offered';
+      card.innerHTML = `
+        <div class="contract-header">
+          <span class="contract-partner">${partnerName}</span>
+          <span class="contract-timer ${secsLeft < 60 ? 'urgent' : ''}">⏱ ${secsLeft}s</span>
+        </div>
+        <div class="contract-resource">${resName} ×${contract.amountRequired}</div>
+        <div class="contract-rewards">
+          <span class="contract-reward">✅ $${contract.rewardCash.toLocaleString()}</span>
+          <span class="contract-penalty">❌ -$${contract.penaltyCash.toLocaleString()} if accepted &amp; failed</span>
+        </div>
+      `;
+      const acceptBtn = document.createElement('button');
+      acceptBtn.className = 'action-btn';
+      acceptBtn.textContent = 'Accept Contract';
+      acceptBtn.addEventListener('click', () => {
+        this.game.acceptContract(contract.id);
+        this.renderContractsTab(this.game.getState());
+      });
+      card.appendChild(acceptBtn);
+      list.appendChild(card);
+    }
+
+    if (active.length > 0) {
+      const activeLabel = document.createElement('div');
+      activeLabel.className = 'panel-section-label';
+      activeLabel.style.marginTop = offered.length > 0 ? '12px' : '';
+      activeLabel.textContent = 'ACTIVE';
+      list.appendChild(activeLabel);
     }
 
     for (const contract of active) {
@@ -1287,7 +1356,7 @@ export class UiController {
     }
 
     // Recently finished contracts
-    const finished = state.contracts.filter((c) => c.status !== 'active');
+    const finished = state.contracts.filter((c) => c.status === 'completed' || c.status === 'failed');
     if (finished.length > 0) {
       const label = document.createElement('div');
       label.className = 'panel-section-label';
@@ -1410,11 +1479,7 @@ export class UiController {
       const secsLeft = Math.ceil(ticksLeft / 20);
       const res = event.affectedResourceId ? RESOURCES_MAP[event.affectedResourceId] : null;
       const partner = event.affectedPartnerId ? TRADE_PARTNERS_MAP[event.affectedPartnerId] : null;
-      const target = res
-        ? `${res.icon} ${this.i18n.t(res.nameKey)}`
-        : partner
-          ? this.i18n.t(partner.nameKey)
-          : 'All markets';
+      const target = res ? `${res.icon} ${this.i18n.t(res.nameKey)}` : partner ? this.i18n.t(partner.nameKey) : 'All markets';
       const modPct = Math.round((event.modifier - 1) * 100);
       const isPositive = event.modifier >= 1;
 
@@ -1444,7 +1509,7 @@ export class UiController {
       'factory-buttons': ['factory', 'refinery'],
       'infra-buttons': ['storage', 'research', 'power', 'trade'],
       'cooling-buttons': ['infrastructure'],
-      'prototype-buttons': ['prototype'],
+      'prototype-buttons': ['prototype']
     };
 
     // Build tooltip element (shared, positioned on mousemove)
@@ -1480,9 +1545,7 @@ export class UiController {
 
         btn.addEventListener('mouseenter', () => {
           const tt = ensureTooltip();
-          const powerLabel = bt.basePowerUsage < 0
-            ? `⚡ Produces ${Math.abs(bt.basePowerUsage)}`
-            : `⚡ Uses ${bt.basePowerUsage}`;
+          const powerLabel = bt.basePowerUsage < 0 ? `⚡ Produces ${Math.abs(bt.basePowerUsage)}` : `⚡ Uses ${bt.basePowerUsage}`;
           tt.innerHTML = `
             <div class="tt-name">${this.i18n.t(bt.nameKey)}</div>
             <div class="tt-cost">💰 $${bt.baseCost.toLocaleString()}</div>
@@ -1674,7 +1737,7 @@ export class UiController {
       research: '#4488ff',
       trade: '#cc44ff',
       prototype: '#00ffff',
-      infrastructure: '#88ccff',
+      infrastructure: '#88ccff'
     };
 
     for (const building of state.buildings) {
@@ -1691,7 +1754,13 @@ export class UiController {
       this.minimapUnlocked = true;
       if (!state.unlockedAchievements.includes('minimap_watcher')) {
         state.unlockedAchievements.push('minimap_watcher');
-        state.alerts.push({ id: crypto.randomUUID(), tick: state.tick, type: 'success', messageKey: 'alerts.achievement_unlocked', params: ['achievements.minimap_watcher.name', '🗺️'] });
+        state.alerts.push({
+          id: crypto.randomUUID(),
+          tick: state.tick,
+          type: 'success',
+          messageKey: 'alerts.achievement_unlocked',
+          params: ['achievements.minimap_watcher.name', '🗺️']
+        });
       }
     }
   }
@@ -1739,9 +1808,7 @@ export class UiController {
       const desc = this.i18n.t(scenario.descriptionKey);
       const objCount = scenario.objectives.length;
       const multiplier = scenario.scoreMultiplier;
-      const timeLimit = scenario.timeLimitTicks !== null
-        ? `${Math.round(scenario.timeLimitTicks / 20)}s`
-        : '∞';
+      const timeLimit = scenario.timeLimitTicks !== null ? `${Math.round(scenario.timeLimitTicks / 20)}s` : '∞';
 
       card.innerHTML = `
         <div class="scenario-card-header">

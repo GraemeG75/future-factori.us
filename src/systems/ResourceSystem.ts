@@ -1,9 +1,7 @@
 import { RESOURCES_MAP } from '../data/resources';
 import { BUILDINGS_MAP } from '../data/buildings';
 import type { GameState } from '../game/GameState';
-
-/** Base global inventory capacity multiplier for storage depots (per level). */
-const STORAGE_DEPOT_CAPACITY_PER_LEVEL = 100;
+import { STORAGE_DEPOT_CAPACITY_PER_LEVEL } from '../consts/buildings';
 
 /**
  * Returns the current amount of a resource in the global inventory.

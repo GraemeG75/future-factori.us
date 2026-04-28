@@ -3,9 +3,8 @@ import type { GameState, BuildingInstance, RouteInstance, ResourceSpot } from '.
 import { ModelFactory } from '../graphics/ModelFactory';
 import { RetroMaterials } from '../graphics/RetroMaterials';
 import { BuildingAnimations } from '../graphics/BuildingAnimations';
-
-/** Number of cargo capsules spread across each route. */
-const CARGO_COUNT = 3;
+import { BUILDINGS_MAP } from '../data/buildings';
+import { CARGO_COUNT } from '../consts/buildings';
 
 export class World {
   private scene: THREE.Scene;
@@ -83,6 +82,9 @@ export class World {
     group.position.set(instance.position.x, instance.position.y, instance.position.z);
     group.rotation.y = instance.rotation;
     this.scene.add(group);
+    if (BUILDINGS_MAP[instance.typeId]?.category === 'harvester' && this.terrain instanceof THREE.Mesh) {
+      ModelFactory.flattenTerrainAt(this.terrain, instance.position.x, instance.position.z);
+    }
     this.buildingMeshes.set(instance.id, group);
     this.buildingAnimations.register(instance.id, group);
     return group;

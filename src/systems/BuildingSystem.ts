@@ -1,16 +1,7 @@
 import { BUILDINGS_MAP } from '../data/buildings';
 import type { BuildingInstance, GameState, ResourceSpot } from '../game/GameState';
 import { sampleTerrainHeight } from '../game/TerrainGeneration';
-
-/** Base harvest rate in units per tick at building level 1. */
-const BASE_HARVEST_RATE = 0.1;
-
-/** Max distance (world units) from a spot to snap a harvester placement. */
-const HARVESTER_SNAP_RADIUS = 8;
-
-/** Minimum distance (world units) between any two non-harvester buildings. */
-const MIN_BUILDING_SEPARATION = 4;
-const TERRAIN_HEIGHT_PRECISION = 100;
+import { BASE_HARVEST_RATE, HARVESTER_SNAP_RADIUS, MIN_BUILDING_SEPARATION, TERRAIN_HEIGHT_PRECISION } from '../consts/buildings';
 
 function getTerrainAnchoredPosition(state: GameState, position: { x: number; y: number; z: number }) {
   return {

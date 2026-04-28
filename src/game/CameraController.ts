@@ -1,13 +1,5 @@
 import * as THREE from 'three';
-
-const MIN_RADIUS = 5;
-const MAX_RADIUS = 220;
-const MIN_PHI = 0.1;
-const MAX_PHI = Math.PI / 2 - 0.1;
-const PAN_SPEED = 10;
-const ORBIT_KEY_SPEED = 1.0;
-const LERP_SPEED = 5;
-const ZOOM_SENSITIVITY = 0.001;
+import { MIN_RADIUS, MAX_RADIUS, MIN_PHI, MAX_PHI, PAN_SPEED, ORBIT_KEY_SPEED, LERP_SPEED, ZOOM_SENSITIVITY } from '../consts/camera';
 
 export class CameraController {
   private camera: THREE.PerspectiveCamera;

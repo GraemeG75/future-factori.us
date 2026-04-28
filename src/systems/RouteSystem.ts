@@ -1,11 +1,7 @@
 import type { RouteInstance, GameState } from '../game/GameState';
 import { BUILDINGS_MAP } from '../data/buildings';
 import { addResource } from './ResourceSystem';
-
-/** Delivery travel does not deduct passive cash. */
-const DEFAULT_COST_PER_TRIP = 0;
-/** Minimum travel distance to avoid division by zero. */
-const MIN_DISTANCE = 1;
+import { DEFAULT_COST_PER_TRIP, MIN_DISTANCE } from '../consts/routes';
 
 /**
  * Creates a new transport route between two buildings.

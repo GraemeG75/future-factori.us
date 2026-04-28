@@ -18,12 +18,10 @@ import * as EventSystem from '../systems/EventSystem';
 import * as SaveSystem from '../systems/SaveSystem';
 import * as ScenarioSystem from '../systems/ScenarioSystem';
 import * as HeatSystem from '../systems/HeatSystem';
-import { TICK_RATE } from '../systems/EconomySystem';
 import { BUILDINGS_MAP } from '../data/buildings';
 import { ACHIEVEMENTS_MAP } from '../data/achievements';
-import { LOAN_TIERS } from '../systems/LoanSystem';
-
-const TICK_INTERVAL = 1 / TICK_RATE;
+import { TICK_RATE, TICK_INTERVAL, SHADOW_BIAS, SHADOW_NORMAL_BIAS } from '../consts/simulation';
+import { LOAN_TIERS } from '../consts/loans';
 
 export class Game {
   private renderer: THREE.WebGLRenderer;
@@ -64,18 +62,24 @@ export class Game {
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.setPixelRatio(window.devicePixelRatio);
     this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.shadowMap.type = THREE.PCFShadowMap;
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = 1.15;
+    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
 
-    this.scene.background = new THREE.Color(0x7ab4d8);
-    this.scene.fog = new THREE.FogExp2(0x9dc8e0, 0.004);
+    this.scene.background = new THREE.Color(0x8db4da);
+    this.scene.fog = new THREE.FogExp2(0x7ca5d0, 0.0033);
 
     this.camera.position.set(20, 30, 20);
     this.camera.lookAt(0, 0, 0);
 
-    const ambient = new THREE.AmbientLight(0x8899bb, 0.75);
+    const ambient = new THREE.AmbientLight(0x6d78a8, 0.38);
     this.scene.add(ambient);
 
-    const dirLight = new THREE.DirectionalLight(0xfff4e0, 1.8);
+    const hemisphere = new THREE.HemisphereLight(0xa8d8ff, 0x22311e, 0.9);
+    this.scene.add(hemisphere);
+
+    const dirLight = new THREE.DirectionalLight(0xfff2d6, 2.15);
     dirLight.position.set(50, 80, 30);
     dirLight.castShadow = true;
     dirLight.shadow.mapSize.width = 4096;
@@ -86,7 +90,17 @@ export class Game {
     dirLight.shadow.camera.right = 250;
     dirLight.shadow.camera.top = 250;
     dirLight.shadow.camera.bottom = -250;
+    dirLight.shadow.bias = SHADOW_BIAS;
+    dirLight.shadow.normalBias = SHADOW_NORMAL_BIAS;
     this.scene.add(dirLight);
+
+    const rimLight = new THREE.DirectionalLight(0x8ed8ff, 0.5);
+    rimLight.position.set(-90, 45, -30);
+    this.scene.add(rimLight);
+
+    const bloomLight = new THREE.PointLight(0x6dcbff, 1.1, 320, 2);
+    bloomLight.position.set(0, 40, 0);
+    this.scene.add(bloomLight);
 
     this.applyState(this.state);
     this.render();
@@ -296,6 +310,12 @@ export class Game {
 
   fulfillContract(contractId: string): boolean {
     const ok = ContractSystem.fulfillContract(this.state, contractId);
+    if (ok && this.onStateChange) this.onStateChange(this.state);
+    return ok;
+  }
+
+  acceptContract(contractId: string): boolean {
+    const ok = ContractSystem.acceptContract(this.state, contractId);
     if (ok && this.onStateChange) this.onStateChange(this.state);
     return ok;
   }

@@ -1,37 +1,14 @@
 import type { MarketEvent, GameState } from '../game/GameState';
 import { RESOURCES } from '../data/resources';
 import { TRADE_PARTNERS } from '../data/tradePartners';
-
-/** How often (in ticks) to potentially generate a market event. */
-const EVENT_CHECK_INTERVAL = 1200; // every 60 s
-/** Chance (0-1) of generating an event when checked. */
-const EVENT_CHANCE = 0.35;
-/** Maximum simultaneous active market events. */
-const MAX_ACTIVE_EVENTS = 3;
-
-const EVENT_TEMPLATES: ReadonlyArray<{
-  messageKey: string;
-  modifier: number;
-  durationTicks: number;
-  targetsResource: boolean;
-  targetsPartner: boolean;
-}> = [
-  { messageKey: 'events.trade_embargo', modifier: 0.5, durationTicks: 2400, targetsResource: false, targetsPartner: true },
-  { messageKey: 'events.resource_boom', modifier: 1.8, durationTicks: 1800, targetsResource: true, targetsPartner: false },
-  { messageKey: 'events.market_crash', modifier: 0.6, durationTicks: 3000, targetsResource: false, targetsPartner: false },
-  { messageKey: 'events.subsidy', modifier: 1.4, durationTicks: 1200, targetsResource: true, targetsPartner: false },
-  { messageKey: 'events.tech_demand_surge', modifier: 2.0, durationTicks: 900, targetsResource: true, targetsPartner: false },
-  { messageKey: 'events.pollution_fine', modifier: 0.7, durationTicks: 1800, targetsResource: false, targetsPartner: false },
-];
+import { EVENT_CHECK_INTERVAL, EVENT_CHANCE, MAX_ACTIVE_EVENTS, EVENT_TEMPLATES } from '../consts/events';
 
 /**
  * Advances market event logic: expires old events and randomly spawns new ones.
  */
 export function tick(state: GameState): void {
   // Remove events that have expired
-  state.activeMarketEvents = state.activeMarketEvents.filter(
-    (e) => state.tick < e.startTick + e.durationTicks,
-  );
+  state.activeMarketEvents = state.activeMarketEvents.filter((e) => state.tick < e.startTick + e.durationTicks);
 
   if (state.tick % EVENT_CHECK_INTERVAL !== 0) return;
   if (state.activeMarketEvents.length >= MAX_ACTIVE_EVENTS) return;
@@ -49,9 +26,7 @@ export function tick(state: GameState): void {
   }
 
   if (template.targetsPartner && TRADE_PARTNERS.length > 0) {
-    const availablePartners = TRADE_PARTNERS.filter(
-      (p) => !p.unlockRequirement || state.completedResearch.includes(p.unlockRequirement),
-    );
+    const availablePartners = TRADE_PARTNERS.filter((p) => !p.unlockRequirement || state.completedResearch.includes(p.unlockRequirement));
     if (availablePartners.length > 0) {
       affectedPartnerId = availablePartners[Math.floor(Math.random() * availablePartners.length)]!.id;
     }
@@ -64,7 +39,7 @@ export function tick(state: GameState): void {
     durationTicks: template.durationTicks,
     affectedResourceId,
     affectedPartnerId,
-    modifier: template.modifier,
+    modifier: template.modifier
   };
 
   state.activeMarketEvents.push(event);
@@ -74,7 +49,7 @@ export function tick(state: GameState): void {
     tick: state.tick,
     type: event.modifier >= 1 ? 'info' : 'warning',
     messageKey: template.messageKey,
-    params: affectedResourceId ? [affectedResourceId] : affectedPartnerId ? [affectedPartnerId] : [],
+    params: affectedResourceId ? [affectedResourceId] : affectedPartnerId ? [affectedPartnerId] : []
   });
 }
 
@@ -82,11 +57,7 @@ export function tick(state: GameState): void {
  * Returns the combined event price modifier for a given resource + partner pair.
  * Multipliers from all applicable events are multiplied together.
  */
-export function getEventPriceModifier(
-  state: GameState,
-  resourceId: string,
-  partnerId: string,
-): number {
+export function getEventPriceModifier(state: GameState, resourceId: string, partnerId: string): number {
   let combined = 1.0;
   for (const event of state.activeMarketEvents) {
     if (event.affectedResourceId && event.affectedResourceId !== resourceId) continue;

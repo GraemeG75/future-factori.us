@@ -1,25 +1,16 @@
 import { BUILDINGS_MAP } from '../data/buildings';
 import type { BuildingInstance, GameState } from '../game/GameState';
+import {
+  HEALTH_DRAIN_PER_SECOND,
+  BREAKDOWN_CHANCE_PER_SECOND,
+  BREAKDOWN_DAMAGE,
+  BROKEN_HEALTH_THRESHOLD,
+  REPAIR_COST_MULTIPLIER,
+  MIN_EFFICIENCY,
+  EFFICIENCY_SCALE
+} from '../consts/maintenance';
 
-/** Health drained per second while a building is operating. */
-const HEALTH_DRAIN_PER_SECOND = 0.05;
-
-/** Probability per second that a random breakdown event occurs. */
-const BREAKDOWN_CHANCE_PER_SECOND = 0.0004;
-
-/** Health lost during a breakdown event (percentage points). */
-const BREAKDOWN_DAMAGE = 40;
-
-/** Minimum health below which a building goes offline (broken). */
-export const BROKEN_HEALTH_THRESHOLD = 0;
-
-/** Fraction of base building cost charged per 1% of missing health repaired. */
-const REPAIR_COST_MULTIPLIER = 0.4;
-
-/** Minimum efficiency factor applied at 0% health (buildings below broken threshold are offline). */
-const MIN_EFFICIENCY = 0.5;
-/** Efficiency scale factor: health 0→100 maps efficiency MIN_EFFICIENCY→1.0. */
-const EFFICIENCY_SCALE = 1 - MIN_EFFICIENCY;
+export { BROKEN_HEALTH_THRESHOLD };
 
 /**
  * Advances building health: drains health from powered, operating buildings,
@@ -31,10 +22,7 @@ export function tick(state: GameState, deltaSeconds: number): void {
     if (building.health <= BROKEN_HEALTH_THRESHOLD) continue;
 
     // Gradual wear
-    building.health = Math.max(
-      BROKEN_HEALTH_THRESHOLD,
-      building.health - HEALTH_DRAIN_PER_SECOND * deltaSeconds,
-    );
+    building.health = Math.max(BROKEN_HEALTH_THRESHOLD, building.health - HEALTH_DRAIN_PER_SECOND * deltaSeconds);
 
     // Random breakdown event
     if (Math.random() < BREAKDOWN_CHANCE_PER_SECOND * deltaSeconds) {
@@ -47,7 +35,7 @@ export function tick(state: GameState, deltaSeconds: number): void {
         tick: state.tick,
         type: 'warning',
         messageKey: 'alerts.building_breakdown',
-        params: [bt ? bt.nameKey : building.typeId],
+        params: [bt ? bt.nameKey : building.typeId]
       });
     }
   }

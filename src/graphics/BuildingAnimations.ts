@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { SMOKE_COLOR } from '../consts/buildings';
 
 interface FanAnimation {
   object: THREE.Object3D;
@@ -32,8 +33,6 @@ interface BuildingAnim {
   smokeEmitters: SmokeEmitter[];
 }
 
-const SMOKE_COLOR = 0x999999;
-
 export class BuildingAnimations {
   private scene: THREE.Scene;
   private registry: Map<string, BuildingAnim> = new Map();
@@ -55,7 +54,7 @@ export class BuildingAnimations {
             material: mat,
             phase: Math.random() * Math.PI * 2,
             speed: 1.5 + Math.random(),
-            baseIntensity: mat.emissiveIntensity,
+            baseIntensity: mat.emissiveIntensity
           });
         }
       } else if (child.name === 'smoke_point') {
@@ -63,7 +62,7 @@ export class BuildingAnimations {
           marker: child,
           timer: Math.random() * 0.4,
           interval: 0.35 + Math.random() * 0.25,
-          particles: [],
+          particles: []
         });
       }
     });
@@ -108,7 +107,7 @@ export class BuildingAnimations {
           const mat = new THREE.MeshBasicMaterial({
             color: SMOKE_COLOR,
             transparent: true,
-            opacity: 0.35,
+            opacity: 0.35
           });
           const mesh = new THREE.Mesh(geo, mat);
           const worldPos = new THREE.Vector3();
@@ -118,13 +117,9 @@ export class BuildingAnimations {
           this.scene.add(mesh);
           emitter.particles.push({
             mesh,
-            velocity: new THREE.Vector3(
-              (Math.random() - 0.5) * 0.4,
-              0.9 + Math.random() * 0.5,
-              (Math.random() - 0.5) * 0.4,
-            ),
+            velocity: new THREE.Vector3((Math.random() - 0.5) * 0.4, 0.9 + Math.random() * 0.5, (Math.random() - 0.5) * 0.4),
             age: 0,
-            maxAge: 1.2 + Math.random() * 0.8,
+            maxAge: 1.2 + Math.random() * 0.8
           });
         }
 
@@ -133,8 +128,7 @@ export class BuildingAnimations {
           p.age += deltaTime;
           p.mesh.position.addScaledVector(p.velocity, deltaTime);
           p.mesh.scale.addScalar(deltaTime * 0.4);
-          (p.mesh.material as THREE.MeshBasicMaterial).opacity =
-            0.35 * (1 - p.age / p.maxAge);
+          (p.mesh.material as THREE.MeshBasicMaterial).opacity = 0.35 * (1 - p.age / p.maxAge);
           if (p.age >= p.maxAge) {
             this.scene.remove(p.mesh);
             p.mesh.geometry.dispose();
