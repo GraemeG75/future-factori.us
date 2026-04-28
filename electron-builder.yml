@@ -1,0 +1,23 @@
+appId: us.futurefactorius.desktop
+productName: Future Factorius
+directories:
+  output: release
+files:
+  - dist/**/*
+  - electron/**/*
+  - package.json
+asar: true
+linux:
+  category: Game
+  target:
+    - AppImage
+    - zip
+mac:
+  category: public.app-category.games
+  target:
+    - dmg
+    - zip
+win:
+  target:
+    - nsis
+    - portable

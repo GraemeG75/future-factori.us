@@ -20,6 +20,14 @@ npm run dev
 
 Open http://localhost:5173 in your browser.
 
+### Desktop Development
+
+```bash
+npm run desktop:dev
+```
+
+This starts the Vite renderer and wraps it with Electron for local desktop testing.
+
 ## Tech Stack
 
 ### Why Three.js over Babylon.js?
@@ -147,10 +155,20 @@ src/
 ```bash
 npm run dev        # Start dev server
 npm run build      # Build for production
+npm run build:desktop   # Build the renderer with relative asset paths for Electron
+npm run desktop:dev     # Run the Electron shell against the local Vite dev server
+npm run desktop:pack    # Package the Electron app for the current platform
+npm run desktop:pack:steam # Produce an unpacked build for Steam depot uploads
 npm test           # Run unit tests
 npm run test:e2e   # Run E2E tests (requires dev server or runs it automatically)
 npm run preview    # Preview production build
 ```
+
+## Desktop Saves
+
+- Browser builds keep using `localStorage`
+- Electron builds also store `future-factorius-save.json` in Electron's `userData` directory
+- `npm run desktop:pack:steam` creates an unpacked build that is convenient for Steam depot packaging
 
 ## Resources
 

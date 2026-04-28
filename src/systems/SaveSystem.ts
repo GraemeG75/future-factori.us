@@ -1,6 +1,7 @@
 import type { GameState, BuildingInstance, ResourceSpot, Contract, Loan, MarketEvent, RouteInstance } from '../game/GameState';
 import { initialiseDemand } from './EconomySystem';
 import { sampleTerrain, sampleTerrainHeight, type TerrainSample } from '../game/TerrainGeneration';
+import { getDesktopStorage } from '../platform/desktop';
 import {
   SAVE_VERSION,
   SAVE_KEY,
@@ -159,7 +160,12 @@ export function generateResourceSpots(seed: number): ResourceSpot[] {
 /** Serialises the current game state to localStorage. */
 export function save(state: GameState): void {
   try {
-    localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+    const serialized = JSON.stringify(state);
+    const desktopStorage = getDesktopStorage();
+    if (desktopStorage) {
+      desktopStorage.save(serialized);
+    }
+    localStorage.setItem(SAVE_KEY, serialized);
   } catch {
     // Storage may be unavailable (private mode, quota exceeded, etc.)
   }
@@ -171,7 +177,8 @@ export function save(state: GameState): void {
  */
 export function load(): GameState | null {
   try {
-    const raw = localStorage.getItem(SAVE_KEY);
+    const desktopStorage = getDesktopStorage();
+    const raw = desktopStorage?.loadSave() ?? localStorage.getItem(SAVE_KEY);
     if (!raw) return null;
     const parsed: unknown = JSON.parse(raw);
     if (!isObject(parsed)) return null;
@@ -184,12 +191,17 @@ export function load(): GameState | null {
 
 /** Removes the saved game from localStorage. */
 export function deleteSave(): void {
+  const desktopStorage = getDesktopStorage();
+  if (desktopStorage) {
+    desktopStorage.deleteSave();
+  }
   localStorage.removeItem(SAVE_KEY);
 }
 
 /** Returns true if a save exists in localStorage. */
 export function hasSave(): boolean {
-  return localStorage.getItem(SAVE_KEY) !== null;
+  const desktopStorage = getDesktopStorage();
+  return desktopStorage?.hasSave() === true || localStorage.getItem(SAVE_KEY) !== null;
 }
 
 /**

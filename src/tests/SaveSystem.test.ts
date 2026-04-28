@@ -19,12 +19,32 @@ function makeLocalStorageMock() {
   };
 }
 
+function makeDesktopStorageMock() {
+  let raw: string | null = null;
+  return {
+    isElectron: true as const,
+    loadSave: vi.fn(() => raw),
+    save: vi.fn((nextRaw: string) => {
+      raw = nextRaw;
+      return true;
+    }),
+    hasSave: vi.fn(() => raw !== null),
+    deleteSave: vi.fn(() => {
+      raw = null;
+      return true;
+    }),
+    getSavePath: vi.fn(() => '/tmp/future-factorius-save.json'),
+    _getRaw: () => raw
+  };
+}
+
 describe('SaveSystem', () => {
   let mockStorage: ReturnType<typeof makeLocalStorageMock>;
 
   beforeEach(() => {
     mockStorage = makeLocalStorageMock();
     vi.stubGlobal('localStorage', mockStorage);
+    delete window.desktopStorage;
   });
 
   it('createNewGame creates valid game state', () => {
@@ -80,6 +100,43 @@ describe('SaveSystem', () => {
     save(createNewGame());
     expect(hasSave()).toBe(true);
     deleteSave();
+    expect(hasSave()).toBe(false);
+  });
+
+  it('save writes to desktop storage when Electron bridge is available', () => {
+    const desktopStorage = makeDesktopStorageMock();
+    window.desktopStorage = desktopStorage;
+
+    save(createNewGame());
+
+    expect(desktopStorage.save).toHaveBeenCalledWith(expect.any(String));
+    expect(mockStorage.setItem).toHaveBeenCalledWith(SAVE_KEY, expect.any(String));
+  });
+
+  it('load prefers desktop storage when Electron bridge is available', () => {
+    const desktopStorage = makeDesktopStorageMock();
+    const desktopState = createNewGame();
+    desktopState.cash = 4321;
+    desktopStorage.save(JSON.stringify(desktopState));
+    mockStorage._store[SAVE_KEY] = JSON.stringify(createNewGame());
+    window.desktopStorage = desktopStorage;
+
+    const loaded = load();
+
+    expect(loaded).not.toBeNull();
+    expect(loaded!.cash).toBe(4321);
+  });
+
+  it('deleteSave removes desktop saves when Electron bridge is available', () => {
+    const desktopStorage = makeDesktopStorageMock();
+    window.desktopStorage = desktopStorage;
+
+    save(createNewGame());
+    expect(hasSave()).toBe(true);
+
+    deleteSave();
+
+    expect(desktopStorage.deleteSave).toHaveBeenCalledTimes(1);
     expect(hasSave()).toBe(false);
   });
 
