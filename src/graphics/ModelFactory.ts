@@ -627,8 +627,8 @@ export class ModelFactory {
   }
 
   static createSeaPlane(width: number, depth: number): THREE.Mesh {
-    const segs = 72;
-    const geo = new THREE.PlaneGeometry(width, depth, segs, segs);
+    const segments = 72;
+    const geo = new THREE.PlaneGeometry(width, depth, segments, segments);
     geo.rotateX(-Math.PI / 2);
     const pos = geo.attributes['position'] as THREE.BufferAttribute | undefined;
     if (pos) {
