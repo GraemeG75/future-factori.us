@@ -26,7 +26,7 @@ export interface TerrainHeightmap {
   cells: HeightmapCell[];
 }
 
-const TERRAIN_HEIGHT_SCALE = 2.2;
+const TERRAIN_HEIGHT_SCALE = 9.0;
 
 function clamp01(v: number): number {
   return Math.min(1, Math.max(0, v));
@@ -139,7 +139,7 @@ export function buildTerrainHeightmap(
   depth: number,
   columns: number,
   rows: number = columns,
-  voxelHeight: number = 0.16
+  voxelHeight: number = 0.08
 ): TerrainHeightmap {
   const safeColumns = Math.max(1, Math.floor(columns));
   const safeRows = Math.max(1, Math.floor(rows));

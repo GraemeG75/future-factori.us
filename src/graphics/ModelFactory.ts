@@ -3,11 +3,11 @@ import { RetroMaterials } from './RetroMaterials';
 import { buildTerrainHeightmap, sampleTerrainHeight, type HeightmapCell } from '../game/TerrainGeneration';
 
 const GRID_HEIGHT_OFFSET = 0.08;
-const VOXEL_HEIGHT = 0.16;
-const TERRAIN_BASE_HEIGHT = -4.8;
-const TERRAIN_TEXTURE_REPEAT = 3.2;
-const MIN_TERRAIN_COLUMNS = 96;
-const MIN_TERRAIN_ROWS = 96;
+const VOXEL_HEIGHT = 0.08;
+const TERRAIN_BASE_HEIGHT = -20.0;
+const TERRAIN_TEXTURE_REPEAT = 2.1;
+const MIN_TERRAIN_COLUMNS = 180;
+const MIN_TERRAIN_ROWS = 180;
 const TERRAIN_SIDE_COLOR_BRIGHTNESS = 0.62;
 const TERRAIN_SIDE_SATURATION_OFFSET = -0.03;
 const TERRAIN_SIDE_LIGHTNESS_OFFSET = -0.05;
@@ -36,11 +36,11 @@ export class ModelFactory {
     const moistureBlend = cell.moisture * 0.55 + cell.flow * 0.45;
     let color: THREE.Color;
 
-    if (cell.quantizedHeight < -0.05) {
+    if (cell.quantizedHeight < -0.09) {
       color = ModelFactory.mixColor(ModelFactory.colorFromRgb(82, 92, 106), ModelFactory.colorFromRgb(116, 128, 136), moistureBlend);
-    } else if (cell.quantizedHeight < 0.18) {
+    } else if (cell.quantizedHeight < 0.34) {
       color = ModelFactory.mixColor(warmSand, ModelFactory.colorFromRgb(192, 168, 108), cell.detail);
-    } else if (cell.quantizedHeight < 0.9) {
+    } else if (cell.quantizedHeight < 1.7) {
       if (cell.flow > 0.48) {
         color = ModelFactory.mixColor(wetland, moss, cell.detail);
       } else if (cell.moisture > 0.55) {
@@ -48,7 +48,7 @@ export class ModelFactory {
       } else {
         color = ModelFactory.mixColor(scrub, ModelFactory.colorFromRgb(146, 120, 74), cell.detail * 0.7);
       }
-    } else if (cell.quantizedHeight < 1.8) {
+    } else if (cell.quantizedHeight < 3.4) {
       color = ModelFactory.mixColor(rock, ModelFactory.colorFromRgb(166, 150, 132), cell.detail * 0.8);
     } else {
       color = ModelFactory.mixColor(snow, ModelFactory.colorFromRgb(188, 196, 208), cell.detail * 0.65);
@@ -58,7 +58,7 @@ export class ModelFactory {
       color.lerp(rock, Math.min(0.8, (cell.slope - 0.38) / 0.45));
     }
 
-    if (cell.flow > 0.62 && cell.quantizedHeight > 0.05 && cell.quantizedHeight < 1.1) {
+    if (cell.flow > 0.62 && cell.quantizedHeight > 0.1 && cell.quantizedHeight < 2.1) {
       color.lerp(ModelFactory.colorFromRgb(86, 126, 92), 0.2);
     }
 
@@ -100,7 +100,7 @@ export class ModelFactory {
 
   private static getTerrainTexture(): THREE.CanvasTexture {
     if (!ModelFactory.terrainTexture) {
-      ModelFactory.terrainTexture = ModelFactory.buildNoiseTexture(200, 34, 0.04);
+      ModelFactory.terrainTexture = ModelFactory.buildNoiseTexture(182, 62, 0.11);
     }
     return ModelFactory.terrainTexture;
   }
@@ -124,7 +124,7 @@ export class ModelFactory {
     normal: THREE.Vector3,
     color: THREE.Color,
     uvScaleX: number,
-    uvScaleY: number,
+    uvScaleY: number
   ): void {
     const vertices = [a, b, c, a, c, d];
     const quadUvs = [
@@ -178,74 +178,93 @@ export class ModelFactory {
       const topY = cell.quantizedHeight;
 
       ModelFactory.pushQuad(
-        positions, normals, colors, uvs,
+        positions,
+        normals,
+        colors,
+        uvs,
         new THREE.Vector3(x0, topY, z0),
-        new THREE.Vector3(x1, topY, z0),
-        new THREE.Vector3(x1, topY, z1),
         new THREE.Vector3(x0, topY, z1),
+        new THREE.Vector3(x1, topY, z1),
+        new THREE.Vector3(x1, topY, z0),
         normalUp,
         topColor,
         heightmap.cellWidth / TERRAIN_TEXTURE_REPEAT,
         heightmap.cellDepth / TERRAIN_TEXTURE_REPEAT
       );
 
+      // North wall (faces -Z): a→b goes up, a→d goes +X → cross product = -Z ✓
       const northHeight = getCell(cell.column, cell.row - 1)?.quantizedHeight ?? TERRAIN_BASE_HEIGHT;
       if (topY > northHeight) {
         ModelFactory.pushQuad(
-          positions, normals, colors, uvs,
-          new THREE.Vector3(x0, northHeight, z0),
-          new THREE.Vector3(x1, northHeight, z0),
-          new THREE.Vector3(x1, topY, z0),
+          positions,
+          normals,
+          colors,
+          uvs,
+          new THREE.Vector3(x0, TERRAIN_BASE_HEIGHT, z0),
           new THREE.Vector3(x0, topY, z0),
+          new THREE.Vector3(x1, topY, z0),
+          new THREE.Vector3(x1, TERRAIN_BASE_HEIGHT, z0),
           normalNorth,
           sideColor,
-          heightmap.cellWidth / TERRAIN_TEXTURE_REPEAT,
-          (topY - northHeight) / TERRAIN_TEXTURE_REPEAT
+          (topY - TERRAIN_BASE_HEIGHT) / TERRAIN_TEXTURE_REPEAT,
+          heightmap.cellWidth / TERRAIN_TEXTURE_REPEAT
         );
       }
 
+      // South wall (faces +Z): a→b goes up, a→d goes -X → cross product = +Z ✓
       const southHeight = getCell(cell.column, cell.row + 1)?.quantizedHeight ?? TERRAIN_BASE_HEIGHT;
       if (topY > southHeight) {
         ModelFactory.pushQuad(
-          positions, normals, colors, uvs,
-          new THREE.Vector3(x1, southHeight, z1),
-          new THREE.Vector3(x0, southHeight, z1),
-          new THREE.Vector3(x0, topY, z1),
+          positions,
+          normals,
+          colors,
+          uvs,
+          new THREE.Vector3(x1, TERRAIN_BASE_HEIGHT, z1),
           new THREE.Vector3(x1, topY, z1),
+          new THREE.Vector3(x0, topY, z1),
+          new THREE.Vector3(x0, TERRAIN_BASE_HEIGHT, z1),
           normalSouth,
           sideColor,
-          heightmap.cellWidth / TERRAIN_TEXTURE_REPEAT,
-          (topY - southHeight) / TERRAIN_TEXTURE_REPEAT
+          (topY - TERRAIN_BASE_HEIGHT) / TERRAIN_TEXTURE_REPEAT,
+          heightmap.cellWidth / TERRAIN_TEXTURE_REPEAT
         );
       }
 
+      // East wall (faces +X): a→b goes up, a→d goes +Z → cross product = +X ✓
       const eastHeight = getCell(cell.column + 1, cell.row)?.quantizedHeight ?? TERRAIN_BASE_HEIGHT;
       if (topY > eastHeight) {
         ModelFactory.pushQuad(
-          positions, normals, colors, uvs,
-          new THREE.Vector3(x1, eastHeight, z0),
-          new THREE.Vector3(x1, eastHeight, z1),
-          new THREE.Vector3(x1, topY, z1),
+          positions,
+          normals,
+          colors,
+          uvs,
+          new THREE.Vector3(x1, TERRAIN_BASE_HEIGHT, z0),
           new THREE.Vector3(x1, topY, z0),
+          new THREE.Vector3(x1, topY, z1),
+          new THREE.Vector3(x1, TERRAIN_BASE_HEIGHT, z1),
           normalEast,
           sideColor,
-          heightmap.cellDepth / TERRAIN_TEXTURE_REPEAT,
-          (topY - eastHeight) / TERRAIN_TEXTURE_REPEAT
+          (topY - TERRAIN_BASE_HEIGHT) / TERRAIN_TEXTURE_REPEAT,
+          heightmap.cellDepth / TERRAIN_TEXTURE_REPEAT
         );
       }
 
+      // West wall (faces -X): a→b goes up, a→d goes -Z → cross product = -X ✓
       const westHeight = getCell(cell.column - 1, cell.row)?.quantizedHeight ?? TERRAIN_BASE_HEIGHT;
       if (topY > westHeight) {
         ModelFactory.pushQuad(
-          positions, normals, colors, uvs,
-          new THREE.Vector3(x0, westHeight, z1),
-          new THREE.Vector3(x0, westHeight, z0),
-          new THREE.Vector3(x0, topY, z0),
+          positions,
+          normals,
+          colors,
+          uvs,
+          new THREE.Vector3(x0, TERRAIN_BASE_HEIGHT, z1),
           new THREE.Vector3(x0, topY, z1),
+          new THREE.Vector3(x0, topY, z0),
+          new THREE.Vector3(x0, TERRAIN_BASE_HEIGHT, z0),
           normalWest,
           sideColor,
-          heightmap.cellDepth / TERRAIN_TEXTURE_REPEAT,
-          (topY - westHeight) / TERRAIN_TEXTURE_REPEAT
+          (topY - TERRAIN_BASE_HEIGHT) / TERRAIN_TEXTURE_REPEAT,
+          heightmap.cellDepth / TERRAIN_TEXTURE_REPEAT
         );
       }
     }
@@ -672,12 +691,14 @@ export class ModelFactory {
   static createTerrain(width: number, depth: number, divisions: number, seed: number = 1337): THREE.Mesh {
     const geo = ModelFactory.buildVoxelTerrainGeometry(width, depth, divisions, seed);
     const terrainTexture = ModelFactory.getTerrainTexture();
-    terrainTexture.repeat.set(10, 10);
+    terrainTexture.repeat.set(22, 22);
     const mat = new THREE.MeshStandardMaterial({
       color: 0xffffff,
       vertexColors: true,
       map: terrainTexture,
       flatShading: true,
+      emissive: new THREE.Color(0x111111),
+      emissiveIntensity: 0.16,
       roughness: 0.92,
       metalness: 0.04
     });

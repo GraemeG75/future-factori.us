@@ -1,306 +1,530 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Future Factorius</title>
-  <link rel="stylesheet" href="/src/styles/main.less" />
-  <link rel="manifest" href="/manifest.json" />
-</head>
-<body>
-  <!-- Loading screen -->
-  <div id="loading-screen">
-    <div id="loading-spinner"></div>
-    <div id="loading-text">Initializing Future Factorius…</div>
-  </div>
-
-  <!-- Game canvas (3D world) -->
-  <canvas id="game-canvas"></canvas>
-
-  <!-- UI Overlay -->
-  <div id="ui-root">
-    <!-- Top bar: resource inventory + cash -->
-    <div id="top-bar">
-      <div id="game-title">FUTURE FACTORIUS</div>
-      <div id="resource-bar"></div>
-      <div id="power-display" title="Power: Production / Consumption">
-        <span id="power-icon">⚡</span>
-        <span id="power-value">0/0</span>
-      </div>
-      <div id="pollution-display" title="Pollution level">
-        <span id="pollution-icon">🌫️</span>
-        <span id="pollution-value">0%</span>
-      </div>
-      <div id="heat-display" title="Global heat level">
-        <span id="heat-icon">🌡️</span>
-        <span id="heat-value">0%</span>
-      </div>
-      <div id="cash-display">
-        <span id="cash-value">$ 0</span>
-        <span id="profit-indicator"></span>
-      </div>
-      <div id="speed-controls">
-        <button id="btn-pause" class="ctrl-btn" title="Pause">⏸</button>
-        <button id="btn-speed-1" class="ctrl-btn active" title="Normal speed">1x</button>
-        <button id="btn-speed-2" class="ctrl-btn" title="Fast">2x</button>
-        <button id="btn-speed-4" class="ctrl-btn" title="Very fast">4x</button>
-      </div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0" />
+    <title>Future Factorius</title>
+    <link
+      rel="icon"
+      href="/favicon.svg"
+      type="image/svg+xml" />
+    <link
+      rel="stylesheet"
+      href="/src/styles/main.less" />
+    <link
+      rel="manifest"
+      href="/manifest.json" />
+  </head>
+  <body>
+    <!-- Loading screen -->
+    <div id="loading-screen">
+      <div id="loading-spinner"></div>
+      <div id="loading-text">Initializing Future Factorius…</div>
     </div>
 
-    <!-- Left side: Build menu (collapsible) -->
-    <div id="build-panel">
-      <div id="build-panel-header">
-        <span>BUILD</span>
-        <button id="btn-build-toggle" class="panel-toggle">&#9664;</button>
-      </div>
-      <div id="build-panel-content">
-        <div class="build-category" id="cat-harvesters">
-          <div class="category-label">HARVESTERS</div>
-          <div class="build-buttons" id="harvester-buttons"></div>
-        </div>
-        <div class="build-category" id="cat-factories">
-          <div class="category-label">FACTORIES</div>
-          <div class="build-buttons" id="factory-buttons"></div>
-        </div>
-        <div class="build-category" id="cat-infrastructure">
-          <div class="category-label">INFRASTRUCTURE</div>
-          <div class="build-buttons" id="infra-buttons"></div>
-        </div>
-        <div class="build-category" id="cat-cooling">
-          <div class="category-label">COOLING</div>
-          <div class="build-buttons" id="cooling-buttons"></div>
-        </div>
-        <div class="build-category" id="cat-prototypes">
-          <div class="category-label">PROTOTYPES</div>
-          <div class="build-buttons" id="prototype-buttons"></div>
-        </div>
-      </div>
-    </div>
+    <!-- Game canvas (3D world) -->
+    <canvas id="game-canvas"></canvas>
 
-    <!-- Right side: Selected building panel -->
-    <div id="info-panel" class="hidden">
-      <div id="info-panel-header">
-        <span id="info-building-name">Building</span>
-        <button id="btn-info-close" class="panel-close">&#10005;</button>
+    <!-- UI Overlay -->
+    <div id="ui-root">
+      <!-- Top bar: resource inventory + cash -->
+      <div id="top-bar">
+        <div id="game-title">FUTURE FACTORIUS</div>
+        <div id="resource-bar"></div>
+        <div
+          id="power-display"
+          title="Power: Production / Consumption">
+          <span id="power-icon">⚡</span>
+          <span id="power-value">0/0</span>
+        </div>
+        <div
+          id="pollution-display"
+          title="Pollution level">
+          <span id="pollution-icon">🌫️</span>
+          <span id="pollution-value">0%</span>
+        </div>
+        <div
+          id="heat-display"
+          title="Global heat level">
+          <span id="heat-icon">🌡️</span>
+          <span id="heat-value">0%</span>
+        </div>
+        <div id="cash-display">
+          <span id="cash-value">$ 0</span>
+          <span id="profit-indicator"></span>
+        </div>
+        <div id="speed-controls">
+          <button
+            id="btn-pause"
+            class="ctrl-btn"
+            title="Pause">
+            ⏸
+          </button>
+          <button
+            id="btn-speed-1"
+            class="ctrl-btn active"
+            title="Normal speed">
+            1x
+          </button>
+          <button
+            id="btn-speed-2"
+            class="ctrl-btn"
+            title="Fast">
+            2x
+          </button>
+          <button
+            id="btn-speed-4"
+            class="ctrl-btn"
+            title="Very fast">
+            4x
+          </button>
+        </div>
       </div>
-      <div id="info-panel-content">
-        <div id="info-level">Level: 1</div>
-        <div id="info-status">Status: Active</div>
-        <div id="info-efficiency">Efficiency: 100%</div>
-        <div id="info-health-section">
-          <div class="panel-section-label">HEALTH</div>
-          <div id="health-progress-bar"><div id="health-fill"></div></div>
-          <div id="health-info">100%</div>
-        </div>
-        <div id="info-recipe-section" class="hidden">
-          <div class="panel-section-label">RECIPE</div>
-          <select id="recipe-select"></select>
-        </div>
-        <div id="info-production-section" class="hidden">
-          <div class="panel-section-label">PRODUCTION</div>
-          <div id="production-progress-bar"><div id="production-fill"></div></div>
-          <div id="production-info"></div>
-        </div>
-        <div id="info-buffers">
-          <div class="panel-section-label">INVENTORY</div>
-          <div id="input-buffer"></div>
-          <div id="output-buffer"></div>
-        </div>
-        <div id="info-routes-section">
-          <div class="panel-section-label">ROUTES</div>
-          <div id="building-routes"></div>
-          <button id="btn-create-route" class="action-btn">+ New Route</button>
-        </div>
-        <div id="info-actions">
-          <button id="btn-upgrade" class="action-btn upgrade">&#11014; Upgrade</button>
-          <button id="btn-repair" class="action-btn repair">🔧 Repair</button>
-          <button id="btn-demolish" class="action-btn danger">&#128465; Demolish</button>
-        </div>
-      </div>
-    </div>
 
-    <!-- Minimap -->
-    <div id="minimap-panel">
-      <canvas id="minimap-canvas" width="160" height="160" title="Factory minimap"></canvas>
-    </div>
-
-    <!-- Bottom: Alerts feed -->
-    <div id="alerts-panel">
-      <div id="alerts-list"></div>
-    </div>
-
-    <!-- Research screen -->
-    <div id="research-screen" class="screen hidden">
-      <div class="screen-header">
-        <span>RESEARCH TREE</span>
-        <button class="screen-close">&#10005;</button>
-      </div>
-      <div id="research-content">
-        <div id="research-tree"></div>
-        <div id="active-research-panel">
-          <div id="active-research-info">No active research</div>
-          <div id="research-progress-bar"><div id="research-fill"></div></div>
+      <!-- Left side: Build menu (collapsible) -->
+      <div id="build-panel">
+        <div id="build-panel-header">
+          <span>BUILD</span>
+          <button
+            id="btn-build-toggle"
+            class="panel-toggle">
+            &#9664;
+          </button>
         </div>
-        <div id="research-specialization-panel">
-          <div class="panel-section-label">SPECIALIZATION</div>
-          <div id="specialization-info"></div>
-          <div id="specialization-buttons">
-            <button class="spec-btn" data-spec="energy">⚡ Energy</button>
-            <button class="spec-btn" data-spec="matter">🔬 Matter</button>
-            <button class="spec-btn" data-spec="biology">🧬 Biology</button>
-            <button class="spec-btn" data-spec="">🔄 Auto</button>
+        <div id="build-panel-content">
+          <div
+            class="build-category"
+            id="cat-harvesters">
+            <div class="category-label">HARVESTERS</div>
+            <div
+              class="build-buttons"
+              id="harvester-buttons"></div>
           </div>
-          <div id="synergy-bonuses"></div>
+          <div
+            class="build-category"
+            id="cat-factories">
+            <div class="category-label">FACTORIES</div>
+            <div
+              class="build-buttons"
+              id="factory-buttons"></div>
+          </div>
+          <div
+            class="build-category"
+            id="cat-infrastructure">
+            <div class="category-label">INFRASTRUCTURE</div>
+            <div
+              class="build-buttons"
+              id="infra-buttons"></div>
+          </div>
+          <div
+            class="build-category"
+            id="cat-cooling">
+            <div class="category-label">COOLING</div>
+            <div
+              class="build-buttons"
+              id="cooling-buttons"></div>
+          </div>
+          <div
+            class="build-category"
+            id="cat-prototypes">
+            <div class="category-label">PROTOTYPES</div>
+            <div
+              class="build-buttons"
+              id="prototype-buttons"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right side: Selected building panel -->
+      <div
+        id="info-panel"
+        class="hidden">
+        <div id="info-panel-header">
+          <span id="info-building-name">Building</span>
+          <button
+            id="btn-info-close"
+            class="panel-close">
+            &#10005;
+          </button>
+        </div>
+        <div id="info-panel-content">
+          <div id="info-level">Level: 1</div>
+          <div id="info-status">Status: Active</div>
+          <div id="info-efficiency">Efficiency: 100%</div>
+          <div id="info-health-section">
+            <div class="panel-section-label">HEALTH</div>
+            <div id="health-progress-bar"><div id="health-fill"></div></div>
+            <div id="health-info">100%</div>
+          </div>
+          <div
+            id="info-recipe-section"
+            class="hidden">
+            <div class="panel-section-label">RECIPE</div>
+            <select id="recipe-select"></select>
+          </div>
+          <div
+            id="info-production-section"
+            class="hidden">
+            <div class="panel-section-label">PRODUCTION</div>
+            <div id="production-progress-bar"><div id="production-fill"></div></div>
+            <div id="production-info"></div>
+          </div>
+          <div id="info-buffers">
+            <div class="panel-section-label">INVENTORY</div>
+            <div id="input-buffer"></div>
+            <div id="output-buffer"></div>
+          </div>
+          <div id="info-routes-section">
+            <div class="panel-section-label">ROUTES</div>
+            <div id="building-routes"></div>
+            <button
+              id="btn-create-route"
+              class="action-btn">
+              + New Route
+            </button>
+          </div>
+          <div id="info-actions">
+            <button
+              id="btn-upgrade"
+              class="action-btn upgrade">
+              &#11014; Upgrade
+            </button>
+            <button
+              id="btn-repair"
+              class="action-btn repair">
+              🔧 Repair
+            </button>
+            <button
+              id="btn-demolish"
+              class="action-btn danger">
+              &#128465; Demolish
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Minimap -->
+      <div id="minimap-panel">
+        <canvas
+          id="minimap-canvas"
+          width="160"
+          height="160"
+          title="Factory minimap"></canvas>
+      </div>
+
+      <!-- Bottom: Alerts feed -->
+      <div id="alerts-panel">
+        <div id="alerts-list"></div>
+      </div>
+
+      <!-- Research screen -->
+      <div
+        id="research-screen"
+        class="screen hidden">
+        <div class="screen-header">
+          <span>RESEARCH TREE</span>
+          <button class="screen-close">&#10005;</button>
+        </div>
+        <div id="research-content">
+          <div id="research-tree"></div>
+          <div id="active-research-panel">
+            <div id="active-research-info">No active research</div>
+            <div id="research-progress-bar"><div id="research-fill"></div></div>
+          </div>
+          <div id="research-specialization-panel">
+            <div class="panel-section-label">SPECIALIZATION</div>
+            <div id="specialization-info"></div>
+            <div id="specialization-buttons">
+              <button
+                class="spec-btn"
+                data-spec="energy">
+                ⚡ Energy
+              </button>
+              <button
+                class="spec-btn"
+                data-spec="matter">
+                🔬 Matter
+              </button>
+              <button
+                class="spec-btn"
+                data-spec="biology">
+                🧬 Biology
+              </button>
+              <button
+                class="spec-btn"
+                data-spec="">
+                🔄 Auto
+              </button>
+            </div>
+            <div id="synergy-bonuses"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Trade screen -->
+      <div
+        id="trade-screen"
+        class="screen hidden">
+        <div class="screen-header">
+          <span>TRADING</span>
+          <button class="screen-close">&#10005;</button>
+        </div>
+        <div id="trade-content">
+          <div id="partner-list"></div>
+          <div id="trade-panel">
+            <div id="selected-partner-info"></div>
+            <div id="trade-resources"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Routes screen -->
+      <div
+        id="routes-screen"
+        class="screen hidden">
+        <div class="screen-header">
+          <span>ROUTE MANAGEMENT</span>
+          <button class="screen-close">&#10005;</button>
+        </div>
+        <div id="routes-content">
+          <div id="routes-list"></div>
+          <div id="create-route-panel">
+            <div class="panel-section-label">NEW ROUTE</div>
+            <div>
+              From:
+              <select id="route-from"></select>
+            </div>
+            <div>
+              Resource:
+              <select id="route-resource"></select>
+            </div>
+            <div>
+              To:
+              <select id="route-to"></select>
+            </div>
+            <button
+              id="btn-confirm-route"
+              class="action-btn">
+              Create Route
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Save/Load screen -->
+      <div
+        id="save-screen"
+        class="screen hidden">
+        <div class="screen-header">
+          <span>GAME MENU</span>
+          <button class="screen-close">&#10005;</button>
+        </div>
+        <div id="save-content">
+          <button
+            id="btn-new-game"
+            class="menu-btn">
+            New Game
+          </button>
+          <button
+            id="btn-save-game"
+            class="menu-btn">
+            Save Game
+          </button>
+          <button
+            id="btn-load-game"
+            class="menu-btn">
+            Load Game
+          </button>
+          <button
+            id="btn-export-save"
+            class="menu-btn">
+            Export Save
+          </button>
+          <button
+            id="btn-import-save"
+            class="menu-btn">
+            Import Save
+          </button>
+          <input
+            type="file"
+            id="import-file-input"
+            accept=".json"
+            style="display: none" />
+          <button
+            id="btn-delete-save"
+            class="menu-btn danger">
+            Delete Save
+          </button>
+          <div id="save-status"></div>
+          <div id="language-selector">
+            <label>Language:</label>
+            <select id="language-select">
+              <option value="en">English</option>
+              <option value="fr">Français</option>
+              <option value="de">Deutsch</option>
+              <option value="es">Español</option>
+              <option value="ja">日本語</option>
+              <option value="zh">中文</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Finance screen (Contracts / Loans / Market Events) -->
+      <div
+        id="finance-screen"
+        class="screen hidden">
+        <div class="screen-header">
+          <span>FINANCE</span>
+          <button class="screen-close">&#10005;</button>
+        </div>
+        <div id="finance-content">
+          <div id="finance-tabs">
+            <button
+              class="finance-tab active"
+              data-tab="contracts">
+              📋 Contracts
+            </button>
+            <button
+              class="finance-tab"
+              data-tab="loans">
+              💳 Loans
+            </button>
+            <button
+              class="finance-tab"
+              data-tab="events">
+              📊 Market Events
+            </button>
+          </div>
+
+          <!-- Contracts panel -->
+          <div
+            id="finance-tab-contracts"
+            class="finance-tab-panel">
+            <div class="panel-section-label">ACTIVE CONTRACTS</div>
+            <div id="contracts-list"></div>
+          </div>
+
+          <!-- Loans panel -->
+          <div
+            id="finance-tab-loans"
+            class="finance-tab-panel hidden">
+            <div class="panel-section-label">TAKE A LOAN</div>
+            <div id="loan-tiers"></div>
+            <div
+              class="panel-section-label"
+              style="margin-top: 12px">
+              OUTSTANDING LOANS
+            </div>
+            <div id="loans-list"></div>
+          </div>
+
+          <!-- Market events panel -->
+          <div
+            id="finance-tab-events"
+            class="finance-tab-panel hidden">
+            <div class="panel-section-label">ACTIVE MARKET EVENTS</div>
+            <div id="market-events-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom nav buttons -->
+      <div id="bottom-nav">
+        <button
+          id="btn-research"
+          class="nav-btn"
+          title="Research Tree">
+          &#128300; Research
+        </button>
+        <button
+          id="btn-trade"
+          class="nav-btn"
+          title="Trading">
+          &#8652; Trade
+        </button>
+        <button
+          id="btn-routes"
+          class="nav-btn"
+          title="Routes">
+          &#128644; Routes
+        </button>
+        <button
+          id="btn-finance"
+          class="nav-btn"
+          title="Finance">
+          💳 Finance
+        </button>
+        <button
+          id="btn-achievements"
+          class="nav-btn"
+          title="Achievements">
+          🏆 Achievements
+        </button>
+        <button
+          id="btn-scenarios"
+          class="nav-btn"
+          title="Scenarios">
+          🎯 Scenarios
+        </button>
+        <button
+          id="btn-menu"
+          class="nav-btn"
+          title="Menu">
+          &#9776; Menu
+        </button>
+      </div>
+
+      <!-- Achievements screen -->
+      <div
+        id="achievements-screen"
+        class="screen hidden">
+        <div class="screen-header">
+          <span>ACHIEVEMENTS</span>
+          <button class="screen-close">&#10005;</button>
+        </div>
+        <div id="achievements-content">
+          <div id="achievements-list"></div>
+        </div>
+      </div>
+
+      <!-- Scenarios screen -->
+      <div
+        id="scenarios-screen"
+        class="screen hidden">
+        <div class="screen-header">
+          <span>SCENARIOS</span>
+          <button class="screen-close">&#10005;</button>
+        </div>
+        <div id="scenarios-content">
+          <div id="scenarios-list"></div>
+          <div
+            id="scenario-active-panel"
+            class="hidden">
+            <div class="panel-section-label">CURRENT SCENARIO</div>
+            <div id="scenario-name"></div>
+            <div id="scenario-objectives-list"></div>
+            <div id="scenario-score"></div>
+            <div id="scenario-time-left"></div>
+            <div
+              id="scenario-result"
+              class="hidden"></div>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Trade screen -->
-    <div id="trade-screen" class="screen hidden">
-      <div class="screen-header">
-        <span>TRADING</span>
-        <button class="screen-close">&#10005;</button>
-      </div>
-      <div id="trade-content">
-        <div id="partner-list"></div>
-        <div id="trade-panel">
-          <div id="selected-partner-info"></div>
-          <div id="trade-resources"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Routes screen -->
-    <div id="routes-screen" class="screen hidden">
-      <div class="screen-header">
-        <span>ROUTE MANAGEMENT</span>
-        <button class="screen-close">&#10005;</button>
-      </div>
-      <div id="routes-content">
-        <div id="routes-list"></div>
-        <div id="create-route-panel">
-          <div class="panel-section-label">NEW ROUTE</div>
-          <div>From: <select id="route-from"></select></div>
-          <div>Resource: <select id="route-resource"></select></div>
-          <div>To: <select id="route-to"></select></div>
-          <button id="btn-confirm-route" class="action-btn">Create Route</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Save/Load screen -->
-    <div id="save-screen" class="screen hidden">
-      <div class="screen-header">
-        <span>GAME MENU</span>
-        <button class="screen-close">&#10005;</button>
-      </div>
-      <div id="save-content">
-        <button id="btn-new-game" class="menu-btn">New Game</button>
-        <button id="btn-save-game" class="menu-btn">Save Game</button>
-        <button id="btn-load-game" class="menu-btn">Load Game</button>
-        <button id="btn-export-save" class="menu-btn">Export Save</button>
-        <button id="btn-import-save" class="menu-btn">Import Save</button>
-        <input type="file" id="import-file-input" accept=".json" style="display:none" />
-        <button id="btn-delete-save" class="menu-btn danger">Delete Save</button>
-        <div id="save-status"></div>
-        <div id="language-selector">
-          <label>Language:</label>
-          <select id="language-select">
-            <option value="en">English</option>
-            <option value="fr">Français</option>
-            <option value="de">Deutsch</option>
-            <option value="es">Español</option>
-            <option value="ja">日本語</option>
-            <option value="zh">中文</option>
-          </select>
-        </div>
-      </div>
-    </div>
-
-    <!-- Finance screen (Contracts / Loans / Market Events) -->
-    <div id="finance-screen" class="screen hidden">
-      <div class="screen-header">
-        <span>FINANCE</span>
-        <button class="screen-close">&#10005;</button>
-      </div>
-      <div id="finance-content">
-        <div id="finance-tabs">
-          <button class="finance-tab active" data-tab="contracts">📋 Contracts</button>
-          <button class="finance-tab" data-tab="loans">💳 Loans</button>
-          <button class="finance-tab" data-tab="events">📊 Market Events</button>
-        </div>
-
-        <!-- Contracts panel -->
-        <div id="finance-tab-contracts" class="finance-tab-panel">
-          <div class="panel-section-label">ACTIVE CONTRACTS</div>
-          <div id="contracts-list"></div>
-        </div>
-
-        <!-- Loans panel -->
-        <div id="finance-tab-loans" class="finance-tab-panel hidden">
-          <div class="panel-section-label">TAKE A LOAN</div>
-          <div id="loan-tiers"></div>
-          <div class="panel-section-label" style="margin-top:12px;">OUTSTANDING LOANS</div>
-          <div id="loans-list"></div>
-        </div>
-
-        <!-- Market events panel -->
-        <div id="finance-tab-events" class="finance-tab-panel hidden">
-          <div class="panel-section-label">ACTIVE MARKET EVENTS</div>
-          <div id="market-events-list"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Bottom nav buttons -->
-    <div id="bottom-nav">
-      <button id="btn-research" class="nav-btn" title="Research Tree">&#128300; Research</button>
-      <button id="btn-trade" class="nav-btn" title="Trading">&#8652; Trade</button>
-      <button id="btn-routes" class="nav-btn" title="Routes">&#128644; Routes</button>
-      <button id="btn-finance" class="nav-btn" title="Finance">💳 Finance</button>
-      <button id="btn-achievements" class="nav-btn" title="Achievements">🏆 Achievements</button>
-      <button id="btn-scenarios" class="nav-btn" title="Scenarios">🎯 Scenarios</button>
-      <button id="btn-menu" class="nav-btn" title="Menu">&#9776; Menu</button>
-    </div>
-
-    <!-- Achievements screen -->
-    <div id="achievements-screen" class="screen hidden">
-      <div class="screen-header">
-        <span>ACHIEVEMENTS</span>
-        <button class="screen-close">&#10005;</button>
-      </div>
-      <div id="achievements-content">
-        <div id="achievements-list"></div>
-      </div>
-    </div>
-
-    <!-- Scenarios screen -->
-    <div id="scenarios-screen" class="screen hidden">
-      <div class="screen-header">
-        <span>SCENARIOS</span>
-        <button class="screen-close">&#10005;</button>
-      </div>
-      <div id="scenarios-content">
-        <div id="scenarios-list"></div>
-        <div id="scenario-active-panel" class="hidden">
-          <div class="panel-section-label">CURRENT SCENARIO</div>
-          <div id="scenario-name"></div>
-          <div id="scenario-objectives-list"></div>
-          <div id="scenario-score"></div>
-          <div id="scenario-time-left"></div>
-          <div id="scenario-result" class="hidden"></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <script type="module" src="/src/main.ts"></script>
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js').catch(() => {});
-      });
-    }
-  </script>
-</body>
+    <script
+      type="module"
+      src="/src/main.ts"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(() => {});
+        });
+      }
+    </script>
+  </body>
 </html>
