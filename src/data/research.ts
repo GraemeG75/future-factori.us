@@ -1,5 +1,5 @@
 export type { TechnologyUnlock, Technology } from '../interfaces/research';
-import type { TechnologyUnlock, Technology } from '../interfaces/research';
+import type { Technology } from '../interfaces/research';
 
 export const TECHNOLOGIES: Technology[] = [
   {

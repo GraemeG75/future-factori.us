@@ -175,11 +175,11 @@ export class Game {
     this.state.settings.gameSpeed = speed;
   }
 
-  placeBuilding(typeId: string, position: { x: number; z: number }): boolean {
+  async placeBuilding(typeId: string, position: { x: number; z: number }): Promise<boolean> {
     const fullPos = { x: position.x, y: 0, z: position.z };
     const building = BuildingSystem.placeBuilding(this.state, typeId, fullPos);
     if (!building) return false;
-    const mesh = this.world.addBuildingMesh(building);
+    const mesh = await this.world.addBuildingMesh(building);
     this.selectionManager.registerBuilding(building.id, mesh);
     this.world.syncSpotMarkers(this.state.resourceSpots);
     this.audio.playBuild();

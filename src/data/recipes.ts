@@ -1,5 +1,5 @@
 export type { RecipeIngredient, Recipe } from '../interfaces/recipes';
-import type { RecipeIngredient, Recipe } from '../interfaces/recipes';
+import type { Recipe } from '../interfaces/recipes';
 
 export const RECIPES: Recipe[] = [
   {

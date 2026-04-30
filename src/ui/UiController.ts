@@ -1606,11 +1606,11 @@ export class UiController {
     });
   }
 
-  private onBuildClick(e: MouseEvent): void {
+  private async onBuildClick(e: MouseEvent): Promise<void> {
     if (!this.buildTypeId) return;
     const pos = this.game.getWorldPositionFromEvent(e);
     if (!pos) return;
-    const ok = this.game.placeBuilding(this.buildTypeId, pos);
+    const ok = await this.game.placeBuilding(this.buildTypeId, pos);
     if (ok) {
       const bt = BUILDINGS_MAP[this.buildTypeId];
       const name = bt ? this.i18n.t(bt.nameKey) : this.buildTypeId;

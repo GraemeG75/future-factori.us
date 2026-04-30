@@ -1,5 +1,5 @@
 export type { ScenarioId, ScenarioObjective, Scenario } from '../interfaces/scenarios';
-import type { Scenario, ScenarioObjective } from '../interfaces/scenarios';
+import type { Scenario } from '../interfaces/scenarios';
 
 export const SCENARIOS: Scenario[] = [
   {
