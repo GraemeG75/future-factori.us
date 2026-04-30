@@ -67,8 +67,8 @@ export class Game {
     this.renderer.toneMappingExposure = 1.15;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
 
-    this.scene.background = new THREE.Color(0x8db4da);
-    this.scene.fog = new THREE.FogExp2(0x7ca5d0, 0.0033);
+    this.scene.background = new THREE.Color(0x5e8ab8);
+    this.scene.fog = new THREE.FogExp2(0x607eb0, 0.0042);
 
     this.camera.position.set(20, 30, 20);
     this.camera.lookAt(0, 0, 0);

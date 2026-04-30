@@ -59,19 +59,19 @@ export function quantizeTerrainHeight(height: number, voxelHeight: number): numb
 }
 
 export function sampleTerrainHeight(seed: number, x: number, z: number, width: number = 200, depth: number = 200): number {
-  const warpX = x + (fbm(x * 0.025, z * 0.025, 3, seed + 91) - 0.5) * 16;
-  const warpZ = z + (fbm(x * 0.025 + 200, z * 0.025 + 200, 3, seed + 137) - 0.5) * 16;
+  const warpX = x + (fbm(x * 0.025, z * 0.025, 3, seed + 91) - 0.5) * 24;
+  const warpZ = z + (fbm(x * 0.025 + 200, z * 0.025 + 200, 3, seed + 137) - 0.5) * 24;
 
   const continent = fbm(warpX * 0.008, warpZ * 0.008, 5, seed + 11);
   const detail = fbm(warpX * 0.055, warpZ * 0.055, 4, seed + 23);
   const erosionNoise = fbm(warpX * 0.028 + 400, warpZ * 0.028 + 400, 3, seed + 47);
   const ridge = 1 - Math.abs(fbm(warpX * 0.02 + 800, warpZ * 0.02 + 800, 4, seed + 71) * 2 - 1);
 
-  const ridgeMask = smoothstep(0.48, 0.84, continent);
-  const macro = (continent - 0.5) * 1.8;
-  const micro = (detail - 0.5) * 0.55;
-  const ridges = Math.pow(ridge, 2.4) * 0.95 * ridgeMask;
-  const carved = (1 - erosionNoise) * 0.45 * ridgeMask;
+  const ridgeMask = smoothstep(0.42, 0.78, continent);
+  const macro = (continent - 0.5) * 2.3;
+  const micro = (detail - 0.5) * 0.68;
+  const ridges = Math.pow(ridge, 1.7) * 1.35 * ridgeMask;
+  const carved = (1 - erosionNoise) * 0.62 * ridgeMask;
 
   let h = macro + micro + ridges - carved;
   const dist = Math.sqrt((x / (width * 0.5)) ** 2 + (z / (depth * 0.5)) ** 2);

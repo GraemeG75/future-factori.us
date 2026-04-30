@@ -27,44 +27,48 @@ export class ModelFactory {
   }
 
   private static getTerrainTopColor(cell: HeightmapCell): THREE.Color {
-    const warmSand = ModelFactory.colorFromRgb(212, 186, 126);
-    const moss = ModelFactory.colorFromRgb(93, 145, 72);
-    const lush = ModelFactory.colorFromRgb(58, 126, 68);
-    const scrub = ModelFactory.colorFromRgb(122, 112, 70);
-    const rock = ModelFactory.colorFromRgb(136, 128, 120);
-    const snow = ModelFactory.colorFromRgb(225, 232, 242);
-    const wetland = ModelFactory.colorFromRgb(82, 120, 76);
+    const warmSand   = ModelFactory.colorFromRgb(212, 186, 126);
+    const moss       = ModelFactory.colorFromRgb(98,  150,  74); // slightly more vibrant
+    const lush       = ModelFactory.colorFromRgb(62,  132,  70); // slightly more vibrant
+    const dryEarth   = ModelFactory.colorFromRgb(154, 132,  78); // warmer/richer than old scrub
+    const scrubOlive = ModelFactory.colorFromRgb(138, 142,  80); // warm olive for variety
+    const rock       = ModelFactory.colorFromRgb(126, 110,  94); // browner, less gray
+    const snow       = ModelFactory.colorFromRgb(225, 232, 242);
+    const wetland    = ModelFactory.colorFromRgb(82,  120,  76);
 
     const moistureBlend = cell.moisture * 0.55 + cell.flow * 0.45;
     let color: THREE.Color;
 
-    if (cell.quantizedHeight < -0.09) {
-      color = ModelFactory.mixColor(ModelFactory.colorFromRgb(82, 92, 106), ModelFactory.colorFromRgb(116, 128, 136), moistureBlend);
-    } else if (cell.quantizedHeight < 0.34) {
+    if (cell.quantizedHeight < -0.14) {
+      // Rich slate-blue lowlands instead of neutral gray
+      color = ModelFactory.mixColor(ModelFactory.colorFromRgb(64, 80, 106), ModelFactory.colorFromRgb(96, 118, 132), moistureBlend);
+    } else if (cell.quantizedHeight < 0.51) {
       color = ModelFactory.mixColor(warmSand, ModelFactory.colorFromRgb(192, 168, 108), cell.detail);
-    } else if (cell.quantizedHeight < 1.7) {
+    } else if (cell.quantizedHeight < 2.55) {
       if (cell.flow > 0.48) {
         color = ModelFactory.mixColor(wetland, moss, cell.detail);
       } else if (cell.moisture > 0.55) {
         color = ModelFactory.mixColor(moss, lush, cell.detail);
       } else {
-        color = ModelFactory.mixColor(scrub, ModelFactory.colorFromRgb(146, 120, 74), cell.detail * 0.7);
+        // Warm earthy-olive gradient for the main flat build zone
+        color = ModelFactory.mixColor(dryEarth, scrubOlive, cell.detail);
       }
-    } else if (cell.quantizedHeight < 3.4) {
-      color = ModelFactory.mixColor(rock, ModelFactory.colorFromRgb(166, 150, 132), cell.detail * 0.8);
+    } else if (cell.quantizedHeight < 5.1) {
+      // Warm rusty-brown rock instead of neutral gray
+      color = ModelFactory.mixColor(rock, ModelFactory.colorFromRgb(152, 130, 108), cell.detail * 0.8);
     } else {
       color = ModelFactory.mixColor(snow, ModelFactory.colorFromRgb(188, 196, 208), cell.detail * 0.65);
     }
 
-    if (cell.slope > 0.38) {
-      color.lerp(rock, Math.min(0.8, (cell.slope - 0.38) / 0.45));
+    if (cell.slope > 0.30) {
+      color.lerp(rock, Math.min(0.85, (cell.slope - 0.30) / 0.40));
     }
 
-    if (cell.flow > 0.62 && cell.quantizedHeight > 0.1 && cell.quantizedHeight < 2.1) {
+    if (cell.flow > 0.62 && cell.quantizedHeight > 0.1 && cell.quantizedHeight < 3.2) {
       color.lerp(ModelFactory.colorFromRgb(86, 126, 92), 0.2);
     }
 
-    return color.offsetHSL(0, 0, (cell.detail - 0.5) * 0.08);
+    return color.offsetHSL(0, 0, (cell.detail - 0.5) * 0.1);
   }
 
   private static buildNoiseTexture(base: number, range: number, accentChance: number = 0): THREE.CanvasTexture {
@@ -100,9 +104,47 @@ export class ModelFactory {
     return texture;
   }
 
+  private static buildTerrainDetailTexture(): THREE.CanvasTexture {
+    const size = 128;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return new THREE.CanvasTexture(canvas);
+
+    const image = ctx.createImageData(size, size);
+    for (let y = 0; y < size; y++) {
+      for (let x = 0; x < size; x++) {
+        const idx = (y * size + x) * 4;
+        // Multi-frequency wave interference for organic patching
+        const coarse = Math.sin(x * 0.072 + y * 0.053) * 0.5 + Math.cos(x * 0.041 - y * 0.088) * 0.5;
+        const medium = Math.sin(x * 0.19  + y * 0.14 ) * 0.5 + Math.cos(x * 0.11  - y * 0.17 ) * 0.5;
+        const fine   = ((x * 17 + y * 31 + x * y * 7) % 97) / 96;
+        const t = Math.max(0, Math.min(1, coarse * 0.4 + medium * 0.35 + fine * 0.25));
+
+        // Warm sandy-ochre palette: bright enough so multiplication doesn't over-darken
+        // t=0 → sandy warm (214, 192, 144), t=1 → earthy olive-brown (162, 152, 96)
+        const r = Math.round(214 - t * 52 + (fine - 0.5) * 22);
+        const g = Math.round(192 - t * 40 + (fine - 0.5) * 22);
+        const b = Math.round(144 - t * 48 + (fine - 0.5) * 14);
+        image.data[idx]     = Math.max(130, Math.min(245, r));
+        image.data[idx + 1] = Math.max(118, Math.min(228, g));
+        image.data[idx + 2] = Math.max(72,  Math.min(175, b));
+        image.data[idx + 3] = 255;
+      }
+    }
+
+    ctx.putImageData(image, 0, 0);
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.colorSpace = THREE.SRGBColorSpace;
+    return texture;
+  }
+
   private static getTerrainTexture(): THREE.CanvasTexture {
     if (!ModelFactory.terrainTexture) {
-      ModelFactory.terrainTexture = ModelFactory.buildNoiseTexture(148, 100, 0.18);
+      ModelFactory.terrainTexture = ModelFactory.buildTerrainDetailTexture();
     }
     return ModelFactory.terrainTexture;
   }
@@ -490,9 +532,9 @@ export class ModelFactory {
       vertexColors: true,
       map: terrainTexture,
       flatShading: true,
-      emissive: new THREE.Color(0x111111),
-      emissiveIntensity: 0.16,
-      roughness: 0.92,
+      emissive: new THREE.Color(0x1c1008),  // warm dark amber
+      emissiveIntensity: 0.22,
+      roughness: 0.88,
       metalness: 0.04
     });
     const mesh = new THREE.Mesh(geo, mat);
