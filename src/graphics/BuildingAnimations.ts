@@ -1,37 +1,6 @@
 import * as THREE from 'three';
 import { SMOKE_COLOR } from '../consts/buildings';
-
-interface FanAnimation {
-  object: THREE.Object3D;
-  speed: number;
-}
-
-interface BlinkAnimation {
-  material: THREE.MeshStandardMaterial;
-  phase: number;
-  speed: number;
-  baseIntensity: number;
-}
-
-interface SmokeParticle {
-  mesh: THREE.Mesh;
-  velocity: THREE.Vector3;
-  age: number;
-  maxAge: number;
-}
-
-interface SmokeEmitter {
-  marker: THREE.Object3D;
-  timer: number;
-  interval: number;
-  particles: SmokeParticle[];
-}
-
-interface BuildingAnim {
-  fans: FanAnimation[];
-  blinks: BlinkAnimation[];
-  smokeEmitters: SmokeEmitter[];
-}
+import type { BuildingAnim } from '../interfaces/buildingAnimations';
 
 export class BuildingAnimations {
   private scene: THREE.Scene;

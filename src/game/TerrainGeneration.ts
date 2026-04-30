@@ -1,32 +1,7 @@
 import { TERRAIN_HEIGHT_SCALE } from '../consts/terrain';
 
-export interface TerrainSample {
-  height: number;
-  moisture: number;
-  slope: number;
-  flow: number;
-  /** High-frequency micro noise [0,1] — used for per-vertex color variation. */
-  detail: number;
-}
-
-export interface HeightmapCell extends TerrainSample {
-  column: number;
-  row: number;
-  x: number;
-  z: number;
-  quantizedHeight: number;
-}
-
-export interface TerrainHeightmap {
-  width: number;
-  depth: number;
-  columns: number;
-  rows: number;
-  cellWidth: number;
-  cellDepth: number;
-  voxelHeight: number;
-  cells: HeightmapCell[];
-}
+export type { TerrainSample, HeightmapCell, TerrainHeightmap } from '../interfaces/terrain';
+import type { TerrainSample, HeightmapCell, TerrainHeightmap } from '../interfaces/terrain';
 
 function clamp01(v: number): number {
   return Math.min(1, Math.max(0, v));

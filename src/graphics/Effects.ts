@@ -1,25 +1,5 @@
 import * as THREE from 'three';
-
-interface RouteEffect {
-  sphere: THREE.Mesh;
-  from: THREE.Vector3;
-  to: THREE.Vector3;
-  progress: number;
-  speed: number;
-}
-
-interface PulseEffect {
-  mesh: THREE.Mesh;
-  age: number;
-  maxAge: number;
-}
-
-interface ParticleEffect {
-  particles: THREE.Points;
-  velocities: THREE.Vector3[];
-  age: number;
-  maxAge: number;
-}
+import type { RouteEffect, PulseEffect, ParticleEffect } from '../interfaces/effects';
 
 export class Effects {
   private scene: THREE.Scene;
@@ -37,7 +17,7 @@ export class Effects {
     const mat = new THREE.MeshStandardMaterial({
       color,
       emissive: color,
-      emissiveIntensity: 1.0,
+      emissiveIntensity: 1.0
     });
     const sphere = new THREE.Mesh(geo, mat);
     sphere.position.copy(from);
@@ -83,11 +63,7 @@ export class Effects {
 
     const velocities: THREE.Vector3[] = [];
     for (let i = 0; i < count; i++) {
-      const vel = new THREE.Vector3(
-        (Math.random() - 0.5) * 4,
-        Math.random() * 3 + 1,
-        (Math.random() - 0.5) * 4,
-      );
+      const vel = new THREE.Vector3((Math.random() - 0.5) * 4, Math.random() * 3 + 1, (Math.random() - 0.5) * 4);
       velocities.push(vel);
     }
     this.particleEffects.push({ particles, velocities, age: 0, maxAge: 1.5 });
@@ -125,7 +101,7 @@ export class Effects {
           j,
           pos.getX(j) + pe.velocities[j]!.x * deltaTime,
           pos.getY(j) + pe.velocities[j]!.y * deltaTime,
-          pos.getZ(j) + pe.velocities[j]!.z * deltaTime,
+          pos.getZ(j) + pe.velocities[j]!.z * deltaTime
         );
       }
       pos.needsUpdate = true;

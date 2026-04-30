@@ -1,35 +1,5 @@
-export type ScenarioId = 'tutorial' | 'fast_start' | 'survival' | 'sandbox';
-
-export interface ScenarioObjective {
-  id: string;
-  descriptionKey: string;
-  /** Check function description (checked by ScenarioSystem) */
-  type: 'cash' | 'buildings' | 'research' | 'contracts' | 'trade' | 'custom';
-  target: number;
-  /** Optional resource or tech id for contextual checks */
-  resourceId?: string;
-  techId?: string;
-  buildingTypeId?: string;
-}
-
-export interface Scenario {
-  id: ScenarioId;
-  nameKey: string;
-  descriptionKey: string;
-  /** If set, game ends when tick exceeds this */
-  timeLimitTicks: number | null;
-  /** Starting cash override (null = default 2500) */
-  startingCash: number | null;
-  /** Starting inventory overrides */
-  startingInventory: Record<string, number>;
-  /** Starting completed research (unlocks buildings too) */
-  startingResearch: string[];
-  /** Whether resource deposits are infinite */
-  infiniteResources: boolean;
-  objectives: ScenarioObjective[];
-  /** Score formula multiplier */
-  scoreMultiplier: number;
-}
+export type { ScenarioId, ScenarioObjective, Scenario } from '../interfaces/scenarios';
+import type { Scenario, ScenarioObjective } from '../interfaces/scenarios';
 
 export const SCENARIOS: Scenario[] = [
   {
@@ -45,8 +15,8 @@ export const SCENARIOS: Scenario[] = [
     objectives: [
       { id: 'place_factory', descriptionKey: 'scenarios.tutorial.obj_place_factory', type: 'buildings', target: 3 },
       { id: 'earn_cash', descriptionKey: 'scenarios.tutorial.obj_earn_cash', type: 'cash', target: 5000 },
-      { id: 'first_research', descriptionKey: 'scenarios.tutorial.obj_first_research', type: 'research', target: 1 },
-    ],
+      { id: 'first_research', descriptionKey: 'scenarios.tutorial.obj_first_research', type: 'research', target: 1 }
+    ]
   },
   {
     id: 'fast_start',
@@ -60,8 +30,8 @@ export const SCENARIOS: Scenario[] = [
     scoreMultiplier: 1.5,
     objectives: [
       { id: 'earn_50k', descriptionKey: 'scenarios.fast_start.obj_earn_50k', type: 'cash', target: 50000 },
-      { id: 'ten_buildings', descriptionKey: 'scenarios.fast_start.obj_ten_buildings', type: 'buildings', target: 10 },
-    ],
+      { id: 'ten_buildings', descriptionKey: 'scenarios.fast_start.obj_ten_buildings', type: 'buildings', target: 10 }
+    ]
   },
   {
     id: 'survival',
@@ -75,8 +45,8 @@ export const SCENARIOS: Scenario[] = [
     scoreMultiplier: 2.5,
     objectives: [
       { id: 'survive', descriptionKey: 'scenarios.survival.obj_survive', type: 'cash', target: 1 },
-      { id: 'complete_contracts', descriptionKey: 'scenarios.survival.obj_contracts', type: 'contracts', target: 5 },
-    ],
+      { id: 'complete_contracts', descriptionKey: 'scenarios.survival.obj_contracts', type: 'contracts', target: 5 }
+    ]
   },
   {
     id: 'sandbox',
@@ -85,11 +55,24 @@ export const SCENARIOS: Scenario[] = [
     timeLimitTicks: null,
     startingCash: 999999,
     startingInventory: { wood: 9999, coal: 9999, iron_ore: 9999, water: 9999, steel: 9999 },
-    startingResearch: ['silicon_extraction', 'advanced_fabrication', 'fast_routes', 'automation', 'uranium_mining', 'biotech', 'plasma_tech', 'dark_matter_research', 'quantum_physics', 'antimatter_containment', 'fusion_reactor', 'advanced_biotech'],
+    startingResearch: [
+      'silicon_extraction',
+      'advanced_fabrication',
+      'fast_routes',
+      'automation',
+      'uranium_mining',
+      'biotech',
+      'plasma_tech',
+      'dark_matter_research',
+      'quantum_physics',
+      'antimatter_containment',
+      'fusion_reactor',
+      'advanced_biotech'
+    ],
     infiniteResources: true,
     scoreMultiplier: 0.1,
-    objectives: [],
-  },
+    objectives: []
+  }
 ];
 
-export const SCENARIOS_MAP: Record<string, Scenario> = Object.fromEntries(SCENARIOS.map(s => [s.id, s]));
+export const SCENARIOS_MAP: Record<string, Scenario> = Object.fromEntries(SCENARIOS.map((s) => [s.id, s]));

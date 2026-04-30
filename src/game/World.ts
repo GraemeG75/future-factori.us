@@ -77,8 +77,8 @@ export class World {
     }
   }
 
-  addBuildingMesh(instance: BuildingInstance): THREE.Group {
-    const group = ModelFactory.createBuilding(instance.typeId, instance.level);
+  async addBuildingMesh(instance: BuildingInstance): Promise<THREE.Group> {
+    const group = await ModelFactory.createBuilding(instance.typeId, instance.level);
     group.position.set(instance.position.x, instance.position.y, instance.position.z);
     group.rotation.y = instance.rotation;
     this.scene.add(group);

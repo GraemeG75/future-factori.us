@@ -1,32 +1,5 @@
-export interface TechnologyUnlock {
-  type: 'resource' | 'building' | 'recipe' | 'upgrade';
-  id: string;
-}
-
-export interface Technology {
-  id: string;
-  nameKey: string;
-  descriptionKey: string;
-  tier: 1 | 2 | 3 | 4 | 5;
-  researchPoints: number;
-  moneyCost: number;
-  prerequisites: string[];
-  unlocks: TechnologyUnlock[];
-  duration: number;
-  /** Research tree specialization branch. */
-  specialization?: 'energy' | 'matter' | 'biology';
-  /**
-   * Other technology ids that, when all completed alongside this one, provide
-   * a combined synergy production bonus.
-   */
-  synergyWith?: string[];
-  /**
-   * Production speed multiplier applied when all synergyWith techs are also
-   * complete (e.g. 1.25 = +25% production for all buildings of the relevant
-   * specialization).
-   */
-  synergyBonus?: number;
-}
+export type { TechnologyUnlock, Technology } from '../interfaces/research';
+import type { TechnologyUnlock, Technology } from '../interfaces/research';
 
 export const TECHNOLOGIES: Technology[] = [
   {
@@ -40,9 +13,9 @@ export const TECHNOLOGIES: Technology[] = [
     unlocks: [
       { type: 'resource', id: 'silicon' },
       { type: 'building', id: 'silicon_extractor' },
-      { type: 'building', id: 'circuit_fab' },
+      { type: 'building', id: 'circuit_fab' }
     ],
-    duration: 60,
+    duration: 60
   },
   {
     id: 'advanced_fabrication',
@@ -54,9 +27,9 @@ export const TECHNOLOGIES: Technology[] = [
     prerequisites: [],
     unlocks: [
       { type: 'recipe', id: 'steel_components' },
-      { type: 'resource', id: 'advanced_components' },
+      { type: 'resource', id: 'advanced_components' }
     ],
-    duration: 45,
+    duration: 45
   },
   {
     id: 'uranium_mining',
@@ -70,9 +43,9 @@ export const TECHNOLOGIES: Technology[] = [
     unlocks: [
       { type: 'resource', id: 'uranium' },
       { type: 'building', id: 'uranium_extractor' },
-      { type: 'recipe', id: 'uranium_fuel' },
+      { type: 'recipe', id: 'uranium_fuel' }
     ],
-    duration: 120,
+    duration: 120
   },
   {
     id: 'plasma_tech',
@@ -89,9 +62,9 @@ export const TECHNOLOGIES: Technology[] = [
       { type: 'resource', id: 'plasma_crystals' },
       { type: 'building', id: 'exotic_lab' },
       { type: 'recipe', id: 'plasma_exotic' },
-      { type: 'resource', id: 'exotic_cores' },
+      { type: 'resource', id: 'exotic_cores' }
     ],
-    duration: 240,
+    duration: 240
   },
   {
     id: 'dark_matter_research',
@@ -107,9 +80,9 @@ export const TECHNOLOGIES: Technology[] = [
     unlocks: [
       { type: 'resource', id: 'dark_matter_residue' },
       { type: 'recipe', id: 'nano_alloy' },
-      { type: 'resource', id: 'nano_alloy' },
+      { type: 'resource', id: 'nano_alloy' }
     ],
-    duration: 300,
+    duration: 300
   },
   {
     id: 'quantum_physics',
@@ -120,10 +93,8 @@ export const TECHNOLOGIES: Technology[] = [
     moneyCost: 6000,
     prerequisites: ['plasma_tech'],
     specialization: 'matter',
-    unlocks: [
-      { type: 'resource', id: 'quantum_foam' },
-    ],
-    duration: 280,
+    unlocks: [{ type: 'resource', id: 'quantum_foam' }],
+    duration: 280
   },
   {
     id: 'biotech',
@@ -137,9 +108,9 @@ export const TECHNOLOGIES: Technology[] = [
     unlocks: [
       { type: 'resource', id: 'synthetic_bio_gel' },
       { type: 'recipe', id: 'bio_circuits' },
-      { type: 'resource', id: 'bio_circuits' },
+      { type: 'resource', id: 'bio_circuits' }
     ],
-    duration: 150,
+    duration: 150
   },
   {
     id: 'antimatter_containment',
@@ -156,9 +127,9 @@ export const TECHNOLOGIES: Technology[] = [
       { type: 'resource', id: 'antimatter_particles' },
       { type: 'resource', id: 'antimatter_core' },
       { type: 'recipe', id: 'antimatter_core' },
-      { type: 'building', id: 'quantum_forge' },
+      { type: 'building', id: 'quantum_forge' }
     ],
-    duration: 600,
+    duration: 600
   },
   {
     id: 'fast_routes',
@@ -168,10 +139,8 @@ export const TECHNOLOGIES: Technology[] = [
     researchPoints: 30,
     moneyCost: 300,
     prerequisites: [],
-    unlocks: [
-      { type: 'upgrade', id: 'route_speed' },
-    ],
-    duration: 30,
+    unlocks: [{ type: 'upgrade', id: 'route_speed' }],
+    duration: 30
   },
   {
     id: 'automation',
@@ -181,10 +150,8 @@ export const TECHNOLOGIES: Technology[] = [
     researchPoints: 80,
     moneyCost: 2000,
     prerequisites: ['advanced_fabrication'],
-    unlocks: [
-      { type: 'upgrade', id: 'auto_assign' },
-    ],
-    duration: 100,
+    unlocks: [{ type: 'upgrade', id: 'auto_assign' }],
+    duration: 100
   },
   // -----------------------------------------------------------------------
   // Tier 4 — Advanced Specializations
@@ -202,9 +169,9 @@ export const TECHNOLOGIES: Technology[] = [
     synergyBonus: 1.4,
     unlocks: [
       { type: 'building', id: 'fusion_plant' },
-      { type: 'recipe', id: 'fusion_power' },
+      { type: 'recipe', id: 'fusion_power' }
     ],
-    duration: 480,
+    duration: 480
   },
   {
     id: 'advanced_biotech',
@@ -219,9 +186,9 @@ export const TECHNOLOGIES: Technology[] = [
     synergyBonus: 1.35,
     unlocks: [
       { type: 'recipe', id: 'nano_bio_gel' },
-      { type: 'building', id: 'bio_reactor' },
+      { type: 'building', id: 'bio_reactor' }
     ],
-    duration: 400,
+    duration: 400
   },
   // -----------------------------------------------------------------------
   // Tier 5 — Post-Singularity
@@ -239,9 +206,9 @@ export const TECHNOLOGIES: Technology[] = [
     synergyBonus: 1.5,
     unlocks: [
       { type: 'building', id: 'singularity_tap' },
-      { type: 'recipe', id: 'void_energy' },
+      { type: 'recipe', id: 'void_energy' }
     ],
-    duration: 1800,
+    duration: 1800
   },
   {
     id: 'consciousness_upload',
@@ -256,9 +223,9 @@ export const TECHNOLOGIES: Technology[] = [
     synergyBonus: 1.6,
     unlocks: [
       { type: 'building', id: 'mind_matrix' },
-      { type: 'recipe', id: 'neural_substrate' },
+      { type: 'recipe', id: 'neural_substrate' }
     ],
-    duration: 2400,
+    duration: 2400
   },
   {
     id: 'reality_engineering',
@@ -273,12 +240,10 @@ export const TECHNOLOGIES: Technology[] = [
     synergyBonus: 2.0,
     unlocks: [
       { type: 'building', id: 'reality_forge' },
-      { type: 'recipe', id: 'reality_shard' },
+      { type: 'recipe', id: 'reality_shard' }
     ],
-    duration: 3600,
-  },
+    duration: 3600
+  }
 ];
 
-export const TECHNOLOGIES_MAP: Record<string, Technology> = Object.fromEntries(
-  TECHNOLOGIES.map((t) => [t.id, t]),
-);
+export const TECHNOLOGIES_MAP: Record<string, Technology> = Object.fromEntries(TECHNOLOGIES.map((t) => [t.id, t]));

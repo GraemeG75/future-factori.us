@@ -1,13 +1,5 @@
-export interface TradePartner {
-  id: string;
-  nameKey: string;
-  descriptionKey: string;
-  preferredResources: string[];
-  baseDemand: number;
-  priceModifier: number;
-  unlockRequirement?: string;
-  position: { x: number; z: number };
-}
+export type { TradePartner } from '../interfaces/tradePartners';
+import type { TradePartner } from '../interfaces/tradePartners';
 
 export const TRADE_PARTNERS: TradePartner[] = [
   {
@@ -17,7 +9,7 @@ export const TRADE_PARTNERS: TradePartner[] = [
     preferredResources: ['steel', 'basic_components', 'circuits'],
     baseDemand: 0.8,
     priceModifier: 1.0,
-    position: { x: 200, z: 50 },
+    position: { x: 200, z: 50 }
   },
   {
     id: 'energy_traders',
@@ -26,7 +18,7 @@ export const TRADE_PARTNERS: TradePartner[] = [
     preferredResources: ['fuel', 'uranium', 'coal'],
     baseDemand: 0.7,
     priceModifier: 1.25,
-    position: { x: -150, z: 180 },
+    position: { x: -150, z: 180 }
   },
   {
     id: 'research_institute',
@@ -36,7 +28,7 @@ export const TRADE_PARTNERS: TradePartner[] = [
     baseDemand: 0.5,
     priceModifier: 1.6,
     unlockRequirement: 'plasma_tech',
-    position: { x: 300, z: -200 },
+    position: { x: 300, z: -200 }
   },
   {
     id: 'black_market',
@@ -46,7 +38,7 @@ export const TRADE_PARTNERS: TradePartner[] = [
     baseDemand: 0.6,
     priceModifier: 2.0,
     unlockRequirement: 'dark_matter_research',
-    position: { x: 0, z: 300 },
+    position: { x: 0, z: 300 }
   },
   {
     id: 'terraformers',
@@ -56,12 +48,10 @@ export const TRADE_PARTNERS: TradePartner[] = [
     baseDemand: 0.75,
     priceModifier: 1.4,
     unlockRequirement: 'biotech',
-    position: { x: -300, z: 200 },
-  },
+    position: { x: -300, z: 200 }
+  }
 ];
 
-export const TRADE_PARTNERS_MAP: Record<string, TradePartner> = Object.fromEntries(
-  TRADE_PARTNERS.map((p) => [p.id, p]),
-);
+export const TRADE_PARTNERS_MAP: Record<string, TradePartner> = Object.fromEntries(TRADE_PARTNERS.map((p) => [p.id, p]));
 
 export const DEFAULT_TRADE_PARTNER: TradePartner = TRADE_PARTNERS_MAP['industrial_corp'];

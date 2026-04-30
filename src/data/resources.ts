@@ -1,14 +1,5 @@
-export interface ResourceType {
-  id: string;
-  nameKey: string;
-  descriptionKey: string;
-  tier: 'basic' | 'intermediate' | 'advanced' | 'exotic';
-  basePrice: number;
-  storageSize: number;
-  unlockRequirement?: string;
-  color: string;
-  icon: string;
-}
+export type { ResourceType } from '../interfaces/resources';
+import type { ResourceType } from '../interfaces/resources';
 
 export const RESOURCES: ResourceType[] = [
   // Basic
@@ -20,7 +11,7 @@ export const RESOURCES: ResourceType[] = [
     basePrice: 5,
     storageSize: 100,
     color: '#8B5E3C',
-    icon: '🪵',
+    icon: '🪵'
   },
   {
     id: 'coal',
@@ -30,7 +21,7 @@ export const RESOURCES: ResourceType[] = [
     basePrice: 8,
     storageSize: 80,
     color: '#2C2C2C',
-    icon: '🪨',
+    icon: '🪨'
   },
   {
     id: 'iron_ore',
@@ -40,7 +31,7 @@ export const RESOURCES: ResourceType[] = [
     basePrice: 10,
     storageSize: 60,
     color: '#8B4513',
-    icon: '⛏️',
+    icon: '⛏️'
   },
   {
     id: 'water',
@@ -50,7 +41,7 @@ export const RESOURCES: ResourceType[] = [
     basePrice: 3,
     storageSize: 120,
     color: '#1E90FF',
-    icon: '💧',
+    icon: '💧'
   },
 
   // Intermediate
@@ -62,7 +53,7 @@ export const RESOURCES: ResourceType[] = [
     basePrice: 30,
     storageSize: 40,
     color: '#708090',
-    icon: '🔩',
+    icon: '🔩'
   },
   {
     id: 'basic_components',
@@ -72,7 +63,7 @@ export const RESOURCES: ResourceType[] = [
     basePrice: 25,
     storageSize: 50,
     color: '#DAA520',
-    icon: '⚙️',
+    icon: '⚙️'
   },
   {
     id: 'circuits',
@@ -82,7 +73,7 @@ export const RESOURCES: ResourceType[] = [
     basePrice: 80,
     storageSize: 30,
     color: '#228B22',
-    icon: '🔌',
+    icon: '🔌'
   },
   {
     id: 'fuel',
@@ -92,7 +83,7 @@ export const RESOURCES: ResourceType[] = [
     basePrice: 40,
     storageSize: 50,
     color: '#FF8C00',
-    icon: '⛽',
+    icon: '⛽'
   },
 
   // Advanced
@@ -105,7 +96,7 @@ export const RESOURCES: ResourceType[] = [
     storageSize: 60,
     unlockRequirement: 'silicon_extraction',
     color: '#C0C0C0',
-    icon: '💎',
+    icon: '💎'
   },
   {
     id: 'uranium',
@@ -116,7 +107,7 @@ export const RESOURCES: ResourceType[] = [
     storageSize: 20,
     unlockRequirement: 'uranium_mining',
     color: '#7FFF00',
-    icon: '☢️',
+    icon: '☢️'
   },
   {
     id: 'plasma_crystals',
@@ -127,7 +118,7 @@ export const RESOURCES: ResourceType[] = [
     storageSize: 10,
     unlockRequirement: 'plasma_tech',
     color: '#FF00FF',
-    icon: '🔮',
+    icon: '🔮'
   },
   {
     id: 'dark_matter_residue',
@@ -138,7 +129,7 @@ export const RESOURCES: ResourceType[] = [
     storageSize: 5,
     unlockRequirement: 'dark_matter_research',
     color: '#1A1A2E',
-    icon: '🌑',
+    icon: '🌑'
   },
   {
     id: 'quantum_foam',
@@ -149,7 +140,7 @@ export const RESOURCES: ResourceType[] = [
     storageSize: 5,
     unlockRequirement: 'quantum_physics',
     color: '#9400D3',
-    icon: '🫧',
+    icon: '🫧'
   },
   {
     id: 'synthetic_bio_gel',
@@ -160,7 +151,7 @@ export const RESOURCES: ResourceType[] = [
     storageSize: 15,
     unlockRequirement: 'biotech',
     color: '#00FA9A',
-    icon: '🧬',
+    icon: '🧬'
   },
   {
     id: 'antimatter_particles',
@@ -171,7 +162,7 @@ export const RESOURCES: ResourceType[] = [
     storageSize: 2,
     unlockRequirement: 'antimatter_containment',
     color: '#FF1493',
-    icon: '⚛️',
+    icon: '⚛️'
   },
   {
     id: 'advanced_components',
@@ -182,7 +173,7 @@ export const RESOURCES: ResourceType[] = [
     storageSize: 30,
     unlockRequirement: 'advanced_fabrication',
     color: '#4169E1',
-    icon: '🔧',
+    icon: '🔧'
   },
 
   {
@@ -194,7 +185,7 @@ export const RESOURCES: ResourceType[] = [
     storageSize: 1,
     unlockRequirement: 'antimatter_containment',
     color: '#FF69B4',
-    icon: '🌀',
+    icon: '🌀'
   },
 
   // Exotic
@@ -207,7 +198,7 @@ export const RESOURCES: ResourceType[] = [
     storageSize: 3,
     unlockRequirement: 'plasma_tech',
     color: '#FFD700',
-    icon: '💠',
+    icon: '💠'
   },
   {
     id: 'nano_alloy',
@@ -218,7 +209,7 @@ export const RESOURCES: ResourceType[] = [
     storageSize: 10,
     unlockRequirement: 'dark_matter_research',
     color: '#B8860B',
-    icon: '🔱',
+    icon: '🔱'
   },
   {
     id: 'bio_circuits',
@@ -229,10 +220,8 @@ export const RESOURCES: ResourceType[] = [
     storageSize: 8,
     unlockRequirement: 'biotech',
     color: '#32CD32',
-    icon: '🧪',
-  },
+    icon: '🧪'
+  }
 ];
 
-export const RESOURCES_MAP: Record<string, ResourceType> = Object.fromEntries(
-  RESOURCES.map((r) => [r.id, r]),
-);
+export const RESOURCES_MAP: Record<string, ResourceType> = Object.fromEntries(RESOURCES.map((r) => [r.id, r]));
