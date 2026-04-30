@@ -129,7 +129,9 @@ export class Game {
 
   newGame(): void {
     this.applyState(SaveSystem.createNewGame());
-    if (this.onStateChange) this.onStateChange(this.state);
+    if (this.onStateChange) {
+      this.onStateChange(this.state);
+    }
   }
 
   saveGame(): void {
@@ -138,9 +140,13 @@ export class Game {
 
   loadGame(): boolean {
     const loaded = SaveSystem.load();
-    if (!loaded) return false;
+    if (!loaded) {
+      return false;
+    }
     this.applyState(loaded);
-    if (this.onStateChange) this.onStateChange(this.state);
+    if (this.onStateChange) {
+      this.onStateChange(this.state);
+    }
     return true;
   }
 
@@ -150,16 +156,22 @@ export class Game {
 
   importSave(json: string): boolean {
     const loaded = SaveSystem.importSave(json);
-    if (!loaded) return false;
+    if (!loaded) {
+      return false;
+    }
     this.applyState(loaded);
-    if (this.onStateChange) this.onStateChange(this.state);
+    if (this.onStateChange) {
+      this.onStateChange(this.state);
+    }
     return true;
   }
 
   resetGame(): void {
     SaveSystem.deleteSave();
     this.applyState(SaveSystem.createNewGame());
-    if (this.onStateChange) this.onStateChange(this.state);
+    if (this.onStateChange) {
+      this.onStateChange(this.state);
+    }
   }
 
   pause(): void {
@@ -178,24 +190,32 @@ export class Game {
   async placeBuilding(typeId: string, position: { x: number; z: number }): Promise<boolean> {
     const fullPos = { x: position.x, y: 0, z: position.z };
     const building = BuildingSystem.placeBuilding(this.state, typeId, fullPos);
-    if (!building) return false;
+    if (!building) {
+      return false;
+    }
     const mesh = await this.world.addBuildingMesh(building);
     this.selectionManager.registerBuilding(building.id, mesh);
     this.world.syncSpotMarkers(this.state.resourceSpots);
     this.audio.playBuild();
-    if (this.onStateChange) this.onStateChange(this.state);
+    if (this.onStateChange) {
+      this.onStateChange(this.state);
+    }
     return true;
   }
 
   createRoute(fromId: string, toId: string, resourceId: string): boolean {
     const route = RouteSystem.createRoute(this.state, fromId, toId, resourceId, 10);
-    if (!route) return false;
+    if (!route) {
+      return false;
+    }
     const from = this.world.getBuildingPosition(fromId);
     const to = this.world.getBuildingPosition(toId);
     if (from && to) {
       this.world.addRouteLine(route, from, to);
     }
-    if (this.onStateChange) this.onStateChange(this.state);
+    if (this.onStateChange) {
+      this.onStateChange(this.state);
+    }
     return true;
   }
 
@@ -203,14 +223,18 @@ export class Game {
     const result = EconomySystem.sellResource(this.state, resourceId, amount, partnerId);
     if (result) {
       this.audio.playTradeComplete();
-      if (this.onStateChange) this.onStateChange(this.state);
+      if (this.onStateChange) {
+        this.onStateChange(this.state);
+      }
     }
     return result;
   }
 
   startResearch(techId: string): boolean {
     const result = ResearchSystem.startResearch(this.state, techId);
-    if (result && this.onStateChange) this.onStateChange(this.state);
+    if (result && this.onStateChange) {
+      this.onStateChange(this.state);
+    }
     return result;
   }
 
@@ -222,14 +246,18 @@ export class Game {
     const ok = ScenarioSystem.startScenario(this.state, scenarioId);
     if (ok) {
       this.world.init(this.state);
-      if (this.onStateChange) this.onStateChange(this.state);
+      if (this.onStateChange) {
+        this.onStateChange(this.state);
+      }
     }
     return ok;
   }
 
   getSelectedBuilding(): BuildingInstance | undefined {
     const id = this.selectionManager.getSelected();
-    if (!id) return undefined;
+    if (!id) {
+      return undefined;
+    }
     return BuildingSystem.getBuildingById(this.state, id);
   }
 
@@ -244,7 +272,9 @@ export class Game {
 
     for (const building of this.state.buildings) {
       const mesh = this.world.getBuildingMesh(building.id);
-      if (mesh) this.selectionManager.registerBuilding(building.id, mesh);
+      if (mesh) {
+        this.selectionManager.registerBuilding(building.id, mesh);
+      }
     }
     this.world.syncSpotMarkers(this.state.resourceSpots);
   }
@@ -267,7 +297,9 @@ export class Game {
     const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
     const target = new THREE.Vector3();
     const hit = raycaster.ray.intersectPlane(groundPlane, target);
-    if (!hit) return null;
+    if (!hit) {
+      return null;
+    }
     return { x: Math.round(target.x), z: Math.round(target.z) };
   }
 
@@ -275,8 +307,12 @@ export class Game {
     const result = BuildingSystem.upgradeBuilding(this.state, buildingId);
     if (result) {
       const building = BuildingSystem.getBuildingById(this.state, buildingId);
-      if (building) this.world.updateBuildingMesh(building);
-      if (this.onStateChange) this.onStateChange(this.state);
+      if (building) {
+        this.world.updateBuildingMesh(building);
+      }
+      if (this.onStateChange) {
+        this.onStateChange(this.state);
+      }
     }
     return result;
   }
@@ -285,7 +321,9 @@ export class Game {
     this.world.removeBuildingMesh(buildingId);
     this.selectionManager.unregisterBuilding(buildingId);
     BuildingSystem.removeBuilding(this.state, buildingId);
-    if (this.onStateChange) this.onStateChange(this.state);
+    if (this.onStateChange) {
+      this.onStateChange(this.state);
+    }
   }
 
   setRecipe(buildingId: string, recipeId: string | null): void {
@@ -293,48 +331,64 @@ export class Game {
     if (building) {
       building.activeRecipeId = recipeId;
       building.productionProgress = 0;
-      if (this.onStateChange) this.onStateChange(this.state);
+      if (this.onStateChange) {
+        this.onStateChange(this.state);
+      }
     }
   }
 
   removeRoute(routeId: string): void {
     this.world.removeRouteLine(routeId);
     RouteSystem.removeRoute(this.state, routeId);
-    if (this.onStateChange) this.onStateChange(this.state);
+    if (this.onStateChange) {
+      this.onStateChange(this.state);
+    }
   }
 
   cancelResearch(): void {
     ResearchSystem.cancelResearch(this.state);
-    if (this.onStateChange) this.onStateChange(this.state);
+    if (this.onStateChange) {
+      this.onStateChange(this.state);
+    }
   }
 
   fulfillContract(contractId: string): boolean {
     const ok = ContractSystem.fulfillContract(this.state, contractId);
-    if (ok && this.onStateChange) this.onStateChange(this.state);
+    if (ok && this.onStateChange) {
+      this.onStateChange(this.state);
+    }
     return ok;
   }
 
   acceptContract(contractId: string): boolean {
     const ok = ContractSystem.acceptContract(this.state, contractId);
-    if (ok && this.onStateChange) this.onStateChange(this.state);
+    if (ok && this.onStateChange) {
+      this.onStateChange(this.state);
+    }
     return ok;
   }
 
   takeLoan(tierIndex: number): boolean {
     const ok = LoanSystem.takeLoan(this.state, tierIndex);
-    if (ok && this.onStateChange) this.onStateChange(this.state);
+    if (ok && this.onStateChange) {
+      this.onStateChange(this.state);
+    }
     return ok;
   }
 
   repayLoan(loanId: string): number {
     const amount = LoanSystem.repayLoan(this.state, loanId);
-    if (amount > 0 && this.onStateChange) this.onStateChange(this.state);
+    if (amount > 0 && this.onStateChange) {
+      this.onStateChange(this.state);
+    }
     return amount;
   }
 
   setResearchSpecialization(spec: 'energy' | 'matter' | 'biology' | null): void {
     this.state.researchSpecialization = spec;
-    if (this.onStateChange) this.onStateChange(this.state);
+    if (this.onStateChange) {
+      this.onStateChange(this.state);
+    }
   }
 
   getLoanTiers() {
@@ -343,15 +397,21 @@ export class Game {
 
   getUpgradeCost(buildingId: string): number {
     const building = BuildingSystem.getBuildingById(this.state, buildingId);
-    if (!building) return 0;
+    if (!building) {
+      return 0;
+    }
     const bt = BUILDINGS_MAP[building.typeId];
-    if (!bt) return 0;
+    if (!bt) {
+      return 0;
+    }
     return bt.baseCost * Math.pow(bt.upgradeCostMultiplier, building.level);
   }
 
   getRepairCost(buildingId: string): number {
     const building = BuildingSystem.getBuildingById(this.state, buildingId);
-    if (!building) return 0;
+    if (!building) {
+      return 0;
+    }
     return MaintenanceSystem.getRepairCost(building);
   }
 
@@ -370,13 +430,17 @@ export class Game {
           params: [ach?.nameKey ?? 'achievements.repair_crew.name', ach?.icon ?? '🔧']
         });
       }
-      if (this.onStateChange) this.onStateChange(this.state);
+      if (this.onStateChange) {
+        this.onStateChange(this.state);
+      }
     }
     return ok;
   }
 
   private gameLoop(timestamp: number): void {
-    if (!this.running) return;
+    if (!this.running) {
+      return;
+    }
     this.deltaTime = (timestamp - this.lastTimestamp) / 1000;
     this.lastTimestamp = timestamp;
     const realDelta = Math.min(this.deltaTime, 0.1);
@@ -392,12 +456,16 @@ export class Game {
     this.render();
     // Only notify the UI when the simulation state actually advanced —
     // avoids 60fps DOM rebuilds when no tick ran this frame.
-    if (didTick && this.onStateChange) this.onStateChange(this.state);
+    if (didTick && this.onStateChange) {
+      this.onStateChange(this.state);
+    }
     this.animFrameId = requestAnimationFrame((ts) => this.gameLoop(ts));
   }
 
   private tick(): void {
-    if (this.state.settings.gamePaused) return;
+    if (this.state.settings.gamePaused) {
+      return;
+    }
     this.state.tick++;
     BuildingSystem.updatePowerState(this.state);
     ProductionSystem.tick(this.state, TICK_INTERVAL);
@@ -430,7 +498,9 @@ export class Game {
 
   dispose(): void {
     this.running = false;
-    if (this.animFrameId) cancelAnimationFrame(this.animFrameId);
+    if (this.animFrameId) {
+      cancelAnimationFrame(this.animFrameId);
+    }
     this.cameraController.dispose();
     this.effects.dispose();
     this.world.dispose();

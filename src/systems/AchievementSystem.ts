@@ -11,7 +11,9 @@ import { HOT_BUILDING_IDS } from './HeatSystem';
  */
 export function checkAchievements(state: GameState): void {
   for (const achievement of ACHIEVEMENTS) {
-    if (state.unlockedAchievements.includes(achievement.id)) continue;
+    if (state.unlockedAchievements.includes(achievement.id)) {
+      continue;
+    }
     if (isUnlocked(achievement.id, state)) {
       state.unlockedAchievements.push(achievement.id);
       state.alerts.push({

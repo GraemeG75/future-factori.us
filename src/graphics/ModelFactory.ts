@@ -27,14 +27,14 @@ export class ModelFactory {
   }
 
   private static getTerrainTopColor(cell: HeightmapCell): THREE.Color {
-    const warmSand   = ModelFactory.colorFromRgb(212, 186, 126);
-    const moss       = ModelFactory.colorFromRgb(98,  150,  74); // slightly more vibrant
-    const lush       = ModelFactory.colorFromRgb(62,  132,  70); // slightly more vibrant
-    const dryEarth   = ModelFactory.colorFromRgb(154, 132,  78); // warmer/richer than old scrub
-    const scrubOlive = ModelFactory.colorFromRgb(138, 142,  80); // warm olive for variety
-    const rock       = ModelFactory.colorFromRgb(126, 110,  94); // browner, less gray
-    const snow       = ModelFactory.colorFromRgb(225, 232, 242);
-    const wetland    = ModelFactory.colorFromRgb(82,  120,  76);
+    const warmSand = ModelFactory.colorFromRgb(212, 186, 126);
+    const moss = ModelFactory.colorFromRgb(98, 150, 74); // slightly more vibrant
+    const lush = ModelFactory.colorFromRgb(62, 132, 70); // slightly more vibrant
+    const dryEarth = ModelFactory.colorFromRgb(154, 132, 78); // warmer/richer than old scrub
+    const scrubOlive = ModelFactory.colorFromRgb(138, 142, 80); // warm olive for variety
+    const rock = ModelFactory.colorFromRgb(126, 110, 94); // browner, less gray
+    const snow = ModelFactory.colorFromRgb(225, 232, 242);
+    const wetland = ModelFactory.colorFromRgb(82, 120, 76);
 
     const moistureBlend = cell.moisture * 0.55 + cell.flow * 0.45;
     let color: THREE.Color;
@@ -77,7 +77,9 @@ export class ModelFactory {
     canvas.width = size;
     canvas.height = size;
     const ctx = canvas.getContext('2d');
-    if (!ctx) return new THREE.CanvasTexture(canvas);
+    if (!ctx) {
+      return new THREE.CanvasTexture(canvas);
+    }
 
     const image = ctx.createImageData(size, size);
     for (let y = 0; y < size; y++) {
@@ -87,7 +89,9 @@ export class ModelFactory {
         const grain = ((x * 13 + y * 17 + x * y * 3) % 97) / 96;
         const sparkle = ((x * 7 + y * 19) % 31) / 30;
         let value = base + wave * range * 0.35 + grain * range * 0.65;
-        if (accentChance > 0 && sparkle > 1 - accentChance) value += range * 0.8;
+        if (accentChance > 0 && sparkle > 1 - accentChance) {
+          value += range * 0.8;
+        }
         const channel = Math.max(0, Math.min(255, Math.round(value)));
         image.data[idx] = channel;
         image.data[idx + 1] = channel;
@@ -110,7 +114,9 @@ export class ModelFactory {
     canvas.width = size;
     canvas.height = size;
     const ctx = canvas.getContext('2d');
-    if (!ctx) return new THREE.CanvasTexture(canvas);
+    if (!ctx) {
+      return new THREE.CanvasTexture(canvas);
+    }
 
     const image = ctx.createImageData(size, size);
     for (let y = 0; y < size; y++) {
@@ -118,8 +124,8 @@ export class ModelFactory {
         const idx = (y * size + x) * 4;
         // Multi-frequency wave interference for organic patching
         const coarse = Math.sin(x * 0.072 + y * 0.053) * 0.5 + Math.cos(x * 0.041 - y * 0.088) * 0.5;
-        const medium = Math.sin(x * 0.19  + y * 0.14 ) * 0.5 + Math.cos(x * 0.11  - y * 0.17 ) * 0.5;
-        const fine   = ((x * 17 + y * 31 + x * y * 7) % 97) / 96;
+        const medium = Math.sin(x * 0.19 + y * 0.14 ) * 0.5 + Math.cos(x * 0.11 - y * 0.17 ) * 0.5;
+        const fine = ((x * 17 + y * 31 + x * y * 7) % 97) / 96;
         const t = Math.max(0, Math.min(1, coarse * 0.4 + medium * 0.35 + fine * 0.25));
 
         // Warm sandy-ochre palette: bright enough so multiplication doesn't over-darken
@@ -127,9 +133,9 @@ export class ModelFactory {
         const r = Math.round(214 - t * 52 + (fine - 0.5) * 22);
         const g = Math.round(192 - t * 40 + (fine - 0.5) * 22);
         const b = Math.round(144 - t * 48 + (fine - 0.5) * 14);
-        image.data[idx]     = Math.max(130, Math.min(245, r));
+        image.data[idx] = Math.max(130, Math.min(245, r));
         image.data[idx + 1] = Math.max(118, Math.min(228, g));
-        image.data[idx + 2] = Math.max(72,  Math.min(175, b));
+        image.data[idx + 2] = Math.max(72, Math.min(175, b));
         image.data[idx + 3] = 255;
       }
     }
@@ -200,9 +206,13 @@ export class ModelFactory {
     const normalEast = new THREE.Vector3(1, 0, 0);
     const normalWest = new THREE.Vector3(-1, 0, 0);
     const getCell = (column: number, row: number): HeightmapCell | null => {
-      if (column < 0 || row < 0 || column >= heightmap.columns || row >= heightmap.rows) return null;
+      if (column < 0 || row < 0 || column >= heightmap.columns || row >= heightmap.rows) {
+        return null;
+      }
       const index = row * heightmap.columns + column;
-      if (index < 0 || index >= heightmap.cells.length) return null;
+      if (index < 0 || index >= heightmap.cells.length) {
+        return null;
+      }
       return heightmap.cells[index] ?? null;
     };
 
@@ -532,7 +542,7 @@ export class ModelFactory {
       vertexColors: true,
       map: terrainTexture,
       flatShading: true,
-      emissive: new THREE.Color(0x1c1008),  // warm dark amber
+      emissive: new THREE.Color(0x1c1008), // warm dark amber
       emissiveIntensity: 0.22,
       roughness: 0.88,
       metalness: 0.04
@@ -546,12 +556,16 @@ export class ModelFactory {
 
   static flattenTerrainAt(terrainMesh: THREE.Mesh, worldX: number, worldZ: number, radius: number = 5): void {
     const heightmap = terrainMesh.userData['heightmap'] as TerrainHeightmap | undefined;
-    if (!heightmap) return;
+    if (!heightmap) {
+      return;
+    }
 
     const centerCol = Math.min(heightmap.columns - 1, Math.max(0, Math.floor((worldX + heightmap.width * 0.5) / heightmap.cellWidth)));
     const centerRow = Math.min(heightmap.rows - 1, Math.max(0, Math.floor((worldZ + heightmap.depth * 0.5) / heightmap.cellDepth)));
     const centerCell = heightmap.cells[centerRow * heightmap.columns + centerCol];
-    if (!centerCell) return;
+    if (!centerCell) {
+      return;
+    }
     const targetHeight = centerCell.quantizedHeight;
 
     const colRadius = Math.ceil(radius / heightmap.cellWidth);
@@ -560,11 +574,17 @@ export class ModelFactory {
       for (let dc = -colRadius; dc <= colRadius; dc++) {
         const col = centerCol + dc;
         const row = centerRow + dr;
-        if (col < 0 || row < 0 || col >= heightmap.columns || row >= heightmap.rows) continue;
+        if (col < 0 || row < 0 || col >= heightmap.columns || row >= heightmap.rows) {
+          continue;
+        }
         const cell = heightmap.cells[row * heightmap.columns + col];
-        if (!cell) continue;
+        if (!cell) {
+          continue;
+        }
         const dist = Math.sqrt((cell.x - worldX) ** 2 + (cell.z - worldZ) ** 2);
-        if (dist <= radius) cell.quantizedHeight = targetHeight;
+        if (dist <= radius) {
+          cell.quantizedHeight = targetHeight;
+        }
       }
     }
 
@@ -581,7 +601,9 @@ export class ModelFactory {
     const getGridHeight = (x: number, z: number): number => {
       const key = `${x},${z}`;
       const cached = heightCache.get(key);
-      if (cached !== undefined) return cached;
+      if (cached !== undefined) {
+        return cached;
+      }
       const height = sampleTerrainHeight(seed, x, z, width, depth) + GRID_HEIGHT_OFFSET;
       heightCache.set(key, height);
       return height;

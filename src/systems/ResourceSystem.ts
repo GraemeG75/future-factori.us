@@ -26,7 +26,9 @@ export function addResource(state: GameState, resourceId: string, amount: number
  */
 export function removeResource(state: GameState, resourceId: string, amount: number): boolean {
   const current = getAmount(state, resourceId);
-  if (current < amount) return false;
+  if (current < amount) {
+    return false;
+  }
   state.inventory[resourceId] = current - amount;
   return true;
 }
@@ -44,7 +46,9 @@ export function canAfford(state: GameState, costs: Record<string, number>): bool
  */
 export function getStorageCapacity(state: GameState, resourceId: string): number {
   const resource = RESOURCES_MAP[resourceId];
-  if (!resource) return 0;
+  if (!resource) {
+    return 0;
+  }
   const baseCapacity = resource.storageSize * 10;
   const storageBonus = state.buildings
     .filter((b) => b.typeId === 'storage_depot')
@@ -58,8 +62,12 @@ export function getStorageCapacity(state: GameState, resourceId: string): number
  */
 export function isResourceUnlocked(completedResearch: string[], resourceId: string): boolean {
   const resource = RESOURCES_MAP[resourceId];
-  if (!resource) return false;
-  if (!resource.unlockRequirement) return true;
+  if (!resource) {
+    return false;
+  }
+  if (!resource.unlockRequirement) {
+    return true;
+  }
   return completedResearch.includes(resource.unlockRequirement);
 }
 
@@ -68,7 +76,9 @@ export function isResourceUnlocked(completedResearch: string[], resourceId: stri
  */
 export function getResourceValue(resourceId: string, quantity: number): number {
   const resource = RESOURCES_MAP[resourceId];
-  if (!resource) return 0;
+  if (!resource) {
+    return 0;
+  }
   return resource.basePrice * quantity;
 }
 
@@ -77,7 +87,11 @@ export function getResourceValue(resourceId: string, quantity: number): number {
  */
 export function isBuildingTypeUnlocked(completedResearch: string[], typeId: string): boolean {
   const buildingType = BUILDINGS_MAP[typeId];
-  if (!buildingType) return false;
-  if (!buildingType.unlockRequirement) return true;
+  if (!buildingType) {
+    return false;
+  }
+  if (!buildingType.unlockRequirement) {
+    return true;
+  }
   return completedResearch.includes(buildingType.unlockRequirement);
 }

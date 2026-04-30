@@ -8,17 +8,25 @@ import { DEFAULT_COST_PER_TRIP, MIN_DISTANCE } from '../consts/routes';
  * Returns null if either building does not exist.
  */
 export function createRoute(state: GameState, fromId: string, toId: string, resourceId: string, capacity: number): RouteInstance | null {
-  if (fromId === toId) return null;
+  if (fromId === toId) {
+    return null;
+  }
 
   const duplicate = state.routes.some((r) => r.fromBuildingId === fromId && r.toBuildingId === toId && r.resourceId === resourceId);
-  if (duplicate) return null;
+  if (duplicate) {
+    return null;
+  }
 
   const from = state.buildings.find((b) => b.id === fromId);
   const to = state.buildings.find((b) => b.id === toId);
-  if (!from || !to) return null;
+  if (!from || !to) {
+    return null;
+  }
 
   const toType = BUILDINGS_MAP[to.typeId];
-  if (!toType || toType.category === 'harvester') return null;
+  if (!toType || toType.category === 'harvester') {
+    return null;
+  }
 
   const route: RouteInstance = {
     id: crypto.randomUUID(),
@@ -61,11 +69,15 @@ export function tick(state: GameState, deltaSeconds: number): void {
   const buildingMap = new Map(state.buildings.map((b) => [b.id, b]));
 
   for (const route of state.routes) {
-    if (!route.isActive) continue;
+    if (!route.isActive) {
+      continue;
+    }
 
     const from = buildingMap.get(route.fromBuildingId);
     const to = buildingMap.get(route.toBuildingId);
-    if (!from || !to) continue;
+    if (!from || !to) {
+      continue;
+    }
 
     if (route.currentLoad > 0) {
       // In transit – advance progress
@@ -112,7 +124,9 @@ export function getRoutesForBuilding(state: GameState, buildingId: string): Rout
  * the capacity and current travel speed over an estimated trip duration.
  */
 export function getRouteThroughput(route: RouteInstance): number {
-  if (route.speed <= 0) return 0;
+  if (route.speed <= 0) {
+    return 0;
+  }
   // Estimate round-trip time; without building positions just use speed ratio.
   const estimatedTripSeconds = 1 / route.speed;
   return (route.capacity / estimatedTripSeconds) * 60;
@@ -146,7 +160,9 @@ function tryLoad(state: GameState, route: RouteInstance, from: { outputBuffer: R
   const inventoryAmount = state.inventory[route.resourceId] ?? 0;
   const totalAvailable = outputAmount + inventoryAmount;
 
-  if (totalAvailable <= 0) return;
+  if (totalAvailable <= 0) {
+    return;
+  }
 
   const toLoad = Math.min(route.capacity, totalAvailable);
 

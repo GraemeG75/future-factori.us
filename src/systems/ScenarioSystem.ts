@@ -21,13 +21,17 @@ export function checkObjective(state: GameState, obj: ScenarioObjective): boolea
 
 export function areAllObjectivesComplete(state: GameState): boolean {
   const scenario = state.activeScenarioId ? SCENARIOS_MAP[state.activeScenarioId] : null;
-  if (!scenario || scenario.objectives.length === 0) return false;
+  if (!scenario || scenario.objectives.length === 0) {
+    return false;
+  }
   return scenario.objectives.every(obj => checkObjective(state, obj));
 }
 
 export function isTimedOut(state: GameState): boolean {
   const scenario = state.activeScenarioId ? SCENARIOS_MAP[state.activeScenarioId] : null;
-  if (!scenario || scenario.timeLimitTicks === null) return false;
+  if (!scenario || scenario.timeLimitTicks === null) {
+    return false;
+  }
   return state.tick >= scenario.timeLimitTicks;
 }
 
@@ -40,10 +44,14 @@ export function calculateScore(state: GameState): number {
 }
 
 export function tick(state: GameState): void {
-  if (!state.activeScenarioId || state.scenarioStatus !== 'active') return;
+  if (!state.activeScenarioId || state.scenarioStatus !== 'active') {
+    return;
+  }
 
   const scenario = SCENARIOS_MAP[state.activeScenarioId];
-  if (!scenario) return;
+  if (!scenario) {
+    return;
+  }
 
   // Check time limit
   if (scenario.timeLimitTicks !== null && state.tick >= scenario.timeLimitTicks) {
@@ -61,12 +69,16 @@ export function tick(state: GameState): void {
 
 export function startScenario(state: GameState, scenarioId: string): boolean {
   const scenario = SCENARIOS_MAP[scenarioId];
-  if (!scenario) return false;
+  if (!scenario) {
+    return false;
+  }
   state.activeScenarioId = scenarioId;
   state.scenarioStatus = 'active';
   state.scenarioScore = 0;
   // Apply starting bonuses
-  if (scenario.startingCash !== null) state.cash = scenario.startingCash;
+  if (scenario.startingCash !== null) {
+    state.cash = scenario.startingCash;
+  }
   for (const [resId, amt] of Object.entries(scenario.startingInventory)) {
     state.inventory[resId] = (state.inventory[resId] ?? 0) + amt;
   }

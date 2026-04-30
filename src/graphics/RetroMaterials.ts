@@ -1,7 +1,10 @@
 import * as THREE from 'three';
 
 export class RetroMaterials {
-  static neonGlow(color: THREE.ColorRepresentation, emissive?: THREE.ColorRepresentation): THREE.MeshStandardMaterial {
+  static neonGlow(
+    color: THREE.ColorRepresentation,
+    emissive?: THREE.ColorRepresentation
+  ): THREE.MeshStandardMaterial {
     return new THREE.MeshStandardMaterial({
       color,
       emissive: emissive ?? color,
@@ -11,7 +14,9 @@ export class RetroMaterials {
     });
   }
 
-  static metallic(color: THREE.ColorRepresentation): THREE.MeshStandardMaterial {
+  static metallic(
+    color: THREE.ColorRepresentation
+  ): THREE.MeshStandardMaterial {
     return new THREE.MeshStandardMaterial({
       color,
       roughness: 0.2,
@@ -35,7 +40,10 @@ export class RetroMaterials {
     });
   }
 
-  static glowing(color: THREE.ColorRepresentation, intensity: number = 1.0): THREE.MeshStandardMaterial {
+  static glowing(
+    color: THREE.ColorRepresentation,
+    intensity: number = 1.0
+  ): THREE.MeshStandardMaterial {
     return new THREE.MeshStandardMaterial({
       color,
       emissive: color,
@@ -48,23 +56,44 @@ export class RetroMaterials {
   }
 
   static forBuilding(typeId: string): THREE.MeshStandardMaterial {
-    const harvesters = ['wood_harvester', 'coal_mine', 'iron_mine', 'water_pump', 'silicon_extractor', 'uranium_extractor'];
+    const harvesters = [
+      'wood_harvester',
+      'coal_mine',
+      'iron_mine',
+      'water_pump',
+      'silicon_extractor',
+      'uranium_extractor',
+    ];
     const factories = ['basic_factory', 'smelter', 'circuit_fab', 'refinery'];
-    if (harvesters.includes(typeId)) return RetroMaterials.neonGlow(0xff8c00);
-    if (factories.includes(typeId)) return RetroMaterials.neonGlow(0x0088ff);
-    if (typeId === 'research_center') return RetroMaterials.neonGlow(0x8800ff);
-    if (typeId === 'trading_terminal') return RetroMaterials.neonGlow(0x00ff88);
-    if (typeId === 'storage_depot') return RetroMaterials.metallic(0x667788);
-    if (typeId === 'power_plant') return RetroMaterials.neonGlow(0xffcc00);
-    if (typeId === 'exotic_lab') return RetroMaterials.glowing(0xff00ff, 1.2);
+    if (harvesters.includes(typeId)) {
+      return RetroMaterials.neonGlow(0xff8c00);
+    }
+    if (factories.includes(typeId)) {
+      return RetroMaterials.neonGlow(0x0088ff);
+    }
+    if (typeId === 'research_center') {
+      return RetroMaterials.neonGlow(0x8800ff);
+    }
+    if (typeId === 'trading_terminal') {
+      return RetroMaterials.neonGlow(0x00ff88);
+    }
+    if (typeId === 'storage_depot') {
+      return RetroMaterials.metallic(0x667788);
+    }
+    if (typeId === 'power_plant') {
+      return RetroMaterials.neonGlow(0xffcc00);
+    }
+    if (typeId === 'exotic_lab') {
+      return RetroMaterials.glowing(0xff00ff, 1.2);
+    }
     return RetroMaterials.neonGlow(0x888888);
   }
 
   static forResource(resourceId: string): THREE.MeshStandardMaterial {
     const colors: Record<string, number> = {
-      wood: 0x8B4513,
+      wood: 0x8b4513,
       coal: 0x333333,
-      iron: 0x8B7355,
+      iron: 0x8b7355,
       water: 0x0077ff,
       silicon: 0xc0c0ff,
       uranium: 0x00ff44,
@@ -79,7 +108,7 @@ export class RetroMaterials {
 
   static forRoute(resourceId: string): THREE.LineBasicMaterial {
     const colors: Record<string, number> = {
-      wood: 0x8B4513,
+      wood: 0x8b4513,
       coal: 0x666666,
       iron: 0xaaaa88,
       water: 0x0099ff,

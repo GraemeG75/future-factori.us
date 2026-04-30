@@ -23,12 +23,18 @@ export function tick(state: GameState, deltaSeconds: number): void {
   state.pollution = Math.max(0, state.pollution - POLLUTION_DECAY_PER_SECOND * deltaSeconds);
 
   for (const building of state.buildings) {
-    if (!building.isPowered) continue;
+    if (!building.isPowered) {
+      continue;
+    }
     // Broken buildings (health = 0) cannot operate
-    if (building.health <= 0) continue;
+    if (building.health <= 0) {
+      continue;
+    }
 
     const buildingType = BUILDINGS_MAP[building.typeId];
-    if (!buildingType) continue;
+    if (!buildingType) {
+      continue;
+    }
 
     const healthEff = getHealthEfficiency(building);
 
@@ -43,11 +49,15 @@ export function tick(state: GameState, deltaSeconds: number): void {
         const spot = state.resourceSpots.find((s) => s.occupiedByBuildingId === building.id);
         if (spot !== undefined && spot.remaining <= 0) {
           // Deposit exhausted — harvester cannot produce (unless sandbox mode)
-          if (!state.sandboxMode) continue;
+          if (!state.sandboxMode) {
+            continue;
+          }
         }
         if (spot !== undefined) {
           const actualAmount = state.sandboxMode ? amount : Math.min(amount, spot.remaining);
-          if (!state.sandboxMode) spot.remaining -= actualAmount;
+          if (!state.sandboxMode) {
+            spot.remaining -= actualAmount;
+          }
           addResource(state, resourceId, actualAmount);
           // Alert when deposit is nearly depleted
           if (spot.remaining > 0 && spot.remaining / spot.maxRemaining < LOW_DEPOSIT_THRESHOLD) {
@@ -81,7 +91,9 @@ export function tick(state: GameState, deltaSeconds: number): void {
     // --- Production buildings (factories, refineries) ---
     if (building.activeRecipeId) {
       const recipe = RECIPES_MAP[building.activeRecipeId];
-      if (!recipe) continue;
+      if (!recipe) {
+        continue;
+      }
 
       // Speed bonus from building level + health efficiency
       const speedMultiplier = Math.pow(buildingType.productionRateMultiplier, building.level - 1) * healthEff;
@@ -116,16 +128,24 @@ export function tick(state: GameState, deltaSeconds: number): void {
  */
 export function startProduction(state: GameState, buildingId: string, recipeId: string): boolean {
   const building = state.buildings.find((b) => b.id === buildingId);
-  if (!building) return false;
+  if (!building) {
+    return false;
+  }
 
   const recipe = RECIPES_MAP[recipeId];
-  if (!recipe) return false;
-  if (recipe.buildingTypeId !== building.typeId) return false;
+  if (!recipe) {
+    return false;
+  }
+  if (recipe.buildingTypeId !== building.typeId) {
+    return false;
+  }
   if (recipe.unlockRequirement && !state.completedResearch.includes(recipe.unlockRequirement)) {
     return false;
   }
 
-  if (!tryLoadInputs(state, building, recipe)) return false;
+  if (!tryLoadInputs(state, building, recipe)) {
+    return false;
+  }
 
   building.activeRecipeId = recipeId;
   building.productionProgress = 0;
@@ -135,7 +155,9 @@ export function startProduction(state: GameState, buildingId: string, recipeId: 
 /** Stops active production on the building and returns inputs to inventory. */
 export function stopProduction(state: GameState, buildingId: string): void {
   const building = state.buildings.find((b) => b.id === buildingId);
-  if (!building) return;
+  if (!building) {
+    return;
+  }
 
   // Return unconsumed inputs to inventory
   for (const [resourceId, amount] of Object.entries(building.inputBuffer)) {
@@ -149,10 +171,14 @@ export function stopProduction(state: GameState, buildingId: string): void {
 /** Returns all recipes that a building can use, factoring in research state. */
 export function getAvailableRecipes(state: GameState, buildingId: string): Recipe[] {
   const building = state.buildings.find((b) => b.id === buildingId);
-  if (!building) return [];
+  if (!building) {
+    return [];
+  }
 
   return RECIPES.filter((r) => {
-    if (r.buildingTypeId !== building.typeId) return false;
+    if (r.buildingTypeId !== building.typeId) {
+      return false;
+    }
     if (r.unlockRequirement && !state.completedResearch.includes(r.unlockRequirement)) {
       return false;
     }
@@ -166,7 +192,9 @@ export function getAvailableRecipes(state: GameState, buildingId: string): Recip
  */
 export function getProductionRate(building: BuildingInstance, recipe: Recipe): number {
   const buildingType = BUILDINGS_MAP[building.typeId];
-  if (!buildingType) return 0;
+  if (!buildingType) {
+    return 0;
+  }
   const speedMultiplier = Math.pow(buildingType.productionRateMultiplier, building.level - 1);
   const cyclesPerMinute = (60 / recipe.processingTimeSeconds) * speedMultiplier;
   const firstOutput = recipe.outputs[0];
@@ -185,7 +213,9 @@ function tryLoadInputs(state: GameState, building: BuildingInstance, recipe: Rec
   // Check that every input is available
   for (const input of recipe.inputs) {
     const available = (state.inventory[input.resourceId] ?? 0) + (building.inputBuffer[input.resourceId] ?? 0);
-    if (available < input.amount) return false;
+    if (available < input.amount) {
+      return false;
+    }
   }
 
   // Deduct from inventory (inputBuffer may already hold some from a previous partial load)
@@ -207,7 +237,9 @@ function tryLoadInputs(state: GameState, building: BuildingInstance, recipe: Rec
 function flushOutputBuffer(state: GameState, building: BuildingInstance): void {
   for (const resourceId of Object.keys(building.outputBuffer)) {
     const amount = building.outputBuffer[resourceId] ?? 0;
-    if (amount <= 0) continue;
+    if (amount <= 0) {
+      continue;
+    }
     const capacity = getStorageCapacity(state, resourceId);
     const current = state.inventory[resourceId] ?? 0;
     const canStore = Math.max(0, capacity - current);

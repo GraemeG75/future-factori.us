@@ -10,9 +10,15 @@ export function tick(state: GameState): void {
   // Remove events that have expired
   state.activeMarketEvents = state.activeMarketEvents.filter((e) => state.tick < e.startTick + e.durationTicks);
 
-  if (state.tick % EVENT_CHECK_INTERVAL !== 0) return;
-  if (state.activeMarketEvents.length >= MAX_ACTIVE_EVENTS) return;
-  if (Math.random() > EVENT_CHANCE) return;
+  if (state.tick % EVENT_CHECK_INTERVAL !== 0) {
+    return;
+  }
+  if (state.activeMarketEvents.length >= MAX_ACTIVE_EVENTS) {
+    return;
+  }
+  if (Math.random() > EVENT_CHANCE) {
+    return;
+  }
 
   const template = EVENT_TEMPLATES[Math.floor(Math.random() * EVENT_TEMPLATES.length)]!;
 
@@ -60,8 +66,12 @@ export function tick(state: GameState): void {
 export function getEventPriceModifier(state: GameState, resourceId: string, partnerId: string): number {
   let combined = 1.0;
   for (const event of state.activeMarketEvents) {
-    if (event.affectedResourceId && event.affectedResourceId !== resourceId) continue;
-    if (event.affectedPartnerId && event.affectedPartnerId !== partnerId) continue;
+    if (event.affectedResourceId && event.affectedResourceId !== resourceId) {
+      continue;
+    }
+    if (event.affectedPartnerId && event.affectedPartnerId !== partnerId) {
+      continue;
+    }
     combined *= event.modifier;
   }
   return combined;

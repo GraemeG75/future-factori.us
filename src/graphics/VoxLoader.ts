@@ -65,7 +65,12 @@ function parseVox(buffer: ArrayBuffer): VoxData {
   let off = 0;
 
   function readId(): string {
-    const id = String.fromCharCode(view.getUint8(off), view.getUint8(off + 1), view.getUint8(off + 2), view.getUint8(off + 3));
+    const id = String.fromCharCode(
+      view.getUint8(off),
+      view.getUint8(off + 1),
+      view.getUint8(off + 2),
+      view.getUint8(off + 3)
+    );
     off += 4;
     return id;
   }
@@ -77,7 +82,9 @@ function parseVox(buffer: ArrayBuffer): VoxData {
 
   // Header
   const magic = readId();
-  if (magic !== 'VOX ') throw new Error('Not a .vox file');
+  if (magic !== 'VOX ') {
+    throw new Error('Not a .vox file');
+  }
   readU32(); // version
 
   let sx = 0,
@@ -89,7 +96,9 @@ function parseVox(buffer: ArrayBuffer): VoxData {
 
   // Walk chunks
   const mainId = readId();
-  if (mainId !== 'MAIN') throw new Error('.vox missing MAIN chunk');
+  if (mainId !== 'MAIN') {
+    throw new Error('.vox missing MAIN chunk');
+  }
   readU32(); // numBytes (main content, always 0)
   const childrenBytes = readU32();
   const childrenEnd = off + childrenBytes;
@@ -114,7 +123,9 @@ function parseVox(buffer: ArrayBuffer): VoxData {
         voxels.push({ x, y, z, ci });
       }
     } else if (chunkId === 'RGBA') {
-      for (let i = 0; i < 256 * 4; i++) rawPalette[i] = view.getUint8(off++);
+      for (let i = 0; i < 256 * 4; i++) {
+        rawPalette[i] = view.getUint8(off++);
+      }
       hasPalette = true;
     }
 
@@ -152,9 +163,12 @@ function buildGroup(data: VoxData): THREE.Group {
   // Occupied-voxel set for face-culling
   const occupied = new Set<number>();
   for (const { x, y, z } of voxels) {
-    if (x >= 0 && y >= 0 && z >= 0 && x < sx && y < sy && z < sz) occupied.add(x + y * sx + z * sx * sy);
+    if (x >= 0 && y >= 0 && z >= 0 && x < sx && y < sy && z < sz) {
+      occupied.add(x + y * sx + z * sx * sy);
+    }
   }
-  const isOccupied = (x: number, y: number, z: number): boolean => occupied.has(x + y * sx + z * sx * sy);
+  const isOccupied = (x: number, y: number, z: number): boolean =>
+    occupied.has(x + y * sx + z * sx * sy);
 
   // Per-colour geometry accumulators
   const posMap = new Map<number, number[]>();
@@ -191,10 +205,33 @@ function buildGroup(data: VoxData): THREE.Group {
     const pos = posMap.get(ci)!;
     const nor = norMap.get(ci)!;
     const col = colMap.get(ci)!;
-    const verts = [ax, ay, az, bx, by, bz, cx_, cy_, cz_, ax, ay, az, cx_, cy_, cz_, dx, dy_, dz];
+    const verts = [
+      ax,
+      ay,
+      az,
+      bx,
+      by,
+      bz,
+      cx_,
+      cy_,
+      cz_,
+      ax,
+      ay,
+      az,
+      cx_,
+      cy_,
+      cz_,
+      dx,
+      dy_,
+      dz,
+    ];
     pos.push(...verts);
-    for (let i = 0; i < 6; i++) nor.push(nx, ny, nz);
-    for (let i = 0; i < 6; i++) col.push(color.r, color.g, color.b);
+    for (let i = 0; i < 6; i++) {
+      nor.push(nx, ny, nz);
+    }
+    for (let i = 0; i < 6; i++) {
+      col.push(color.r, color.g, color.b);
+    }
   }
 
   for (const { x, y, z, ci } of voxels) {
@@ -205,7 +242,9 @@ function buildGroup(data: VoxData): THREE.Group {
     const wz = -(y - sy / 2) * S;
 
     // Skip reserved markers — handled separately below
-    if (ci === CI_FAN || ci === CI_BLINK || ci === CI_SMOKE || ci === CI_ORB) continue;
+    if (ci === CI_FAN || ci === CI_BLINK || ci === CI_SMOKE || ci === CI_ORB) {
+      continue;
+    }
 
     const color = palette[ci] ?? new THREE.Color(1, 0, 1);
 
@@ -218,17 +257,137 @@ function buildGroup(data: VoxData): THREE.Group {
       z1 = wz;
 
     // +Y top
-    if (!isOccupied(x, y, z + 1)) pushFace(ci, x0, y1, z1, x0, y1, z0, x1, y1, z0, x1, y1, z1, 0, 1, 0, color);
+    if (!isOccupied(x, y, z + 1)) {
+      pushFace(
+        ci,
+        x0,
+        y1,
+        z1,
+        x0,
+        y1,
+        z0,
+        x1,
+        y1,
+        z0,
+        x1,
+        y1,
+        z1,
+        0,
+        1,
+        0,
+        color
+      );
+    }
     // -Y bottom
-    if (!isOccupied(x, y, z - 1)) pushFace(ci, x0, y0, z0, x0, y0, z1, x1, y0, z1, x1, y0, z0, 0, -1, 0, color);
+    if (!isOccupied(x, y, z - 1)) {
+      pushFace(
+        ci,
+        x0,
+        y0,
+        z0,
+        x0,
+        y0,
+        z1,
+        x1,
+        y0,
+        z1,
+        x1,
+        y0,
+        z0,
+        0,
+        -1,
+        0,
+        color
+      );
+    }
     // +X right
-    if (!isOccupied(x + 1, y, z)) pushFace(ci, x1, y0, z0, x1, y1, z0, x1, y1, z1, x1, y0, z1, 1, 0, 0, color);
+    if (!isOccupied(x + 1, y, z)) {
+      pushFace(
+        ci,
+        x1,
+        y0,
+        z0,
+        x1,
+        y1,
+        z0,
+        x1,
+        y1,
+        z1,
+        x1,
+        y0,
+        z1,
+        1,
+        0,
+        0,
+        color
+      );
+    }
     // -X left
-    if (!isOccupied(x - 1, y, z)) pushFace(ci, x0, y0, z1, x0, y1, z1, x0, y1, z0, x0, y0, z0, -1, 0, 0, color);
+    if (!isOccupied(x - 1, y, z)) {
+      pushFace(
+        ci,
+        x0,
+        y0,
+        z1,
+        x0,
+        y1,
+        z1,
+        x0,
+        y1,
+        z0,
+        x0,
+        y0,
+        z0,
+        -1,
+        0,
+        0,
+        color
+      );
+    }
     // +Z front (vox -Y → three.js +Z)
-    if (!isOccupied(x, y - 1, z)) pushFace(ci, x0, y0, z1, x0, y1, z1, x1, y1, z1, x1, y0, z1, 0, 0, 1, color);
+    if (!isOccupied(x, y - 1, z)) {
+      pushFace(
+        ci,
+        x0,
+        y0,
+        z1,
+        x0,
+        y1,
+        z1,
+        x1,
+        y1,
+        z1,
+        x1,
+        y0,
+        z1,
+        0,
+        0,
+        1,
+        color
+      );
+    }
     // -Z back (vox +Y → three.js -Z)
-    if (!isOccupied(x, y + 1, z)) pushFace(ci, x1, y0, z0, x1, y1, z0, x0, y1, z0, x0, y0, z0, 0, 0, -1, color);
+    if (!isOccupied(x, y + 1, z)) {
+      pushFace(
+        ci,
+        x1,
+        y0,
+        z0,
+        x1,
+        y1,
+        z0,
+        x0,
+        y1,
+        z0,
+        x0,
+        y0,
+        z0,
+        0,
+        0,
+        -1,
+        color
+      );
+    }
   }
 
   const group = new THREE.Group();
@@ -236,14 +395,33 @@ function buildGroup(data: VoxData): THREE.Group {
   // Build one mesh per colour index
   for (const [ci, positions] of posMap) {
     const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-    geo.setAttribute('normal', new THREE.Float32BufferAttribute(norMap.get(ci)!, 3));
-    geo.setAttribute('color', new THREE.Float32BufferAttribute(colMap.get(ci)!, 3));
+    geo.setAttribute(
+      'position',
+      new THREE.Float32BufferAttribute(positions, 3)
+    );
+    geo.setAttribute(
+      'normal',
+      new THREE.Float32BufferAttribute(norMap.get(ci)!, 3)
+    );
+    geo.setAttribute(
+      'color',
+      new THREE.Float32BufferAttribute(colMap.get(ci)!, 3)
+    );
 
     const isEmissive = emissivePalette[ci] ?? false;
     const mat = isEmissive
-      ? new THREE.MeshStandardMaterial({ vertexColors: true, emissive: palette[ci], emissiveIntensity: 2.0, roughness: 0.4, metalness: 0.3 })
-      : new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.7, metalness: 0.2 });
+      ? new THREE.MeshStandardMaterial({
+        vertexColors: true,
+        emissive: palette[ci],
+        emissiveIntensity: 2.0,
+        roughness: 0.4,
+        metalness: 0.3,
+      })
+      : new THREE.MeshStandardMaterial({
+        vertexColors: true,
+        roughness: 0.7,
+        metalness: 0.2,
+      });
 
     const mesh = new THREE.Mesh(geo, mat);
     mesh.castShadow = true;
@@ -263,12 +441,18 @@ function buildGroup(data: VoxData): THREE.Group {
       obj.position.set(wx, wy, wz);
       // Attach a thin box as the visual blade
       const bladeGeo = new THREE.BoxGeometry(S * 1.5, S * 0.3, S * 0.6);
-      const bladeMesh = new THREE.Mesh(bladeGeo, RetroMaterials.neonGlow(0xffdd00));
+      const bladeMesh = new THREE.Mesh(
+        bladeGeo,
+        RetroMaterials.neonGlow(0xffdd00)
+      );
       obj.add(bladeMesh);
       group.add(obj);
     } else if (ci === CI_BLINK) {
       const blinkMat = RetroMaterials.glowing(0x00ff88, 1.8);
-      const blink = new THREE.Mesh(new THREE.SphereGeometry(S * 0.6, 6, 6), blinkMat);
+      const blink = new THREE.Mesh(
+        new THREE.SphereGeometry(S * 0.6, 6, 6),
+        blinkMat
+      );
       blink.name = 'blink_light';
       blink.position.set(wx, wy, wz);
       group.add(blink);
@@ -279,7 +463,10 @@ function buildGroup(data: VoxData): THREE.Group {
       group.add(pt);
     } else if (ci === CI_ORB) {
       const orbMat = RetroMaterials.glowing(0xff00ff, 2.0);
-      const orb = new THREE.Mesh(new THREE.SphereGeometry(S * 1.8, 12, 12), orbMat);
+      const orb = new THREE.Mesh(
+        new THREE.SphereGeometry(S * 1.8, 12, 12),
+        orbMat
+      );
       orb.name = 'spinning_orb';
       orb.position.set(wx, wy, wz);
       group.add(orb);
@@ -300,7 +487,9 @@ export async function loadVox(url: string): Promise<THREE.Group> {
     let raw = rawCache.get(url);
     if (!raw) {
       const resp = await fetch(url);
-      if (!resp.ok) throw new Error(`VoxLoader: fetch failed for ${url} (${resp.status})`);
+      if (!resp.ok) {
+        throw new Error(`VoxLoader: fetch failed for ${url} (${resp.status})`);
+      }
       raw = await resp.arrayBuffer();
       rawCache.set(url, raw);
     }

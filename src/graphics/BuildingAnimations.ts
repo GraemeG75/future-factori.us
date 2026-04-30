@@ -41,7 +41,9 @@ export class BuildingAnimations {
 
   unregister(buildingId: string): void {
     const anim = this.registry.get(buildingId);
-    if (!anim) return;
+    if (!anim) {
+      return;
+    }
     for (const emitter of anim.smokeEmitters) {
       for (const p of emitter.particles) {
         this.scene.remove(p.mesh);

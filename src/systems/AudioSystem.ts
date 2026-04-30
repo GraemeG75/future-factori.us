@@ -7,7 +7,9 @@ export class AudioSystem {
   private factoryHums: Map<string, OscillatorNode> = new Map();
 
   init(): void {
-    if (this.ctx) return;
+    if (this.ctx) {
+      return;
+    }
     this.ctx = new AudioContext();
     this.masterGain = this.ctx.createGain();
     this.masterGain.gain.value = 0.3;
@@ -15,14 +17,20 @@ export class AudioSystem {
   }
 
   private getCtx(): AudioContext | null {
-    if (!this.ctx) this.init();
+    if (!this.ctx) {
+      this.init();
+    }
     return this.ctx;
   }
 
   playClick(): void {
-    if (!this.enabled) return;
+    if (!this.enabled) {
+      return;
+    }
     const ctx = this.getCtx();
-    if (!ctx || !this.masterGain) return;
+    if (!ctx || !this.masterGain) {
+      return;
+    }
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.frequency.value = 800;
@@ -36,9 +44,13 @@ export class AudioSystem {
   }
 
   playBuild(): void {
-    if (!this.enabled) return;
+    if (!this.enabled) {
+      return;
+    }
     const ctx = this.getCtx();
-    if (!ctx || !this.masterGain) return;
+    if (!ctx || !this.masterGain) {
+      return;
+    }
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.frequency.setValueAtTime(200, ctx.currentTime);
@@ -53,9 +65,13 @@ export class AudioSystem {
   }
 
   playResearchComplete(): void {
-    if (!this.enabled) return;
+    if (!this.enabled) {
+      return;
+    }
     const ctx = this.getCtx();
-    if (!ctx || !this.masterGain) return;
+    if (!ctx || !this.masterGain) {
+      return;
+    }
     const freqs = [523, 659, 784];
     freqs.forEach((freq, i) => {
       const osc = ctx.createOscillator();
@@ -73,9 +89,13 @@ export class AudioSystem {
   }
 
   playTradeComplete(): void {
-    if (!this.enabled) return;
+    if (!this.enabled) {
+      return;
+    }
     const ctx = this.getCtx();
-    if (!ctx || !this.masterGain) return;
+    if (!ctx || !this.masterGain) {
+      return;
+    }
     const freqs = [880, 1760];
     freqs.forEach((freq, i) => {
       const osc = ctx.createOscillator();
@@ -93,9 +113,13 @@ export class AudioSystem {
   }
 
   playCargoBlip(): void {
-    if (!this.enabled) return;
+    if (!this.enabled) {
+      return;
+    }
     const ctx = this.getCtx();
-    if (!ctx || !this.masterGain) return;
+    if (!ctx || !this.masterGain) {
+      return;
+    }
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.frequency.value = 440;
@@ -109,10 +133,16 @@ export class AudioSystem {
   }
 
   playFactoryHum(buildingId: string): void {
-    if (!this.enabled) return;
-    if (this.factoryHums.has(buildingId)) return;
+    if (!this.enabled) {
+      return;
+    }
+    if (this.factoryHums.has(buildingId)) {
+      return;
+    }
     const ctx = this.getCtx();
-    if (!ctx || !this.masterGain) return;
+    if (!ctx || !this.masterGain) {
+      return;
+    }
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.frequency.value = 80;
@@ -133,9 +163,13 @@ export class AudioSystem {
   }
 
   playAlert(): void {
-    if (!this.enabled) return;
+    if (!this.enabled) {
+      return;
+    }
     const ctx = this.getCtx();
-    if (!ctx || !this.masterGain) return;
+    if (!ctx || !this.masterGain) {
+      return;
+    }
     const freqs = [440, 660, 440, 660];
     freqs.forEach((freq, i) => {
       const osc = ctx.createOscillator();
@@ -153,10 +187,16 @@ export class AudioSystem {
   }
 
   startAmbient(): void {
-    if (!this.musicEnabled) return;
+    if (!this.musicEnabled) {
+      return;
+    }
     const ctx = this.getCtx();
-    if (!ctx || !this.masterGain) return;
-    if (this.ambientNode) return;
+    if (!ctx || !this.masterGain) {
+      return;
+    }
+    if (this.ambientNode) {
+      return;
+    }
 
     // Richer ambient: drone layer + pad notes + high shimmer
     const sampleRate = ctx.sampleRate;
@@ -169,11 +209,11 @@ export class AudioSystem {
     const droneFreqs = [55, 82.5, 110, 165]; // A1, E2, A2, E3
     // Pad notes staggered across the loop
     const padNotes = [
-      { freq: 220, start: 0.0 },     // A3
-      { freq: 277.18, start: 1.2 },  // C#4
-      { freq: 329.63, start: 2.4 },  // E4
-      { freq: 220, start: 3.6 },     // A3
-      { freq: 415.30, start: 4.8 },  // G#4
+      { freq: 220, start: 0.0 }, // A3
+      { freq: 277.18, start: 1.2 }, // C#4
+      { freq: 329.63, start: 2.4 }, // E4
+      { freq: 220, start: 3.6 }, // A3
+      { freq: 415.30, start: 4.8 }, // G#4
     ];
     const padDuration = 1.8; // each pad note lasts 1.8 s
 
@@ -223,8 +263,16 @@ export class AudioSystem {
     }
   }
 
-  setEnabled(v: boolean): void { this.enabled = v; }
-  setMusicEnabled(v: boolean): void { this.musicEnabled = v; }
-  isEnabled(): boolean { return this.enabled; }
-  isMusicEnabled(): boolean { return this.musicEnabled; }
+  setEnabled(v: boolean): void {
+    this.enabled = v;
+  }
+  setMusicEnabled(v: boolean): void {
+    this.musicEnabled = v;
+  }
+  isEnabled(): boolean {
+    return this.enabled;
+  }
+  isMusicEnabled(): boolean {
+    return this.musicEnabled;
+  }
 }

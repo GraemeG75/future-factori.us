@@ -8,7 +8,9 @@ function clamp01(v: number): number {
 }
 
 function smoothstep(edge0: number, edge1: number, x: number): number {
-  if (edge0 === edge1) return x < edge0 ? 0 : 1;
+  if (edge0 === edge1) {
+    return x < edge0 ? 0 : 1;
+  }
   const t = clamp01((x - edge0) / (edge1 - edge0));
   return t * t * (3 - 2 * t);
 }
@@ -54,7 +56,9 @@ function fbm(x: number, z: number, octaves: number, seed: number): number {
 }
 
 export function quantizeTerrainHeight(height: number, voxelHeight: number): number {
-  if (voxelHeight <= 0) return height;
+  if (voxelHeight <= 0) {
+    return height;
+  }
   return Math.round(height / voxelHeight) * voxelHeight;
 }
 

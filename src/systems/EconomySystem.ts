@@ -29,10 +29,14 @@ export function tick(state: GameState, _deltaSeconds: number): void {
  */
 export function sellResource(state: GameState, resourceId: string, amount: number, partnerId: string): boolean {
   const current = state.inventory[resourceId] ?? 0;
-  if (current < amount) return false;
+  if (current < amount) {
+    return false;
+  }
 
   const partner = TRADE_PARTNERS_MAP[partnerId];
-  if (!partner) return false;
+  if (!partner) {
+    return false;
+  }
   if (partner.unlockRequirement && !state.completedResearch.includes(partner.unlockRequirement)) {
     return false;
   }
@@ -63,7 +67,9 @@ export function sellResource(state: GameState, resourceId: string, amount: numbe
 export function getSellPrice(state: GameState, resourceId: string, partnerId: string): number {
   const resource = RESOURCES_MAP[resourceId];
   const partner = TRADE_PARTNERS_MAP[partnerId];
-  if (!resource || !partner) return 0;
+  if (!resource || !partner) {
+    return 0;
+  }
 
   const demand = getTradePartnerDemand(state, partnerId, resourceId);
   // Pollution suppresses prices: at pollution=100 prices are halved.
@@ -111,10 +117,14 @@ export function updateDemand(state: GameState): void {
  */
 export function getTradePartnerDemand(state: GameState, partnerId: string, resourceId: string): number {
   const storedDemand = state.demand[partnerId]?.[resourceId];
-  if (storedDemand !== undefined) return storedDemand;
+  if (storedDemand !== undefined) {
+    return storedDemand;
+  }
 
   const partner = TRADE_PARTNERS_MAP[partnerId];
-  if (!partner) return 0.5;
+  if (!partner) {
+    return 0.5;
+  }
   const bonus = partner.preferredResources.includes(resourceId) ? 0.2 : 0;
   return Math.min(DEMAND_MAX, partner.baseDemand + bonus);
 }
@@ -151,12 +161,16 @@ export function getPriceHistory(state: GameState, partnerId: string, resourceId:
 
 function samplePriceHistory(state: GameState): void {
   for (const [partnerId] of Object.entries(TRADE_PARTNERS_MAP)) {
-    if (!state.priceHistory[partnerId]) state.priceHistory[partnerId] = {};
+    if (!state.priceHistory[partnerId]) {
+      state.priceHistory[partnerId] = {};
+    }
     for (const resourceId of Object.keys(RESOURCES_MAP)) {
       const price = getSellPrice(state, resourceId, partnerId);
       const history = state.priceHistory[partnerId][resourceId] ?? [];
       history.push(price);
-      if (history.length > PRICE_HISTORY_LENGTH) history.shift();
+      if (history.length > PRICE_HISTORY_LENGTH) {
+        history.shift();
+      }
       state.priceHistory[partnerId][resourceId] = history;
     }
   }

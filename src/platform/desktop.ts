@@ -14,7 +14,9 @@ declare global {
 }
 
 export function getDesktopStorage(): DesktopStorageApi | null {
-  if (typeof window === 'undefined') return null;
+  if (typeof window === 'undefined') {
+    return null;
+  }
   const desktopStorage = window.desktopStorage;
   return desktopStorage?.isElectron ? desktopStorage : null;
 }

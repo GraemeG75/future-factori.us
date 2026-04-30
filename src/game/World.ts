@@ -99,7 +99,9 @@ export class World {
       group.position.set(spot.position.x, spot.position.y, spot.position.z);
       const showPlacementHint = spot.occupiedByBuildingId === null;
       group.traverse((child) => {
-        if (child.name === 'spot_hint') child.visible = showPlacementHint;
+        if (child.name === 'spot_hint') {
+          child.visible = showPlacementHint;
+        }
       });
       this.scene.add(group);
       this.spotMarkers.set(spot.id, group);
@@ -110,10 +112,14 @@ export class World {
   syncSpotMarkers(spots: ResourceSpot[]): void {
     for (const spot of spots) {
       const marker = this.spotMarkers.get(spot.id);
-      if (!marker) continue;
+      if (!marker) {
+        continue;
+      }
       const showPlacementHint = spot.occupiedByBuildingId === null;
       marker.traverse((child) => {
-        if (child.name === 'spot_hint') child.visible = showPlacementHint;
+        if (child.name === 'spot_hint') {
+          child.visible = showPlacementHint;
+        }
       });
     }
   }
@@ -183,9 +189,13 @@ export class World {
 
   updateCargoPosition(route: RouteInstance): void {
     const capsules = this.cargoMeshes.get(route.id);
-    if (!capsules) return;
+    if (!capsules) {
+      return;
+    }
     const endpoints = this.routeEndpoints.get(route.id);
-    if (!endpoints) return;
+    if (!endpoints) {
+      return;
+    }
     for (let i = 0; i < capsules.length; i++) {
       const progress = (route.progress + i / CARGO_COUNT) % 1;
       capsules[i]!.position.lerpVectors(endpoints.from, endpoints.to, progress);
@@ -206,7 +216,9 @@ export class World {
 
   getBuildingPosition(buildingId: string): THREE.Vector3 | undefined {
     const mesh = this.buildingMeshes.get(buildingId);
-    if (mesh) return mesh.position.clone();
+    if (mesh) {
+      return mesh.position.clone();
+    }
     return undefined;
   }
 

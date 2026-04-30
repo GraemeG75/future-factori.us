@@ -54,7 +54,9 @@ export class UiController {
     this.setupSelectionCallback();
     // Set language selector to current locale
     const langSelect = document.getElementById('language-select') as HTMLSelectElement | null;
-    if (langSelect) langSelect.value = this.game.getState().locale;
+    if (langSelect) {
+      langSelect.value = this.game.getState().locale;
+    }
   }
   update(state: GameState): void {
     this.updateTopBar(state);
@@ -199,7 +201,9 @@ export class UiController {
 
   addAlert(type: 'info' | 'warning' | 'success' | 'error', message: string): void {
     const list = document.getElementById('alerts-list');
-    if (!list) return;
+    if (!list) {
+      return;
+    }
 
     const id = crypto.randomUUID();
     const item = document.createElement('div');
@@ -216,8 +220,12 @@ export class UiController {
 
   clearAlerts(): void {
     const list = document.getElementById('alerts-list');
-    if (list) list.innerHTML = '';
-    for (const timer of this.alertTimers.values()) clearTimeout(timer);
+    if (list) {
+      list.innerHTML = '';
+    }
+    for (const timer of this.alertTimers.values()) {
+      clearTimeout(timer);
+    }
     this.alertTimers.clear();
   }
 
@@ -312,14 +320,18 @@ export class UiController {
 
     document.getElementById('recipe-select')?.addEventListener('change', (e) => {
       const selected = this.game.getSelectedBuilding();
-      if (!selected) return;
+      if (!selected) {
+        return;
+      }
       const val = (e.target as HTMLSelectElement).value;
       this.game.setRecipe(selected.id, val || null);
     });
 
     document.getElementById('btn-upgrade')?.addEventListener('click', () => {
       const selected = this.game.getSelectedBuilding();
-      if (!selected) return;
+      if (!selected) {
+        return;
+      }
       const ok = this.game.upgradeBuilding(selected.id);
       if (!ok) {
         this.addAlert('warning', this.i18n.t('messages.insufficientFunds'));
@@ -332,7 +344,9 @@ export class UiController {
 
     document.getElementById('btn-demolish')?.addEventListener('click', () => {
       const selected = this.game.getSelectedBuilding();
-      if (!selected) return;
+      if (!selected) {
+        return;
+      }
       const bt = BUILDINGS_MAP[selected.typeId];
       const name = bt ? this.i18n.t(bt.nameKey) : selected.typeId;
       this.game.demolishBuilding(selected.id);
@@ -341,7 +355,9 @@ export class UiController {
 
     document.getElementById('btn-repair')?.addEventListener('click', () => {
       const selected = this.game.getSelectedBuilding();
-      if (!selected) return;
+      if (!selected) {
+        return;
+      }
       const ok = this.game.repairBuilding(selected.id);
       const bt = BUILDINGS_MAP[selected.typeId];
       const name = bt ? this.i18n.t(bt.nameKey) : selected.typeId;
@@ -435,7 +451,9 @@ export class UiController {
     document.getElementById('btn-save-game')?.addEventListener('click', () => {
       this.game.saveGame();
       const status = document.getElementById('save-status');
-      if (status) status.textContent = this.i18n.t('messages.gameSaved');
+      if (status) {
+        status.textContent = this.i18n.t('messages.gameSaved');
+      }
       this.addAlert('success', this.i18n.t('messages.gameSaved'));
     });
 
@@ -443,10 +461,14 @@ export class UiController {
       const ok = this.game.loadGame();
       const status = document.getElementById('save-status');
       if (ok) {
-        if (status) status.textContent = this.i18n.t('messages.gameLoaded');
+        if (status) {
+          status.textContent = this.i18n.t('messages.gameLoaded');
+        }
         this.addAlert('success', this.i18n.t('messages.gameLoaded'));
       } else {
-        if (status) status.textContent = 'No save found.';
+        if (status) {
+          status.textContent = 'No save found.';
+        }
         this.addAlert('warning', 'No save found.');
       }
     });
@@ -454,7 +476,9 @@ export class UiController {
     document.getElementById('btn-delete-save')?.addEventListener('click', () => {
       this.game.resetGame();
       const status = document.getElementById('save-status');
-      if (status) status.textContent = 'Save deleted.';
+      if (status) {
+        status.textContent = 'Save deleted.';
+      }
       this.closeMenu();
       this.addAlert('info', 'Save deleted. New game started.');
     });
@@ -490,18 +514,24 @@ export class UiController {
     document.getElementById('import-file-input')?.addEventListener('change', (e) => {
       const input = e.target as HTMLInputElement;
       const file = input.files?.[0];
-      if (!file) return;
+      if (!file) {
+        return;
+      }
       const reader = new FileReader();
       reader.onload = (ev) => {
         const text = ev.target?.result as string;
         const ok = this.game.importSave(text);
         const status = document.getElementById('save-status');
         if (ok) {
-          if (status) status.textContent = 'Save imported successfully.';
+          if (status) {
+            status.textContent = 'Save imported successfully.';
+          }
           this.addAlert('success', 'Save imported successfully.');
           this.closeMenu();
         } else {
-          if (status) status.textContent = 'Import failed: invalid save file.';
+          if (status) {
+            status.textContent = 'Import failed: invalid save file.';
+          }
           this.addAlert('error', 'Import failed: invalid save file.');
         }
         input.value = '';
@@ -522,7 +552,9 @@ export class UiController {
       const fromSel = document.getElementById('route-from') as HTMLSelectElement;
       const resSel = document.getElementById('route-resource') as HTMLSelectElement;
       const toSel = document.getElementById('route-to') as HTMLSelectElement;
-      if (!fromSel || !resSel || !toSel) return;
+      if (!fromSel || !resSel || !toSel) {
+        return;
+      }
 
       const fromId = fromSel.value;
       const resourceId = resSel.value;
@@ -580,7 +612,9 @@ export class UiController {
 
   private updateTopBar(state: GameState): void {
     const cashEl = document.getElementById('cash-value');
-    if (cashEl) cashEl.textContent = `$ ${Math.floor(state.cash).toLocaleString()}`;
+    if (cashEl) {
+      cashEl.textContent = `$ ${Math.floor(state.cash).toLocaleString()}`;
+    }
 
     const profitEl = document.getElementById('profit-indicator');
     if (profitEl) {
@@ -641,12 +675,16 @@ export class UiController {
 
   private updateResourceBar(state: GameState): void {
     const bar = document.getElementById('resource-bar');
-    if (!bar) return;
+    if (!bar) {
+      return;
+    }
 
     bar.innerHTML = '';
     for (const res of RESOURCES) {
       const amt = state.inventory[res.id] ?? 0;
-      if (amt <= 0) continue;
+      if (amt <= 0) {
+        continue;
+      }
       const item = document.createElement('div');
       item.className = 'resource-item';
       item.title = this.i18n.t(res.nameKey);
@@ -668,9 +706,13 @@ export class UiController {
     const allBtns = document.querySelectorAll('.build-btn');
     allBtns.forEach((btn) => {
       const typeId = (btn as HTMLElement).dataset['buildTypeId'];
-      if (!typeId) return;
+      if (!typeId) {
+        return;
+      }
       const bt = BUILDINGS_MAP[typeId];
-      if (!bt) return;
+      if (!bt) {
+        return;
+      }
       const unlocked = BuildingSystem.isBuildingTypeUnlocked(state.completedResearch, typeId);
       const canAfford = state.cash >= bt.baseCost;
       btn.classList.toggle('locked', !unlocked);
@@ -680,17 +722,23 @@ export class UiController {
 
   private showInfoPanel(building: BuildingInstance, state: GameState): void {
     const panel = document.getElementById('info-panel');
-    if (!panel) return;
+    if (!panel) {
+      return;
+    }
     panel.classList.remove('hidden');
 
     const bt = BUILDINGS_MAP[building.typeId];
     const name = bt ? this.i18n.t(bt.nameKey) : building.typeId;
 
     const nameEl = document.getElementById('info-building-name');
-    if (nameEl) nameEl.textContent = name;
+    if (nameEl) {
+      nameEl.textContent = name;
+    }
 
     const levelEl = document.getElementById('info-level');
-    if (levelEl) levelEl.textContent = `Level: ${building.level} / ${bt?.maxLevel ?? '?'}`;
+    if (levelEl) {
+      levelEl.textContent = `Level: ${building.level} / ${bt?.maxLevel ?? '?'}`;
+    }
 
     const statusEl = document.getElementById('info-status');
     if (statusEl) {
@@ -716,12 +764,16 @@ export class UiController {
       const hue = Math.round(pct * 1.2); // green at 100, red at 0
       healthFill.style.background = `hsl(${hue}, 80%, 50%)`;
     }
-    if (healthInfo) healthInfo.textContent = `${Math.floor(building.health)}%`;
+    if (healthInfo) {
+      healthInfo.textContent = `${Math.floor(building.health)}%`;
+    }
 
     // Efficiency rating
     const eff = BuildingSystem.getBuildingEfficiency(building);
     const effEl = document.getElementById('info-efficiency');
-    if (effEl) effEl.textContent = `Efficiency: ${(eff * 100).toFixed(0)}%`;
+    if (effEl) {
+      effEl.textContent = `Efficiency: ${(eff * 100).toFixed(0)}%`;
+    }
 
     // Recipe section
     const recipeSection = document.getElementById('info-recipe-section');
@@ -755,9 +807,13 @@ export class UiController {
       if (prodSection && building.activeRecipeId) {
         prodSection.classList.remove('hidden');
         const fill = document.getElementById('production-fill');
-        if (fill) fill.style.width = `${Math.min(100, building.productionProgress * 100).toFixed(1)}%`;
+        if (fill) {
+          fill.style.width = `${Math.min(100, building.productionProgress * 100).toFixed(1)}%`;
+        }
         const info = document.getElementById('production-info');
-        if (info) info.textContent = `${(building.productionProgress * 100).toFixed(0)}%`;
+        if (info) {
+          info.textContent = `${(building.productionProgress * 100).toFixed(0)}%`;
+        }
       } else {
         prodSection?.classList.add('hidden');
       }
@@ -829,14 +885,18 @@ export class UiController {
 
   private updateResearchScreen(state: GameState): void {
     const tree = document.getElementById('research-tree');
-    if (!tree) return;
+    if (!tree) {
+      return;
+    }
 
     tree.innerHTML = '';
 
     // Group techs by tier
     const tiers: Map<number, typeof TECHNOLOGIES> = new Map();
     for (const tech of TECHNOLOGIES) {
-      if (!tiers.has(tech.tier)) tiers.set(tech.tier, []);
+      if (!tiers.has(tech.tier)) {
+        tiers.set(tech.tier, []);
+      }
       tiers.get(tech.tier)!.push(tech);
     }
 
@@ -859,10 +919,18 @@ export class UiController {
 
         const card = document.createElement('div');
         card.className = 'tech-card';
-        if (isCompleted) card.classList.add('completed');
-        else if (isResearching) card.classList.add('researching');
-        else if (isAvailable) card.classList.add('available');
-        else card.classList.add('locked');
+        if (isCompleted) {
+          card.classList.add('completed');
+        }
+        else if (isResearching) {
+          card.classList.add('researching');
+        }
+        else if (isAvailable) {
+          card.classList.add('available');
+        }
+        else {
+          card.classList.add('locked');
+        }
 
         const specBadge = tech.specialization
           ? `<div class="tech-spec-badge spec-${tech.specialization}">${tech.specialization.toUpperCase()}</div>`
@@ -888,9 +956,9 @@ export class UiController {
             <div class="tech-progress"><div class="tech-progress-fill" style="width:${(progress * 100).toFixed(1)}%"></div></div>
           `;
         } else if (isCompleted) {
-          card.innerHTML += `<div class="tech-status completed-label">✓ Completed</div>`;
+          card.innerHTML += '<div class="tech-status completed-label">✓ Completed</div>';
         } else if (isAvailable) {
-          card.innerHTML += `<div class="tech-status available-label">▶ Click to research</div>`;
+          card.innerHTML += '<div class="tech-status available-label">▶ Click to research</div>';
           card.addEventListener('click', () => {
             const ok = this.game.startResearch(tech.id);
             if (!ok) {
@@ -923,11 +991,19 @@ export class UiController {
       const tech = TECHNOLOGIES.find((t) => t.id === state.activeResearch!.technologyId);
       const name = tech ? this.i18n.t(tech.nameKey) : state.activeResearch.technologyId;
       const progress = tech ? state.activeResearch.progress / tech.researchPoints : 0;
-      if (activeInfoEl) activeInfoEl.textContent = `Researching: ${name} (${(progress * 100).toFixed(0)}%)`;
-      if (fillEl) fillEl.style.width = `${(progress * 100).toFixed(1)}%`;
+      if (activeInfoEl) {
+        activeInfoEl.textContent = `Researching: ${name} (${(progress * 100).toFixed(0)}%)`;
+      }
+      if (fillEl) {
+        fillEl.style.width = `${(progress * 100).toFixed(1)}%`;
+      }
     } else {
-      if (activeInfoEl) activeInfoEl.textContent = 'No active research';
-      if (fillEl) fillEl.style.width = '0%';
+      if (activeInfoEl) {
+        activeInfoEl.textContent = 'No active research';
+      }
+      if (fillEl) {
+        fillEl.style.width = '0%';
+      }
     }
 
     this.updateSpecializationPanel(state);
@@ -970,10 +1046,14 @@ export class UiController {
   private renderTradeResources(state: GameState, partnerId: string): void {
     const panel = document.getElementById('selected-partner-info');
     const tradeRes = document.getElementById('trade-resources');
-    if (!panel || !tradeRes) return;
+    if (!panel || !tradeRes) {
+      return;
+    }
 
     const partner = TRADE_PARTNERS.find((p) => p.id === partnerId);
-    if (!partner) return;
+    if (!partner) {
+      return;
+    }
 
     panel.textContent = this.i18n.t(partner.descriptionKey);
     tradeRes.innerHTML = '';
@@ -986,11 +1066,15 @@ export class UiController {
 
     const seen = new Set<string>();
     for (const resId of resourcesToShow) {
-      if (seen.has(resId)) continue;
+      if (seen.has(resId)) {
+        continue;
+      }
       seen.add(resId);
 
       const res = RESOURCES_MAP[resId];
-      if (!res) continue;
+      if (!res) {
+        continue;
+      }
       const inv = Math.floor(state.inventory[resId] ?? 0);
       const price = EconomySystem.getSellPrice(state, resId, partnerId);
       const demand = EconomySystem.getTradePartnerDemand(state, partnerId, resId);
@@ -1080,7 +1164,9 @@ export class UiController {
     const fromSel = document.getElementById('route-from') as HTMLSelectElement | null;
     const toSel = document.getElementById('route-to') as HTMLSelectElement | null;
     const resSel = document.getElementById('route-resource') as HTMLSelectElement | null;
-    if (!fromSel || !toSel || !resSel) return;
+    if (!fromSel || !toSel || !resSel) {
+      return;
+    }
 
     // Preserve user selections across frequent UI refreshes.
     const prevFrom = fromSel.value;
@@ -1107,7 +1193,9 @@ export class UiController {
     const destinationOptions = state.buildings
       .filter((b) => {
         const bt = BUILDINGS_MAP[b.typeId];
-        if (!bt || bt.category === 'harvester') return false;
+        if (!bt || bt.category === 'harvester') {
+          return false;
+        }
         return b.id !== selectedFromId;
       })
       .map((b) => {
@@ -1122,7 +1210,9 @@ export class UiController {
       state.buildings
         .filter((b) => {
           const bt = BUILDINGS_MAP[b.typeId];
-          if (!bt || bt.category === 'harvester') return false;
+          if (!bt || bt.category === 'harvester') {
+            return false;
+          }
           return b.id !== selectedFromId;
         })
         .map((b) => b.id)
@@ -1151,7 +1241,9 @@ export class UiController {
 
   private updateAchievementsScreen(state: GameState): void {
     const list = document.getElementById('achievements-list');
-    if (!list) return;
+    if (!list) {
+      return;
+    }
 
     list.innerHTML = '';
     const unlocked = state.unlockedAchievements;
@@ -1182,7 +1274,9 @@ export class UiController {
     document.querySelectorAll('.finance-tab').forEach((btn) => {
       btn.addEventListener('click', () => {
         const tab = (btn as HTMLElement).dataset['tab'] as 'contracts' | 'loans' | 'events';
-        if (!tab) return;
+        if (!tab) {
+          return;
+        }
         this.activeFinanceTab = tab;
         document.querySelectorAll('.finance-tab').forEach((b) => b.classList.remove('active'));
         btn.classList.add('active');
@@ -1230,9 +1324,15 @@ export class UiController {
       synEl.innerHTML = '';
       let hasBonus = false;
       for (const tech of TECHNOLOGIES) {
-        if (!tech.synergyWith || !tech.synergyBonus) continue;
-        if (!state.completedResearch.includes(tech.id)) continue;
-        if (!tech.synergyWith.every((sid) => state.completedResearch.includes(sid))) continue;
+        if (!tech.synergyWith || !tech.synergyBonus) {
+          continue;
+        }
+        if (!state.completedResearch.includes(tech.id)) {
+          continue;
+        }
+        if (!tech.synergyWith.every((sid) => state.completedResearch.includes(sid))) {
+          continue;
+        }
         hasBonus = true;
         const pct = Math.round((tech.synergyBonus - 1) * 100);
         const specLabel = tech.specialization ? ` [${tech.specialization}]` : '';
@@ -1248,14 +1348,22 @@ export class UiController {
   }
 
   private updateFinanceScreen(state: GameState): void {
-    if (this.activeFinanceTab === 'contracts') this.renderContractsTab(state);
-    else if (this.activeFinanceTab === 'loans') this.renderLoansTab(state);
-    else this.renderMarketEventsTab(state);
+    if (this.activeFinanceTab === 'contracts') {
+      this.renderContractsTab(state);
+    }
+    else if (this.activeFinanceTab === 'loans') {
+      this.renderLoansTab(state);
+    }
+    else {
+      this.renderMarketEventsTab(state);
+    }
   }
 
   private renderContractsTab(state: GameState): void {
     const list = document.getElementById('contracts-list');
-    if (!list) return;
+    if (!list) {
+      return;
+    }
     list.innerHTML = '';
 
     const active = ContractSystem.getActiveContracts(state);
@@ -1380,7 +1488,9 @@ export class UiController {
   private renderLoansTab(state: GameState): void {
     const tiersEl = document.getElementById('loan-tiers');
     const listEl = document.getElementById('loans-list');
-    if (!tiersEl || !listEl) return;
+    if (!tiersEl || !listEl) {
+      return;
+    }
 
     // Loan tier buttons
     tiersEl.innerHTML = '';
@@ -1466,7 +1576,9 @@ export class UiController {
 
   private renderMarketEventsTab(state: GameState): void {
     const listEl = document.getElementById('market-events-list');
-    if (!listEl) return;
+    if (!listEl) {
+      return;
+    }
     listEl.innerHTML = '';
 
     if (state.activeMarketEvents.length === 0) {
@@ -1530,7 +1642,9 @@ export class UiController {
 
     for (const [containerId, catList] of Object.entries(categories)) {
       const container = document.getElementById(containerId);
-      if (!container) continue;
+      if (!container) {
+        continue;
+      }
 
       const filtered = BUILDINGS.filter((b) => catList.includes(b.category));
       for (const bt of filtered) {
@@ -1569,11 +1683,15 @@ export class UiController {
 
         btn.addEventListener('mouseleave', () => {
           cancelAnimationFrame(tooltipRafId);
-          if (tooltip) tooltip.style.display = 'none';
+          if (tooltip) {
+            tooltip.style.display = 'none';
+          }
         });
 
         btn.addEventListener('click', () => {
-          if (btn.classList.contains('locked')) return;
+          if (btn.classList.contains('locked')) {
+            return;
+          }
           if (this.buildModeActive && this.buildTypeId === bt.id) {
             this.deactivateBuildMode();
           } else {
@@ -1607,9 +1725,13 @@ export class UiController {
   }
 
   private async onBuildClick(e: MouseEvent): Promise<void> {
-    if (!this.buildTypeId) return;
+    if (!this.buildTypeId) {
+      return;
+    }
     const pos = this.game.getWorldPositionFromEvent(e);
-    if (!pos) return;
+    if (!pos) {
+      return;
+    }
     const ok = await this.game.placeBuilding(this.buildTypeId, pos);
     if (ok) {
       const bt = BUILDINGS_MAP[this.buildTypeId];
@@ -1636,12 +1758,16 @@ export class UiController {
 
   private hideBuildCursorHint(): void {
     const hint = document.getElementById('build-cursor-hint');
-    if (hint) hint.style.display = 'none';
+    if (hint) {
+      hint.style.display = 'none';
+    }
   }
 
   private renderBuffer(containerId: string, label: string, buffer: Record<string, number>): void {
     const el = document.getElementById(containerId);
-    if (!el) return;
+    if (!el) {
+      return;
+    }
     el.innerHTML = '';
     const entries = Object.entries(buffer).filter(([, amt]) => amt > 0);
     if (entries.length === 0) {
@@ -1669,10 +1795,14 @@ export class UiController {
     canvas.height = height;
     canvas.className = 'price-sparkline';
     canvas.title = history.length > 0 ? `Price history (${history.length} samples)` : 'No price history yet';
-    if (history.length < 2) return canvas;
+    if (history.length < 2) {
+      return canvas;
+    }
 
     const ctx = canvas.getContext('2d');
-    if (!ctx) return canvas;
+    if (!ctx) {
+      return canvas;
+    }
 
     const min = Math.min(...history);
     const max = Math.max(...history);
@@ -1686,11 +1816,17 @@ export class UiController {
     ctx.beginPath();
     for (let i = 0; i < history.length; i++) {
       const value = history[i];
-      if (value === undefined) continue;
+      if (value === undefined) {
+        continue;
+      }
       const x = pad + (i / (history.length - 1)) * w;
       const y = pad + (1 - (value - min) / range) * h;
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
+      if (i === 0) {
+        ctx.moveTo(x, y);
+      }
+      else {
+        ctx.lineTo(x, y);
+      }
     }
     ctx.stroke();
     return canvas;
@@ -1698,13 +1834,19 @@ export class UiController {
 
   private updateMinimap(state: GameState): void {
     // Refresh minimap at most every 5 seconds (100 ticks at 20 tps)
-    if (state.tick - this.lastMinimapTick < 100) return;
+    if (state.tick - this.lastMinimapTick < 100) {
+      return;
+    }
     this.lastMinimapTick = state.tick;
 
     const canvas = document.getElementById('minimap-canvas') as HTMLCanvasElement | null;
-    if (!canvas) return;
+    if (!canvas) {
+      return;
+    }
     const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) {
+      return;
+    }
 
     const W = canvas.width;
     const H = canvas.height;
@@ -1795,14 +1937,18 @@ export class UiController {
     const listEl = document.getElementById('scenarios-list');
     const activePanel = document.getElementById('scenario-active-panel');
 
-    if (!listEl) return;
+    if (!listEl) {
+      return;
+    }
 
     // Show scenario cards
     listEl.innerHTML = '';
     for (const scenario of SCENARIOS) {
       const card = document.createElement('div');
       card.className = 'scenario-card';
-      if (state.activeScenarioId === scenario.id) card.classList.add('active');
+      if (state.activeScenarioId === scenario.id) {
+        card.classList.add('active');
+      }
 
       const name = this.i18n.t(scenario.nameKey);
       const desc = this.i18n.t(scenario.descriptionKey);
@@ -1837,7 +1983,9 @@ export class UiController {
     }
 
     // Show active scenario panel
-    if (!activePanel) return;
+    if (!activePanel) {
+      return;
+    }
     if (state.activeScenarioId) {
       activePanel.classList.remove('hidden');
       const nameEl = document.getElementById('scenario-name');
@@ -1848,7 +1996,9 @@ export class UiController {
 
       const scenario = SCENARIOS_MAP[state.activeScenarioId];
 
-      if (nameEl && scenario) nameEl.textContent = this.i18n.t(scenario.nameKey);
+      if (nameEl && scenario) {
+        nameEl.textContent = this.i18n.t(scenario.nameKey);
+      }
 
       if (objListEl && scenario) {
         objListEl.innerHTML = '';

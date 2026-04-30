@@ -8,12 +8,16 @@ export { LOAN_TIERS };
  * about any loans that are past due.
  */
 export function tick(state: GameState): void {
-  if (state.tick % INTEREST_INTERVAL !== 0) return;
+  if (state.tick % INTEREST_INTERVAL !== 0) {
+    return;
+  }
 
   const intervalFraction = INTEREST_INTERVAL / TICKS_PER_YEAR;
 
   for (const loan of state.loans) {
-    if (loan.remainingBalance <= 0) continue;
+    if (loan.remainingBalance <= 0) {
+      continue;
+    }
 
     // Accrue interest for this interval
     const interest = loan.remainingBalance * loan.annualInterestRate * intervalFraction;
@@ -40,10 +44,14 @@ export function tick(state: GameState): void {
  */
 export function takeLoan(state: GameState, tierIndex: number): boolean {
   const outstandingCount = state.loans.filter((l) => l.remainingBalance > 0).length;
-  if (outstandingCount >= MAX_LOANS) return false;
+  if (outstandingCount >= MAX_LOANS) {
+    return false;
+  }
 
   const tier = LOAN_TIERS[tierIndex];
-  if (!tier) return false;
+  if (!tier) {
+    return false;
+  }
 
   const loan: Loan = {
     id: crypto.randomUUID(),
@@ -74,7 +82,9 @@ export function takeLoan(state: GameState, tierIndex: number): boolean {
  */
 export function repayLoan(state: GameState, loanId: string): number {
   const loan = state.loans.find((l) => l.id === loanId);
-  if (!loan || loan.remainingBalance <= 0) return 0;
+  if (!loan || loan.remainingBalance <= 0) {
+    return 0;
+  }
 
   const payment = Math.min(state.cash, loan.remainingBalance);
   state.cash -= payment;

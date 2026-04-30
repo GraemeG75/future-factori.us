@@ -37,10 +37,14 @@ function clamp01(v: number): number {
 }
 
 function scoreInRange(value: number, min: number, max: number): number {
-  if (value < min || value > max) return 0;
+  if (value < min || value > max) {
+    return 0;
+  }
   const mid = (min + max) * 0.5;
   const half = (max - min) * 0.5;
-  if (half <= 0) return 0;
+  if (half <= 0) {
+    return 0;
+  }
   return 1 - Math.abs(value - mid) / half;
 }
 
@@ -90,16 +94,22 @@ function pickSpotCandidate(
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     const x = Math.round((rng() - 0.5) * (SPOT_WORLD_HALF_EXTENT * 2));
     const z = Math.round((rng() - 0.5) * (SPOT_WORLD_HALF_EXTENT * 2));
-    if (isTooClose(existingSpots, x, z)) continue;
+    if (isTooClose(existingSpots, x, z)) {
+      continue;
+    }
 
     const sample = sampleTerrain(seed, x, z, TERRAIN_WIDTH, TERRAIN_DEPTH);
-    if (sample.height < LAND_MIN_HEIGHT) continue; // reject underwater/sea positions
+    if (sample.height < LAND_MIN_HEIGHT) {
+      continue;
+    } // reject underwater/sea positions
     const baseScore = evaluateSpotFitness(typeId, sample);
     const jittered = baseScore + (rng() - 0.5) * 0.03;
 
     if (!best || jittered > best.score) {
       best = { x, z, sample, score: jittered };
-      if (best.score > 0.9) break;
+      if (best.score > 0.9) {
+        break;
+      }
     }
   }
 
@@ -131,7 +141,9 @@ export function generateResourceSpots(seed: number): ResourceSpot[] {
     let placed = 0;
     while (placed < count) {
       const candidate = pickSpotCandidate(seed, typeId, spots, rng);
-      if (!candidate) break;
+      if (!candidate) {
+        break;
+      }
 
       const maxRemaining = Math.round(DEPOSIT_MIN + rng() * (DEPOSIT_MAX - DEPOSIT_MIN));
       spots.push({
@@ -179,9 +191,13 @@ export function load(): GameState | null {
   try {
     const desktopStorage = getDesktopStorage();
     const raw = desktopStorage?.loadSave() ?? localStorage.getItem(SAVE_KEY);
-    if (!raw) return null;
+    if (!raw) {
+      return null;
+    }
     const parsed: unknown = JSON.parse(raw);
-    if (!isObject(parsed)) return null;
+    if (!isObject(parsed)) {
+      return null;
+    }
     const version = typeof parsed['version'] === 'number' ? parsed['version'] : 0;
     return migrate(parsed, version);
   } catch {
@@ -209,7 +225,9 @@ export function hasSave(): boolean {
  * format. Applies patches sequentially for each version gap.
  */
 export function migrate(data: unknown, fromVersion: number): GameState {
-  if (!isObject(data)) return createNewGame();
+  if (!isObject(data)) {
+    return createNewGame();
+  }
 
   let state = coerceToGameState(data);
 
@@ -236,8 +254,12 @@ export function migrate(data: unknown, fromVersion: number): GameState {
 /** Patches a v1 state to add v0.3.0 fields. */
 function migrateV1toV2(state: GameState): GameState {
   // Add new top-level fields
-  if (!('pollution' in state)) (state as GameState).pollution = 0;
-  if (!('unlockedAchievements' in state)) (state as GameState).unlockedAchievements = [];
+  if (!('pollution' in state)) {
+    (state as GameState).pollution = 0;
+  }
+  if (!('unlockedAchievements' in state)) {
+    (state as GameState).unlockedAchievements = [];
+  }
   // Add remaining/maxRemaining to any resource spots that lack them
   for (const spot of state.resourceSpots) {
     if (!('remaining' in spot)) {
@@ -250,33 +272,59 @@ function migrateV1toV2(state: GameState): GameState {
 
 /** Patches a v2 state to add v0.4.0 / v0.5.0 fields. */
 function migrateV2toV3(state: GameState): GameState {
-  if (!('contracts' in state)) (state as GameState).contracts = [];
-  if (!('loans' in state)) (state as GameState).loans = [];
-  if (!('priceHistory' in state)) (state as GameState).priceHistory = {};
-  if (!('activeMarketEvents' in state)) (state as GameState).activeMarketEvents = [];
-  if (!('researchSpecialization' in state)) (state as GameState).researchSpecialization = null;
+  if (!('contracts' in state)) {
+    (state as GameState).contracts = [];
+  }
+  if (!('loans' in state)) {
+    (state as GameState).loans = [];
+  }
+  if (!('priceHistory' in state)) {
+    (state as GameState).priceHistory = {};
+  }
+  if (!('activeMarketEvents' in state)) {
+    (state as GameState).activeMarketEvents = [];
+  }
+  if (!('researchSpecialization' in state)) {
+    (state as GameState).researchSpecialization = null;
+  }
   return state;
 }
 
 /** Patches a v3 state to add v0.6.0 / v0.7.0 fields. */
 function migrateV3toV4(state: GameState): GameState {
-  if (!('activeScenarioId' in state)) (state as GameState).activeScenarioId = null;
-  if (!('scenarioStatus' in state)) (state as GameState).scenarioStatus = null;
-  if (!('scenarioScore' in state)) (state as GameState).scenarioScore = 0;
-  if (!('sandboxMode' in state)) (state as GameState).sandboxMode = false;
+  if (!('activeScenarioId' in state)) {
+    (state as GameState).activeScenarioId = null;
+  }
+  if (!('scenarioStatus' in state)) {
+    (state as GameState).scenarioStatus = null;
+  }
+  if (!('scenarioScore' in state)) {
+    (state as GameState).scenarioScore = 0;
+  }
+  if (!('sandboxMode' in state)) {
+    (state as GameState).sandboxMode = false;
+  }
   return state;
 }
 
 /** Patches a v4 state to add v0.8.0 fields (heat system). */
 function migrateV4toV5(state: GameState): GameState {
   for (const building of state.buildings) {
-    if (!('heat' in building)) (building as BuildingInstance).heat = 0;
+    if (!('heat' in building)) {
+      (building as BuildingInstance).heat = 0;
+    }
   }
   for (const route of state.routes) {
-    if (!('automationLevel' in route)) (route as RouteInstance).automationLevel = 0;
+    if (!('automationLevel' in route)) {
+      (route as RouteInstance).automationLevel = 0;
+    }
   }
-  if (!('globalHeat' in state)) (state as GameState).globalHeat = 0;
-  if (!('heatCrisisTicks' in state)) (state as GameState).heatCrisisTicks = 0;
+  if (!('globalHeat' in state)) {
+    (state as GameState).globalHeat = 0;
+  }
+  if (!('heatCrisisTicks' in state)) {
+    (state as GameState).heatCrisisTicks = 0;
+  }
   return state;
 }
 
@@ -349,9 +397,13 @@ export function exportSave(state: GameState): string {
 export function importSave(json: string): GameState | null {
   try {
     const parsed: unknown = JSON.parse(json);
-    if (!isObject(parsed)) return null;
+    if (!isObject(parsed)) {
+      return null;
+    }
     // Require at minimum a version field and a tick field to be considered a valid save.
-    if (typeof parsed['version'] !== 'number' || typeof parsed['tick'] !== 'number') return null;
+    if (typeof parsed['version'] !== 'number' || typeof parsed['tick'] !== 'number') {
+      return null;
+    }
     const version = parsed['version'] as number;
     return migrate(parsed, version);
   } catch {
@@ -385,10 +437,10 @@ function coerceToGameState(raw: Record<string, unknown>): GameState {
     activeResearch:
       isObject(raw['activeResearch']) && typeof raw['activeResearch']['technologyId'] === 'string'
         ? {
-            technologyId: raw['activeResearch']['technologyId'] as string,
-            progress: typeof raw['activeResearch']['progress'] === 'number' ? (raw['activeResearch']['progress'] as number) : 0,
-            startedAt: typeof raw['activeResearch']['startedAt'] === 'number' ? (raw['activeResearch']['startedAt'] as number) : 0
-          }
+          technologyId: raw['activeResearch']['technologyId'] as string,
+          progress: typeof raw['activeResearch']['progress'] === 'number' ? (raw['activeResearch']['progress'] as number) : 0,
+          startedAt: typeof raw['activeResearch']['startedAt'] === 'number' ? (raw['activeResearch']['startedAt'] as number) : 0
+        }
         : null,
     completedResearch: Array.isArray(raw['completedResearch']) ? (raw['completedResearch'] as string[]) : [],
     tradeHistory: Array.isArray(raw['tradeHistory']) ? raw['tradeHistory'] : [],

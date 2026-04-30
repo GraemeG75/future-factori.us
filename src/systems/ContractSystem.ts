@@ -18,7 +18,9 @@ import {
 export function tick(state: GameState): void {
   // Expire contracts that have passed their deadline
   for (const contract of state.contracts) {
-    if (contract.status !== 'active' && contract.status !== 'offered') continue;
+    if (contract.status !== 'active' && contract.status !== 'offered') {
+      continue;
+    }
     if (state.tick >= contract.deadlineAtTick) {
       if (contract.status === 'active') {
         // Only penalise contracts the player explicitly accepted
@@ -50,11 +52,15 @@ export function tick(state: GameState): void {
  */
 export function fulfillContract(state: GameState, contractId: string): boolean {
   const contract = state.contracts.find((c) => c.id === contractId);
-  if (!contract || contract.status !== 'active') return false;
+  if (!contract || contract.status !== 'active') {
+    return false;
+  }
 
   const available = state.inventory[contract.resourceId] ?? 0;
   const needed = contract.amountRequired - contract.amountDelivered;
-  if (available <= 0 || needed <= 0) return false;
+  if (available <= 0 || needed <= 0) {
+    return false;
+  }
 
   const toDeliver = Math.min(available, needed);
   state.inventory[contract.resourceId] = available - toDeliver;
@@ -79,7 +85,9 @@ export function fulfillContract(state: GameState, contractId: string): boolean {
 /** Accepts an offered contract, making it active and enforceable. */
 export function acceptContract(state: GameState, contractId: string): boolean {
   const contract = state.contracts.find((c) => c.id === contractId);
-  if (!contract || contract.status !== 'offered') return false;
+  if (!contract || contract.status !== 'offered') {
+    return false;
+  }
   contract.status = 'active';
   contract.acceptedAtTick = state.tick;
   return true;
@@ -106,25 +114,37 @@ export function getContractTicksRemaining(state: GameState, contract: Contract):
 
 function generateContract(state: GameState): void {
   const active = getActiveContracts(state);
-  if (active.length >= MAX_ACTIVE_CONTRACTS) return;
+  if (active.length >= MAX_ACTIVE_CONTRACTS) {
+    return;
+  }
 
   // Pick an unlocked partner at random
   const availablePartners = TRADE_PARTNERS.filter((p) => !p.unlockRequirement || state.completedResearch.includes(p.unlockRequirement));
-  if (availablePartners.length === 0) return;
+  if (availablePartners.length === 0) {
+    return;
+  }
   const partner = availablePartners[Math.floor(Math.random() * availablePartners.length)]!;
 
   // Pick a preferred resource that the partner wants
   const candidateResources = [...partner.preferredResources, ...Object.keys(RESOURCES_MAP)].filter((rId) => {
     const r = RESOURCES_MAP[rId];
-    if (!r) return false;
-    if (r.unlockRequirement && !state.completedResearch.includes(r.unlockRequirement)) return false;
+    if (!r) {
+      return false;
+    }
+    if (r.unlockRequirement && !state.completedResearch.includes(r.unlockRequirement)) {
+      return false;
+    }
     return true;
   });
 
-  if (candidateResources.length === 0) return;
+  if (candidateResources.length === 0) {
+    return;
+  }
   const resourceId = candidateResources[Math.floor(Math.random() * candidateResources.length)]!;
   const resource = RESOURCES_MAP[resourceId];
-  if (!resource) return;
+  if (!resource) {
+    return;
+  }
 
   const amount = Math.round(CONTRACT_MIN_AMOUNT + Math.random() * (CONTRACT_MAX_AMOUNT - CONTRACT_MIN_AMOUNT));
   const partnerData = TRADE_PARTNERS_MAP[partner.id];

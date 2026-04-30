@@ -72,7 +72,9 @@ export class Effects {
   update(deltaTime: number): void {
     for (const effect of this.routeEffects.values()) {
       effect.progress += deltaTime * effect.speed;
-      if (effect.progress > 1) effect.progress = 0;
+      if (effect.progress > 1) {
+        effect.progress = 0;
+      }
       effect.sphere.position.lerpVectors(effect.from, effect.to, effect.progress);
     }
 

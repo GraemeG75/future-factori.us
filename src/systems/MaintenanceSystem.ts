@@ -18,8 +18,12 @@ export { BROKEN_HEALTH_THRESHOLD };
  */
 export function tick(state: GameState, deltaSeconds: number): void {
   for (const building of state.buildings) {
-    if (!building.isPowered) continue;
-    if (building.health <= BROKEN_HEALTH_THRESHOLD) continue;
+    if (!building.isPowered) {
+      continue;
+    }
+    if (building.health <= BROKEN_HEALTH_THRESHOLD) {
+      continue;
+    }
 
     // Gradual wear
     building.health = Math.max(BROKEN_HEALTH_THRESHOLD, building.health - HEALTH_DRAIN_PER_SECOND * deltaSeconds);
@@ -47,9 +51,13 @@ export function tick(state: GameState, deltaSeconds: number): void {
  */
 export function getRepairCost(building: BuildingInstance): number {
   const bt = BUILDINGS_MAP[building.typeId];
-  if (!bt) return 0;
+  if (!bt) {
+    return 0;
+  }
   const missingHealth = 100 - building.health;
-  if (missingHealth <= 0) return 0;
+  if (missingHealth <= 0) {
+    return 0;
+  }
   return Math.ceil(bt.baseCost * REPAIR_COST_MULTIPLIER * (missingHealth / 100));
 }
 
@@ -60,11 +68,17 @@ export function getRepairCost(building: BuildingInstance): number {
  */
 export function repairBuilding(state: GameState, buildingId: string): boolean {
   const building = state.buildings.find((b) => b.id === buildingId);
-  if (!building) return false;
-  if (building.health >= 100) return false;
+  if (!building) {
+    return false;
+  }
+  if (building.health >= 100) {
+    return false;
+  }
 
   const cost = getRepairCost(building);
-  if (state.cash < cost) return false;
+  if (state.cash < cost) {
+    return false;
+  }
 
   state.cash -= cost;
   building.health = 100;
@@ -76,7 +90,9 @@ export function repairBuilding(state: GameState, buildingId: string): boolean {
  * Full health → 1.0; broken (health = 0) → 0.0 (building offline).
  */
 export function getHealthEfficiency(building: BuildingInstance): number {
-  if (building.health <= BROKEN_HEALTH_THRESHOLD) return 0;
+  if (building.health <= BROKEN_HEALTH_THRESHOLD) {
+    return 0;
+  }
   // Scale from MIN_EFFICIENCY at health=1 to 1.0 at health=100 for a meaningful
   // efficiency curve (a damaged building still works, just slower).
   return MIN_EFFICIENCY + (building.health / 100) * EFFICIENCY_SCALE;

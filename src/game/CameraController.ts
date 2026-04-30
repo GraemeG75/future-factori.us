@@ -79,8 +79,12 @@ export class CameraController {
   }
 
   onMouseUp(e: MouseEvent): void {
-    if (e.button === 0) this.isDragging = false;
-    if (e.button === 1 || e.button === 2) this.isPanning = false;
+    if (e.button === 0) {
+      this.isDragging = false;
+    }
+    if (e.button === 1 || e.button === 2) {
+      this.isPanning = false;
+    }
   }
 
   onWheel(e: WheelEvent): void {

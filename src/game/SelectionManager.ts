@@ -49,7 +49,9 @@ export class SelectionManager {
       meshes.push(mesh);
     }
     const intersects = this.raycaster.intersectObjects(meshes, true);
-    if (intersects.length === 0) return null;
+    if (intersects.length === 0) {
+      return null;
+    }
     const hit = intersects[0]!.object;
     for (const [id, mesh] of this.buildingMeshMap) {
       if (mesh === hit || (mesh as THREE.Group).children?.includes(hit) || hit.parent === mesh) {
@@ -60,7 +62,9 @@ export class SelectionManager {
     let obj: THREE.Object3D | null = hit;
     while (obj) {
       for (const [id, mesh] of this.buildingMeshMap) {
-        if (mesh === obj) return id;
+        if (mesh === obj) {
+          return id;
+        }
       }
       obj = obj.parent;
     }
@@ -99,8 +103,12 @@ export class SelectionManager {
 
   clearSelection(): void {
     this.selected = null;
-    if (this.selectionRing) this.selectionRing.visible = false;
-    if (this.onSelectCallback) this.onSelectCallback(null);
+    if (this.selectionRing) {
+      this.selectionRing.visible = false;
+    }
+    if (this.onSelectCallback) {
+      this.onSelectCallback(null);
+    }
   }
 
   reset(): void {
@@ -110,7 +118,9 @@ export class SelectionManager {
   }
 
   update(): void {
-    if (!this.selectionRing) return;
+    if (!this.selectionRing) {
+      return;
+    }
     if (this.selected) {
       const mesh = this.buildingMeshMap.get(this.selected);
       if (mesh) {

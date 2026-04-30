@@ -13,7 +13,9 @@ function makeLocalStorageMock() {
       delete store[key];
     }),
     clear: vi.fn(() => {
-      for (const k of Object.keys(store)) delete store[k];
+      for (const k of Object.keys(store)) {
+        delete store[k];
+      }
     }),
     _store: store
   };

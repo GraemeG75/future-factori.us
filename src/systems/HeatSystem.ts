@@ -14,7 +14,9 @@ export { HOT_BUILDING_IDS };
  * Returns 0 below the threshold, linearly scales to 0.5 at heat = 100.
  */
 export function getHeatPenalty(heat: number): number {
-  if (heat <= HEAT_PENALTY_THRESHOLD) return 0;
+  if (heat <= HEAT_PENALTY_THRESHOLD) {
+    return 0;
+  }
   return ((heat - HEAT_PENALTY_THRESHOLD) / (100 - HEAT_PENALTY_THRESHOLD)) * 0.5;
 }
 
@@ -32,13 +34,17 @@ function distSq(a: { x: number; z: number }, b: { x: number; z: number }): numbe
  */
 function dissipateHeat(state: GameState): void {
   for (const building of state.buildings) {
-    if (building.heat <= 0) continue;
+    if (building.heat <= 0) {
+      continue;
+    }
 
     building.heat = Math.max(0, building.heat - HEAT_NATURAL_DECAY_PER_TICK);
 
     for (const cooler of state.buildings) {
       const cfg = COOLING_BUILDING_IDS[cooler.typeId];
-      if (!cfg || !cooler.isPowered) continue;
+      if (!cfg || !cooler.isPowered) {
+        continue;
+      }
       const rangeSq = cfg.range * cfg.range;
       if (distSq(building.position, cooler.position) <= rangeSq) {
         building.heat = Math.max(0, building.heat - cfg.coolingPerTick);
@@ -58,8 +64,12 @@ export function tick(state: GameState): void {
 
   // Generate heat in hot buildings
   for (const building of state.buildings) {
-    if (!HOT_BUILDING_IDS.has(building.typeId)) continue;
-    if (!building.isPowered) continue;
+    if (!HOT_BUILDING_IDS.has(building.typeId)) {
+      continue;
+    }
+    if (!building.isPowered) {
+      continue;
+    }
     building.heat = Math.min(100, building.heat + HEAT_GENERATION_PER_TICK);
   }
 
@@ -85,6 +95,8 @@ export function tick(state: GameState): void {
  * Returns 1.0 if not a hot building or heat is within safe range.
  */
 export function getHeatEfficiency(building: BuildingInstance): number {
-  if (!HOT_BUILDING_IDS.has(building.typeId)) return 1.0;
+  if (!HOT_BUILDING_IDS.has(building.typeId)) {
+    return 1.0;
+  }
   return 1.0 - getHeatPenalty(building.heat);
 }

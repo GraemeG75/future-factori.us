@@ -18,16 +18,24 @@ function getTerrainAnchoredPosition(state: GameState, position: { x: number; y: 
  */
 export function placeBuilding(state: GameState, typeId: string, clickPosition: { x: number; y: number; z: number }): BuildingInstance | null {
   const buildingType = BUILDINGS_MAP[typeId];
-  if (!buildingType) return null;
-  if (!isBuildingTypeUnlocked(state.completedResearch, typeId)) return null;
-  if (state.cash < buildingType.baseCost) return null;
+  if (!buildingType) {
+    return null;
+  }
+  if (!isBuildingTypeUnlocked(state.completedResearch, typeId)) {
+    return null;
+  }
+  if (state.cash < buildingType.baseCost) {
+    return null;
+  }
 
   // Harvesters must snap to a matching unoccupied resource spot
   let buildPosition = clickPosition;
   let targetSpot: ResourceSpot | undefined;
   if (buildingType.category === 'harvester') {
     targetSpot = findNearestUnoccupiedSpot(state, typeId, clickPosition);
-    if (!targetSpot) return null;
+    if (!targetSpot) {
+      return null;
+    }
     buildPosition = targetSpot.position;
   } else {
     buildPosition = getTerrainAnchoredPosition(state, clickPosition);
@@ -37,7 +45,9 @@ export function placeBuilding(state: GameState, typeId: string, clickPosition: {
       const dz = b.position.z - clickPosition.z;
       return Math.sqrt(dx * dx + dz * dz) < MIN_BUILDING_SEPARATION;
     });
-    if (tooClose) return null;
+    if (tooClose) {
+      return null;
+    }
   }
 
   state.cash -= buildingType.baseCost;
@@ -73,14 +83,22 @@ export function placeBuilding(state: GameState, typeId: string, clickPosition: {
  */
 export function upgradeBuilding(state: GameState, buildingId: string): boolean {
   const building = getBuildingById(state, buildingId);
-  if (!building) return false;
+  if (!building) {
+    return false;
+  }
 
   const buildingType = BUILDINGS_MAP[building.typeId];
-  if (!buildingType) return false;
-  if (building.level >= buildingType.maxLevel) return false;
+  if (!buildingType) {
+    return false;
+  }
+  if (building.level >= buildingType.maxLevel) {
+    return false;
+  }
 
   const cost = buildingType.baseCost * Math.pow(buildingType.upgradeCostMultiplier, building.level);
-  if (state.cash < cost) return false;
+  if (state.cash < cost) {
+    return false;
+  }
 
   state.cash -= cost;
   building.level += 1;
@@ -95,7 +113,9 @@ export function removeBuilding(state: GameState, buildingId: string): void {
   state.routes = state.routes.filter((r) => r.fromBuildingId !== buildingId && r.toBuildingId !== buildingId);
   // Free any resource spot this building was occupying
   const spot = state.resourceSpots.find((s) => s.occupiedByBuildingId === buildingId);
-  if (spot) spot.occupiedByBuildingId = null;
+  if (spot) {
+    spot.occupiedByBuildingId = null;
+  }
 }
 
 /** Returns a BuildingInstance by its unique id, or undefined if not found. */
@@ -123,8 +143,12 @@ export function getBuildingMaintenance(state: GameState): number {
  */
 export function isBuildingTypeUnlocked(completedResearch: string[], typeId: string): boolean {
   const buildingType = BUILDINGS_MAP[typeId];
-  if (!buildingType) return false;
-  if (!buildingType.unlockRequirement) return true;
+  if (!buildingType) {
+    return false;
+  }
+  if (!buildingType.unlockRequirement) {
+    return true;
+  }
   return completedResearch.includes(buildingType.unlockRequirement);
 }
 
@@ -134,7 +158,9 @@ export function isBuildingTypeUnlocked(completedResearch: string[], typeId: stri
  */
 export function getHarvestRate(building: BuildingInstance): number {
   const buildingType = BUILDINGS_MAP[building.typeId];
-  if (!buildingType || buildingType.category !== 'harvester') return 0;
+  if (!buildingType || buildingType.category !== 'harvester') {
+    return 0;
+  }
   return BASE_HARVEST_RATE * building.level * Math.pow(buildingType.productionRateMultiplier, building.level - 1);
 }
 
@@ -145,7 +171,9 @@ export function getHarvestRate(building: BuildingInstance): number {
 export function getPowerProduction(state: GameState): number {
   return state.buildings.reduce((sum, b) => {
     const bt = BUILDINGS_MAP[b.typeId];
-    if (!bt || bt.basePowerUsage >= 0) return sum;
+    if (!bt || bt.basePowerUsage >= 0) {
+      return sum;
+    }
     return sum + Math.abs(bt.basePowerUsage) * b.level;
   }, 0);
 }
@@ -156,7 +184,9 @@ export function getPowerProduction(state: GameState): number {
 export function getPowerConsumption(state: GameState): number {
   return state.buildings.reduce((sum, b) => {
     const bt = BUILDINGS_MAP[b.typeId];
-    if (!bt || bt.basePowerUsage <= 0) return sum;
+    if (!bt || bt.basePowerUsage <= 0) {
+      return sum;
+    }
     return sum + bt.basePowerUsage * b.level;
   }, 0);
 }
@@ -166,10 +196,16 @@ export function getPowerConsumption(state: GameState): number {
  * Factors in power status, health, and whether a recipe is running.
  */
 export function getBuildingEfficiency(building: BuildingInstance): number {
-  if (!building.isPowered) return 0;
-  if (building.health <= 0) return 0;
+  if (!building.isPowered) {
+    return 0;
+  }
+  if (building.health <= 0) {
+    return 0;
+  }
   const bt = BUILDINGS_MAP[building.typeId];
-  if (!bt) return 0;
+  if (!bt) {
+    return 0;
+  }
   // Research and storage buildings are always considered efficient when powered
   if (bt.category === 'research' || bt.category === 'storage' || bt.category === 'trade' || bt.category === 'power') {
     return building.health / 100;
@@ -179,7 +215,9 @@ export function getBuildingEfficiency(building: BuildingInstance): number {
     return building.health / 100;
   }
   // Factories need an active recipe
-  if (!building.activeRecipeId) return 0;
+  if (!building.activeRecipeId) {
+    return 0;
+  }
   return building.health / 100;
 }
 
@@ -219,8 +257,12 @@ function findNearestUnoccupiedSpot(state: GameState, typeId: string, position: {
   let bestDist = HARVESTER_SNAP_RADIUS;
 
   for (const spot of state.resourceSpots) {
-    if (spot.buildingTypeId !== typeId) continue;
-    if (spot.occupiedByBuildingId !== null) continue;
+    if (spot.buildingTypeId !== typeId) {
+      continue;
+    }
+    if (spot.occupiedByBuildingId !== null) {
+      continue;
+    }
     const dx = spot.position.x - position.x;
     const dz = spot.position.z - position.z;
     const dist = Math.sqrt(dx * dx + dz * dz);
