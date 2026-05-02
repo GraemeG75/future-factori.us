@@ -335,16 +335,77 @@ export const TERRAIN_COAST = ACTIVE_TERRAIN_CONFIG.terrainCoast;
 export const WATER_STYLE = ACTIVE_TERRAIN_CONFIG.waterStyle;
 
 // ModelFactory terrain-rendering constants
-export const GRID_HEIGHT_OFFSET = 0.08;
-export const VOXEL_HEIGHT = 0.10;
-export const TERRAIN_BASE_HEIGHT = -28.0;
-export const TERRAIN_TEXTURE_REPEAT = 2.1;
-export const MIN_TERRAIN_COLUMNS = 180;
-export const MIN_TERRAIN_ROWS = 180;
-export const TERRAIN_SIDE_COLOR_BRIGHTNESS = 0.50;
-export const TERRAIN_SIDE_SATURATION_OFFSET = -0.04;
-export const TERRAIN_SIDE_LIGHTNESS_OFFSET = -0.08;
-export const TERRAIN_SIDE_ALT_STRIPE = 0.08;
-export const TERRAIN_SIDE_ALT_DARKEN = 0.12;
-export const TERRAIN_VOXEL_TOP_VARIATION = 0.12;
-export const TERRAIN_VOXEL_TOP_GRID_STRENGTH = 0.18;
+export const TERRAIN_VISUAL_PRESETS = {
+	enhanced: {
+		gridHeightOffset: 0.08,
+		voxelHeight: 0.10,
+		baseHeight: -28.0,
+		textureRepeat: 2.1,
+		minColumns: 180,
+		minRows: 180,
+		sideColorBrightness: 0.50,
+		sideSaturationOffset: -0.04,
+		sideLightnessOffset: -0.08,
+		sideAltStripe: 0.08,
+		sideAltDarken: 0.12,
+		voxelTopVariation: 0.12,
+		voxelTopGridStrength: 0.18,
+		voxelBandHeight: 0.45,
+		voxelBandHueShift: 0.014,
+		voxelBandSaturation: 0.09,
+		voxelBandLightness: 0.08,
+		topBevelStrength: 0.09,
+		topBevelDirectionX: 0.82,
+		topBevelDirectionZ: -0.58
+	},
+	ultra_voxel: {
+		gridHeightOffset: 0.08,
+		voxelHeight: 0.10,
+		baseHeight: -28.0,
+		textureRepeat: 1.85,
+		minColumns: 200,
+		minRows: 200,
+		sideColorBrightness: 0.42,
+		sideSaturationOffset: -0.06,
+		sideLightnessOffset: -0.14,
+		sideAltStripe: 0.12,
+		sideAltDarken: 0.19,
+		voxelTopVariation: 0.2,
+		voxelTopGridStrength: 0.28,
+		voxelBandHeight: 0.32,
+		voxelBandHueShift: 0.022,
+		voxelBandSaturation: 0.14,
+		voxelBandLightness: 0.12,
+		topBevelStrength: 0.14,
+		topBevelDirectionX: 0.9,
+		topBevelDirectionZ: -0.42
+	}
+} as const;
+
+export type TerrainVisualPresetName = keyof typeof TERRAIN_VISUAL_PRESETS;
+
+// Switch this to 'ultra_voxel' for a bolder, more stylized voxel look.
+export const ACTIVE_TERRAIN_VISUAL_PRESET: TerrainVisualPresetName = 'enhanced';
+
+const ACTIVE_TERRAIN_VISUAL = TERRAIN_VISUAL_PRESETS[ACTIVE_TERRAIN_VISUAL_PRESET];
+
+export const GRID_HEIGHT_OFFSET = ACTIVE_TERRAIN_VISUAL.gridHeightOffset;
+export const VOXEL_HEIGHT = ACTIVE_TERRAIN_VISUAL.voxelHeight;
+export const TERRAIN_BASE_HEIGHT = ACTIVE_TERRAIN_VISUAL.baseHeight;
+export const TERRAIN_TEXTURE_REPEAT = ACTIVE_TERRAIN_VISUAL.textureRepeat;
+export const MIN_TERRAIN_COLUMNS = ACTIVE_TERRAIN_VISUAL.minColumns;
+export const MIN_TERRAIN_ROWS = ACTIVE_TERRAIN_VISUAL.minRows;
+export const TERRAIN_SIDE_COLOR_BRIGHTNESS = ACTIVE_TERRAIN_VISUAL.sideColorBrightness;
+export const TERRAIN_SIDE_SATURATION_OFFSET = ACTIVE_TERRAIN_VISUAL.sideSaturationOffset;
+export const TERRAIN_SIDE_LIGHTNESS_OFFSET = ACTIVE_TERRAIN_VISUAL.sideLightnessOffset;
+export const TERRAIN_SIDE_ALT_STRIPE = ACTIVE_TERRAIN_VISUAL.sideAltStripe;
+export const TERRAIN_SIDE_ALT_DARKEN = ACTIVE_TERRAIN_VISUAL.sideAltDarken;
+export const TERRAIN_VOXEL_TOP_VARIATION = ACTIVE_TERRAIN_VISUAL.voxelTopVariation;
+export const TERRAIN_VOXEL_TOP_GRID_STRENGTH = ACTIVE_TERRAIN_VISUAL.voxelTopGridStrength;
+export const TERRAIN_VOXEL_BAND_HEIGHT = ACTIVE_TERRAIN_VISUAL.voxelBandHeight;
+export const TERRAIN_VOXEL_BAND_HUE_SHIFT = ACTIVE_TERRAIN_VISUAL.voxelBandHueShift;
+export const TERRAIN_VOXEL_BAND_SATURATION = ACTIVE_TERRAIN_VISUAL.voxelBandSaturation;
+export const TERRAIN_VOXEL_BAND_LIGHTNESS = ACTIVE_TERRAIN_VISUAL.voxelBandLightness;
+export const TERRAIN_TOP_BEVEL_STRENGTH = ACTIVE_TERRAIN_VISUAL.topBevelStrength;
+export const TERRAIN_TOP_BEVEL_DIRECTION_X = ACTIVE_TERRAIN_VISUAL.topBevelDirectionX;
+export const TERRAIN_TOP_BEVEL_DIRECTION_Z = ACTIVE_TERRAIN_VISUAL.topBevelDirectionZ;

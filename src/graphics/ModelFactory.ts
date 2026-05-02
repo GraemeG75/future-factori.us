@@ -17,6 +17,12 @@ import {
   TERRAIN_SIDE_ALT_DARKEN,
   TERRAIN_VOXEL_TOP_VARIATION,
   TERRAIN_VOXEL_TOP_GRID_STRENGTH,
+  TERRAIN_VOXEL_BAND_HEIGHT,
+  TERRAIN_VOXEL_BAND_SATURATION,
+  TERRAIN_VOXEL_BAND_LIGHTNESS,
+  TERRAIN_TOP_BEVEL_STRENGTH,
+  TERRAIN_TOP_BEVEL_DIRECTION_X,
+  TERRAIN_TOP_BEVEL_DIRECTION_Z,
   WATER_STYLE
 } from '../consts/terrain';
 
@@ -32,67 +38,133 @@ export class ModelFactory {
     return a.clone().lerp(b, THREE.MathUtils.clamp(t, 0, 1));
   }
 
-  private static getTerrainTopColor(cell: HeightmapCell): THREE.Color {
-    const warmSand = ModelFactory.colorFromRgb(212, 186, 126);
-    const moss = ModelFactory.colorFromRgb(98, 150, 74); // slightly more vibrant
-    const lush = ModelFactory.colorFromRgb(62, 132, 70); // slightly more vibrant
-    const dryEarth = ModelFactory.colorFromRgb(154, 132, 78); // warmer/richer than old scrub
-    const scrubOlive = ModelFactory.colorFromRgb(138, 142, 80); // warm olive for variety
-    const rock = ModelFactory.colorFromRgb(126, 110, 94); // browner, less gray
-    const snow = ModelFactory.colorFromRgb(225, 232, 242);
-    const wetland = ModelFactory.colorFromRgb(82, 120, 76);
+  // ---------------------------------------------------------------------------
+  // Biome palette tables — each zone has a list of [r,g,b] stops that are
+  // indexed by voxel step within that zone, giving distinct stepped colour bands.
+  // ---------------------------------------------------------------------------
+  private static readonly BIOME_BEACH: Array<[number, number, number]> = [
+    [238, 214, 158], // wet wash
+    [228, 202, 142], // dry sand
+    [218, 190, 126], // shadow hollow
+    [242, 220, 168], // bright crest
+    [230, 208, 148], // mid tone
+    [210, 184, 118]  // compact sand
+  ];
+  private static readonly BIOME_LOWLAND: Array<[number, number, number]> = [
+    [148, 136, 80],  // dry straw
+    [118, 152, 80],  // scrub green
+    [96,  148, 68],  // grass
+    [76,  132, 64],  // lush grass
+    [108, 158, 82],  // bright meadow
+    [132, 142, 76]   // olive flat
+  ];
+  private static readonly BIOME_MIDLAND: Array<[number, number, number]> = [
+    [110, 130, 78],  // dark olive
+    [92,  118, 62],  // deep moss
+    [128, 148, 88],  // bright moss
+    [86,  112, 56],  // dense canopy
+    [104, 126, 72],  // mixed green
+    [118, 138, 82]   // light canopy
+  ];
+  private static readonly BIOME_HIGHLAND: Array<[number, number, number]> = [
+    [132, 114, 94],  // warm stone
+    [118, 102, 82],  // dark rock
+    [148, 130, 108], // light slate
+    [106, 94,  76],  // shadow rock
+    [142, 124, 100], // mid cliff
+    [158, 138, 114]  // sun-bleached rock
+  ];
+  private static readonly BIOME_ALPINE: Array<[number, number, number]> = [
+    [194, 202, 218], // blue shadow snow
+    [220, 228, 240], // bright snow
+    [206, 210, 228], // grey-white
+    [232, 236, 248], // glare crest
+    [188, 196, 214], // icy shade
+    [216, 222, 238]  // soft snow
+  ];
 
+  private static sampleBiomePalette(
+    palette: Array<[number, number, number]>,
+    step: number
+  ): THREE.Color {
+    // step is a float — must floor before using as index
+    const safeStep = isFinite(step) ? step : 0;
+    const floored = Math.floor(safeStep);
+    const idx = ((floored % palette.length) + palette.length) % palette.length;
+    const next = (idx + 1) % palette.length;
+    const frac = safeStep - floored;
+    const a = palette[idx] ?? palette[0]!;
+    const b = palette[next] ?? palette[0]!;
+    return ModelFactory.colorFromRgb(
+      a[0] + (b[0] - a[0]) * frac,
+      a[1] + (b[1] - a[1]) * frac,
+      a[2] + (b[2] - a[2]) * frac
+    );
+  }
+
+  private static getTerrainTopColor(cell: HeightmapCell): THREE.Color {
+    const rock       = ModelFactory.colorFromRgb(126, 110, 94);
+    const wetland    = ModelFactory.colorFromRgb(82,  120, 76);
     const moistureBlend = cell.moisture * 0.55 + cell.flow * 0.45;
+    const h = cell.quantizedHeight;
+
     let color: THREE.Color;
 
-    if (cell.quantizedHeight < -0.14) {
-      // Rich slate-blue lowlands instead of neutral gray
-      color = ModelFactory.mixColor(ModelFactory.colorFromRgb(64, 80, 106), ModelFactory.colorFromRgb(96, 118, 132), moistureBlend);
-    } else if (cell.quantizedHeight < 0.51) {
-      color = ModelFactory.mixColor(warmSand, ModelFactory.colorFromRgb(192, 168, 108), cell.detail);
-    } else if (cell.quantizedHeight < 2.55) {
-      if (cell.flow > 0.48) {
-        color = ModelFactory.mixColor(wetland, moss, cell.detail);
-      } else if (cell.moisture > 0.55) {
-        color = ModelFactory.mixColor(moss, lush, cell.detail);
-      } else {
-        // Warm earthy-olive gradient for the main flat build zone
-        color = ModelFactory.mixColor(dryEarth, scrubOlive, cell.detail);
+    if (h < -0.14) {
+      // Shallow submerged shelf — dark slate, no stepped palette needed
+      color = ModelFactory.mixColor(
+        ModelFactory.colorFromRgb(52, 68, 94),
+        ModelFactory.colorFromRgb(80, 104, 120),
+        moistureBlend
+      );
+    } else if (h < TERRAIN_SEA_LEVEL + TERRAIN_COAST.blendHeightRange) {
+      // ---- BEACH ZONE ----
+      const coastDelta = h - TERRAIN_SEA_LEVEL;
+      const bandStep   = coastDelta / Math.max(0.01, TERRAIN_VOXEL_BAND_HEIGHT);
+      color = ModelFactory.sampleBiomePalette(ModelFactory.BIOME_BEACH, bandStep * 1.5);
+      if (cell.slope >= TERRAIN_COAST.rockySlopeStart) {
+        const shoreRock    = ModelFactory.colorFromRgb(112, 106, 98);
+        const rockyStrength = ModelFactory.clamp01(
+          (cell.slope - TERRAIN_COAST.rockySlopeStart) / TERRAIN_COAST.rockySlopeRange
+        );
+        const shoreBlend = ModelFactory.smoothstep(0.0, TERRAIN_COAST.blendHeightRange, Math.max(0, coastDelta));
+        color.lerp(shoreRock, rockyStrength * (1 - shoreBlend * TERRAIN_COAST.rockyFadeByHeight));
       }
-    } else if (cell.quantizedHeight < 5.1) {
-      // Warm rusty-brown rock instead of neutral gray
-      color = ModelFactory.mixColor(rock, ModelFactory.colorFromRgb(152, 130, 108), cell.detail * 0.8);
+    } else if (h < 1.4) {
+      // ---- LOWLAND ZONE ----
+      const bandStep = (h - (TERRAIN_SEA_LEVEL + TERRAIN_COAST.blendHeightRange)) / Math.max(0.01, TERRAIN_VOXEL_BAND_HEIGHT);
+      if (cell.flow > 0.48) {
+        color = ModelFactory.mixColor(
+          wetland,
+          ModelFactory.sampleBiomePalette(ModelFactory.BIOME_LOWLAND, bandStep + 3),
+          0.55
+        );
+      } else {
+        color = ModelFactory.sampleBiomePalette(ModelFactory.BIOME_LOWLAND, bandStep * moistureBlend * 2.0);
+      }
+    } else if (h < 3.4) {
+      // ---- MIDLAND ZONE ----
+      const bandStep = (h - 1.4) / Math.max(0.01, TERRAIN_VOXEL_BAND_HEIGHT);
+      color = ModelFactory.sampleBiomePalette(ModelFactory.BIOME_MIDLAND, bandStep);
+      if (cell.flow > 0.55 && h < 3.2) {
+        color.lerp(ModelFactory.colorFromRgb(72, 118, 80), 0.22);
+      }
+    } else if (h < 6.2) {
+      // ---- HIGHLAND / CLIFF ZONE ----
+      const bandStep = (h - 3.4) / Math.max(0.01, TERRAIN_VOXEL_BAND_HEIGHT);
+      color = ModelFactory.sampleBiomePalette(ModelFactory.BIOME_HIGHLAND, bandStep);
     } else {
-      color = ModelFactory.mixColor(snow, ModelFactory.colorFromRgb(188, 196, 208), cell.detail * 0.65);
+      // ---- ALPINE / SNOW ZONE ----
+      const bandStep = (h - 6.2) / Math.max(0.01, TERRAIN_VOXEL_BAND_HEIGHT);
+      color = ModelFactory.sampleBiomePalette(ModelFactory.BIOME_ALPINE, bandStep);
     }
 
-    if (cell.slope > 0.30) {
+    // Slope-rock overlay applies to all zones except beach/shelf
+    if (h > TERRAIN_SEA_LEVEL + TERRAIN_COAST.blendHeightRange && cell.slope > 0.30) {
       color.lerp(rock, Math.min(0.85, (cell.slope - 0.30) / 0.40));
     }
 
-    if (cell.flow > 0.62 && cell.quantizedHeight > 0.1 && cell.quantizedHeight < 3.2) {
-      color.lerp(ModelFactory.colorFromRgb(86, 126, 92), 0.2);
-    }
-
-    const coastDelta = cell.quantizedHeight - TERRAIN_SEA_LEVEL;
-    if (coastDelta >= 0 && coastDelta < TERRAIN_COAST.blendHeightRange) {
-      const beachSand = ModelFactory.colorFromRgb(222, 196, 136);
-      const shoreRock = ModelFactory.colorFromRgb(112, 106, 98);
-      const shoreBlend = ModelFactory.smoothstep(0.0, TERRAIN_COAST.blendHeightRange, coastDelta);
-      const coastVariation = ModelFactory.clamp01((cell.detail - 0.35) * 1.25);
-
-      if (cell.slope < TERRAIN_COAST.rockySlopeStart) {
-        color.lerp(
-          beachSand,
-          (1 - shoreBlend) * (TERRAIN_COAST.beachStrengthBase + coastVariation * TERRAIN_COAST.beachStrengthVariation)
-        );
-      } else {
-        const rockyStrength = ModelFactory.clamp01((cell.slope - TERRAIN_COAST.rockySlopeStart) / TERRAIN_COAST.rockySlopeRange);
-        color.lerp(shoreRock, rockyStrength * (1 - shoreBlend * TERRAIN_COAST.rockyFadeByHeight));
-      }
-    }
-
-    return color.offsetHSL(0, 0, (cell.detail - 0.5) * 0.1);
+    return color.offsetHSL(0, 0, (cell.detail - 0.5) * 0.10);
   }
 
   private static clamp01(v: number): number {
@@ -105,6 +177,21 @@ export class ModelFactory {
     }
     const t = ModelFactory.clamp01((x - edge0) / (edge1 - edge0));
     return t * t * (3 - 2 * t);
+  }
+
+  private static applyVoxelHeightBanding(color: THREE.Color, height: number): THREE.Color {
+    // Now that getTerrainTopColor already returns biome-palette stepped colours,
+    // this pass only adds a subtle lightness pulse per voxel row so the stair-step
+    // faces read clearly even in flat zones, without overriding the palette hues.
+    const safeBandHeight = Math.max(TERRAIN_VOXEL_BAND_HEIGHT, 0.001);
+    const step = Math.floor((height - TERRAIN_SEA_LEVEL) / safeBandHeight);
+    const even = (step & 1) === 0;
+    const stepFrac = (height - TERRAIN_SEA_LEVEL) / safeBandHeight - step;
+    // Ramp within the step: bright at top, darker toward base
+    const intraRamp = ModelFactory.smoothstep(0.0, 1.0, stepFrac);
+    const lightPulse = (even ? 1 : -1) * (intraRamp - 0.5) * TERRAIN_VOXEL_BAND_LIGHTNESS;
+    const satPulse   = (even ? 1 : -1) * TERRAIN_VOXEL_BAND_SATURATION * 0.4;
+    return color.offsetHSL(0, satPulse, lightPulse);
   }
 
   private static buildNoiseTexture(base: number, range: number, accentChance: number = 0): THREE.CanvasTexture {
@@ -208,7 +295,7 @@ export class ModelFactory {
     c: THREE.Vector3,
     d: THREE.Vector3,
     normal: THREE.Vector3,
-    color: THREE.Color,
+    color: THREE.Color | [THREE.Color, THREE.Color, THREE.Color, THREE.Color],
     uvScaleX: number,
     uvScaleY: number
   ): void {
@@ -221,12 +308,14 @@ export class ModelFactory {
       [uvScaleX, uvScaleY],
       [0, uvScaleY]
     ] as const;
+    const quadColorIndices = [0, 1, 2, 0, 2, 3] as const;
 
     for (let i = 0; i < vertices.length; i++) {
       const vertex = vertices[i]!;
       positions.push(vertex.x, vertex.y, vertex.z);
       normals.push(normal.x, normal.y, normal.z);
-      colors.push(color.r, color.g, color.b);
+      const vertexColor = Array.isArray(color) ? color[quadColorIndices[i]!]! : color;
+      colors.push(vertexColor.r, vertexColor.g, vertexColor.b);
       uvs.push(quadUvs[i]![0], quadUvs[i]![1]);
     }
   }
@@ -253,7 +342,8 @@ export class ModelFactory {
     };
 
     for (const cell of heightmap.cells) {
-      const topColor = ModelFactory.getTerrainTopColor(cell);
+      const topBaseColor = ModelFactory.getTerrainTopColor(cell);
+      const topColor = ModelFactory.applyVoxelHeightBanding(topBaseColor.clone(), cell.quantizedHeight);
       const steppedBand = Math.abs((cell.quantizedHeight / Math.max(0.001, heightmap.voxelHeight)) % 2);
       const sideBandShade = steppedBand > 1 ? 1 : steppedBand;
       const sideColor = topColor
@@ -279,6 +369,25 @@ export class ModelFactory {
       const z1 = cell.z + heightmap.cellDepth * 0.5;
       const topY = cell.quantizedHeight;
 
+      const topLightDir = new THREE.Vector2(TERRAIN_TOP_BEVEL_DIRECTION_X, TERRAIN_TOP_BEVEL_DIRECTION_Z).normalize();
+      const bevelCorners = [
+        new THREE.Vector2(-1, -1),
+        new THREE.Vector2(-1, 1),
+        new THREE.Vector2(1, 1),
+        new THREE.Vector2(1, -1)
+      ];
+      const topCornerColors: [THREE.Color, THREE.Color, THREE.Color, THREE.Color] = [
+        topColorAccented.clone(),
+        topColorAccented.clone(),
+        topColorAccented.clone(),
+        topColorAccented.clone()
+      ];
+      for (let i = 0; i < bevelCorners.length; i++) {
+        const corner = bevelCorners[i]!;
+        const bevelDot = corner.dot(topLightDir) * 0.7071;
+        topCornerColors[i]!.offsetHSL(0, 0, bevelDot * TERRAIN_TOP_BEVEL_STRENGTH);
+      }
+
       ModelFactory.pushQuad(
         positions,
         normals,
@@ -289,7 +398,7 @@ export class ModelFactory {
         new THREE.Vector3(x1, topY, z1),
         new THREE.Vector3(x1, topY, z0),
         normalUp,
-        topColorAccented,
+        topCornerColors,
         heightmap.cellWidth / TERRAIN_TEXTURE_REPEAT,
         heightmap.cellDepth / TERRAIN_TEXTURE_REPEAT
       );
