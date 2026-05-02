@@ -99,6 +99,10 @@ export class CameraController {
     this.keysHeld.delete(e.code);
   }
 
+  getRadius(): number {
+    return this.radius;
+  }
+
   focusOn(position: THREE.Vector3, _duration?: number): void {
     this.targetTarget.copy(position);
   }

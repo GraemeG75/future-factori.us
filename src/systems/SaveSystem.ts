@@ -351,7 +351,8 @@ export function createNewGame(locale = 'en'): GameState {
       gamePaused: false,
       gameSpeed: 1,
       autosaveEnabled: true,
-      autosaveIntervalMinutes: 1
+      autosaveIntervalMinutes: 1,
+      voxelsPerBlock: 10
     },
     locale,
     worldSeed: Math.floor(Math.random() * 1_000_000),
@@ -479,6 +480,7 @@ function coerceSettings(raw: Record<string, unknown>): GameState['settings'] {
     gamePaused: raw['gamePaused'] === true,
     gameSpeed: raw['gameSpeed'] === 2 || raw['gameSpeed'] === 4 ? (raw['gameSpeed'] as 2 | 4) : 1,
     autosaveEnabled: raw['autosaveEnabled'] !== false,
-    autosaveIntervalMinutes: typeof raw['autosaveIntervalMinutes'] === 'number' ? raw['autosaveIntervalMinutes'] : 1
+    autosaveIntervalMinutes: typeof raw['autosaveIntervalMinutes'] === 'number' ? raw['autosaveIntervalMinutes'] : 1,
+    voxelsPerBlock: typeof raw['voxelsPerBlock'] === 'number' ? raw['voxelsPerBlock'] : 10
   };
 }

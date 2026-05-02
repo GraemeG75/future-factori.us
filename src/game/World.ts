@@ -18,23 +18,26 @@ export class World {
   private terrain: THREE.Object3D | null = null;
   private sea: THREE.Object3D | null = null;
   private grid: THREE.Object3D | null = null;
+  private clutter: THREE.Object3D | null = null;
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
     this.buildingAnimations = new BuildingAnimations(scene);
   }
 
-  init(gameState: GameState): void {
+  init(gameState: GameState, terrainDivisions: number = 60): void {
     this.clearDynamicContent();
 
     this.sea = ModelFactory.createSeaPlane(900, 900);
     this.scene.add(this.sea);
 
-    this.terrain = ModelFactory.createTerrain(500, 500, 60, gameState.worldSeed);
+    const voxelHeight = gameState.settings.voxelsPerBlock > 0 ? 1.0 / gameState.settings.voxelsPerBlock : 0;
+    this.terrain = ModelFactory.createTerrain(500, 500, terrainDivisions, gameState.worldSeed, voxelHeight);
     this.scene.add(this.terrain);
+    this.clutter = ModelFactory.createTerrainClutter(this.terrain.userData['heightmap'], gameState.worldSeed);
+    this.scene.add(this.clutter);
 
-    this.grid = ModelFactory.createGridOverlay(500, 500, 25, gameState.worldSeed);
-    this.scene.add(this.grid);
+    this.grid = null;
 
     this.initSpotMarkers(gameState.resourceSpots);
 
@@ -74,6 +77,31 @@ export class World {
     if (this.grid) {
       this.scene.remove(this.grid);
       this.grid = null;
+    }
+    if (this.clutter) {
+      this.scene.remove(this.clutter);
+      this.clutter = null;
+    }
+  }
+
+  rebuildTerrain(gameState: GameState, terrainDivisions: number = 60): void {
+    if (this.terrain) {
+      this.scene.remove(this.terrain);
+    }
+    if (this.clutter) {
+      this.scene.remove(this.clutter);
+      this.clutter = null;
+    }
+    const voxelHeight = gameState.settings.voxelsPerBlock > 0 ? 1.0 / gameState.settings.voxelsPerBlock : 0;
+    this.terrain = ModelFactory.createTerrain(500, 500, terrainDivisions, gameState.worldSeed, voxelHeight);
+    this.scene.add(this.terrain);
+    this.clutter = ModelFactory.createTerrainClutter(this.terrain.userData['heightmap'], gameState.worldSeed);
+    this.scene.add(this.clutter);
+    
+    for (const building of gameState.buildings) {
+      if (BUILDINGS_MAP[building.typeId]?.category === 'harvester' && this.terrain instanceof THREE.Object3D) {
+        ModelFactory.flattenTerrainAt(this.terrain as THREE.Mesh, building.position.x, building.position.z);
+      }
     }
   }
 
@@ -208,6 +236,12 @@ export class World {
       this.updateCargoPosition(route);
     }
     this.buildingAnimations.update(deltaTime);
+    if (this.sea && this.sea instanceof THREE.Mesh) {
+      const mat = this.sea.material as THREE.MeshStandardMaterial;
+      if (mat && mat.userData.shader) {
+        mat.userData.shader.uniforms.uTime.value += deltaTime;
+      }
+    }
   }
 
   getBuildingMesh(buildingId: string): THREE.Group | undefined {

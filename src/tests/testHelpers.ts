@@ -45,7 +45,7 @@ export function createTestGameState(overrides: Partial<GameState> = {}): GameSta
       gamePaused: false,
       gameSpeed: 1,
       autosaveEnabled: false,
-      autosaveIntervalMinutes: 1
+      autosaveIntervalMinutes: 1, voxelsPerBlock: 10
     },
     locale: 'en',
     worldSeed: 42,

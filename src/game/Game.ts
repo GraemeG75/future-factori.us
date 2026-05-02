@@ -22,6 +22,7 @@ import { BUILDINGS_MAP } from '../data/buildings';
 import { ACHIEVEMENTS_MAP } from '../data/achievements';
 import { TICK_RATE, TICK_INTERVAL, SHADOW_BIAS, SHADOW_NORMAL_BIAS } from '../consts/simulation';
 import { LOAN_TIERS } from '../consts/loans';
+import { TERRAIN_LOD } from '../consts/terrain';
 
 export class Game {
   private renderer: THREE.WebGLRenderer;
@@ -42,6 +43,10 @@ export class Game {
   private animFrameId: number = 0;
   private deltaTime: number = 0;
   private lastAutosaveTick: number = 0;
+  private terrainDivisions: number = 60;
+  private lastLodTier: number = -1;
+  private lodPendingTier: number = -1;
+  private lodDebounceTimer: number = 0;
 
   constructor(canvas: HTMLCanvasElement) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -242,6 +247,10 @@ export class Game {
     return this.state;
   }
 
+  rebuildTerrain(): void {
+    this.world.rebuildTerrain(this.state, this.terrainDivisions);
+  }
+
   startScenario(scenarioId: string): boolean {
     const ok = ScenarioSystem.startScenario(this.state, scenarioId);
     if (ok) {
@@ -268,7 +277,9 @@ export class Game {
   private applyState(state: GameState): void {
     this.state = state;
     this.selectionManager.reset();
-    this.world.init(this.state);
+    const initialLodTier = this.getTerrainLodTier(this.cameraController.getRadius());
+    this.applyTerrainLodTier(initialLodTier, false);
+    this.world.init(this.state, this.terrainDivisions);
 
     for (const building of this.state.buildings) {
       const mesh = this.world.getBuildingMesh(building.id);
@@ -494,6 +505,52 @@ export class Game {
     this.selectionManager.update();
     this.effects.update(this.deltaTime);
     this.renderer.render(this.scene, this.camera);
+    this.updateTerrainLod();
+  }
+
+  private updateTerrainLod(): void {
+    const radius = this.cameraController.getRadius();
+    const currentTier = this.getTerrainLodTier(radius);
+
+    if (this.lastLodTier === -1) {
+      // First frame fallback; applyState usually initializes this already.
+      this.applyTerrainLodTier(currentTier, false);
+      return;
+    }
+
+    if (currentTier !== this.lastLodTier && currentTier !== this.lodPendingTier) {
+      this.lodPendingTier = currentTier;
+      this.lodDebounceTimer = 0;
+    }
+
+    if (this.lodPendingTier !== -1) {
+      this.lodDebounceTimer += Math.min(this.deltaTime, 0.1);
+      if (this.lodDebounceTimer >= TERRAIN_LOD.rebuildDebounce) {
+        this.applyTerrainLodTier(this.lodPendingTier, true);
+      }
+    }
+  }
+
+  private getTerrainLodTier(radius: number): number {
+    const tierIdx = TERRAIN_LOD.tiers.findIndex((t) => radius <= t.maxRadius);
+    return tierIdx === -1 ? TERRAIN_LOD.tiers.length - 1 : tierIdx;
+  }
+
+  private applyTerrainLodTier(tier: number, rebuildTerrain: boolean): void {
+    const tierConfig = TERRAIN_LOD.tiers[tier];
+    if (!tierConfig) {
+      return;
+    }
+
+    this.lastLodTier = tier;
+    this.lodPendingTier = -1;
+    this.lodDebounceTimer = 0;
+    this.state.settings.voxelsPerBlock = tierConfig.voxelsPerBlock;
+    this.terrainDivisions = tierConfig.terrainDivisions;
+
+    if (rebuildTerrain) {
+      this.world.rebuildTerrain(this.state, this.terrainDivisions);
+    }
   }
 
   dispose(): void {

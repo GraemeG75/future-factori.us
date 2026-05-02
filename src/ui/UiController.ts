@@ -57,6 +57,12 @@ export class UiController {
     if (langSelect) {
       langSelect.value = this.game.getState().locale;
     }
+    const voxelSlider = document.getElementById('voxel-slider') as HTMLInputElement | null;
+    const voxelVal = document.getElementById('voxel-val') as HTMLSpanElement | null;
+    if (voxelSlider && voxelVal) {
+      voxelSlider.value = this.game.getState().settings.voxelsPerBlock.toString();
+      voxelVal.textContent = voxelSlider.value;
+    }
   }
   update(state: GameState): void {
     this.updateTopBar(state);
@@ -545,6 +551,21 @@ export class UiController {
       this.game.getState().locale = value;
       this.game.saveGame();
     });
+
+    const voxelSlider = document.getElementById('voxel-slider') as HTMLInputElement | null;
+    const voxelVal = document.getElementById('voxel-val') as HTMLSpanElement | null;
+    if (voxelSlider && voxelVal) {
+      voxelSlider.addEventListener('input', (e) => {
+        const val = parseInt((e.target as HTMLInputElement).value, 10);
+        voxelVal.textContent = val.toString();
+      });
+      voxelSlider.addEventListener('change', (e) => {
+        const val = parseInt((e.target as HTMLInputElement).value, 10);
+        this.game.getState().settings.voxelsPerBlock = val;
+        this.game.saveGame();
+        this.game.rebuildTerrain();
+      });
+    }
   }
 
   private attachRoutesScreen(): void {

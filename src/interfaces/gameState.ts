@@ -190,4 +190,5 @@ export interface GameSettings {
   gameSpeed: 1 | 2 | 4;
   autosaveEnabled: boolean;
   autosaveIntervalMinutes: number;
+  voxelsPerBlock: number;
 }

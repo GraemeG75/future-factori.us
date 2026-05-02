@@ -4,14 +4,20 @@ import { loadVox } from './VoxLoader';
 import { buildTerrainHeightmap, sampleTerrainHeight, type HeightmapCell, type TerrainHeightmap } from '../game/TerrainGeneration';
 import {
   GRID_HEIGHT_OFFSET,
-  VOXEL_HEIGHT,
+  TERRAIN_COAST,
+  TERRAIN_SEA_LEVEL,
   TERRAIN_BASE_HEIGHT,
   TERRAIN_TEXTURE_REPEAT,
   MIN_TERRAIN_COLUMNS,
   MIN_TERRAIN_ROWS,
   TERRAIN_SIDE_COLOR_BRIGHTNESS,
   TERRAIN_SIDE_SATURATION_OFFSET,
-  TERRAIN_SIDE_LIGHTNESS_OFFSET
+  TERRAIN_SIDE_LIGHTNESS_OFFSET,
+  TERRAIN_SIDE_ALT_STRIPE,
+  TERRAIN_SIDE_ALT_DARKEN,
+  TERRAIN_VOXEL_TOP_VARIATION,
+  TERRAIN_VOXEL_TOP_GRID_STRENGTH,
+  WATER_STYLE
 } from '../consts/terrain';
 
 export class ModelFactory {
@@ -68,7 +74,37 @@ export class ModelFactory {
       color.lerp(ModelFactory.colorFromRgb(86, 126, 92), 0.2);
     }
 
+    const coastDelta = cell.quantizedHeight - TERRAIN_SEA_LEVEL;
+    if (coastDelta >= 0 && coastDelta < TERRAIN_COAST.blendHeightRange) {
+      const beachSand = ModelFactory.colorFromRgb(222, 196, 136);
+      const shoreRock = ModelFactory.colorFromRgb(112, 106, 98);
+      const shoreBlend = ModelFactory.smoothstep(0.0, TERRAIN_COAST.blendHeightRange, coastDelta);
+      const coastVariation = ModelFactory.clamp01((cell.detail - 0.35) * 1.25);
+
+      if (cell.slope < TERRAIN_COAST.rockySlopeStart) {
+        color.lerp(
+          beachSand,
+          (1 - shoreBlend) * (TERRAIN_COAST.beachStrengthBase + coastVariation * TERRAIN_COAST.beachStrengthVariation)
+        );
+      } else {
+        const rockyStrength = ModelFactory.clamp01((cell.slope - TERRAIN_COAST.rockySlopeStart) / TERRAIN_COAST.rockySlopeRange);
+        color.lerp(shoreRock, rockyStrength * (1 - shoreBlend * TERRAIN_COAST.rockyFadeByHeight));
+      }
+    }
+
     return color.offsetHSL(0, 0, (cell.detail - 0.5) * 0.1);
+  }
+
+  private static clamp01(v: number): number {
+    return Math.min(1, Math.max(0, v));
+  }
+
+  private static smoothstep(edge0: number, edge1: number, x: number): number {
+    if (edge0 === edge1) {
+      return x < edge0 ? 0 : 1;
+    }
+    const t = ModelFactory.clamp01((x - edge0) / (edge1 - edge0));
+    return t * t * (3 - 2 * t);
   }
 
   private static buildNoiseTexture(base: number, range: number, accentChance: number = 0): THREE.CanvasTexture {
@@ -157,7 +193,7 @@ export class ModelFactory {
 
   private static getWaterTexture(): THREE.CanvasTexture {
     if (!ModelFactory.waterTexture) {
-      ModelFactory.waterTexture = ModelFactory.buildNoiseTexture(188, 28, 0.08);
+      ModelFactory.waterTexture = ModelFactory.buildNoiseTexture(WATER_STYLE.textureBase, WATER_STYLE.textureRange, 0);
     }
     return ModelFactory.waterTexture;
   }
@@ -218,10 +254,25 @@ export class ModelFactory {
 
     for (const cell of heightmap.cells) {
       const topColor = ModelFactory.getTerrainTopColor(cell);
+      const steppedBand = Math.abs((cell.quantizedHeight / Math.max(0.001, heightmap.voxelHeight)) % 2);
+      const sideBandShade = steppedBand > 1 ? 1 : steppedBand;
       const sideColor = topColor
         .clone()
         .multiplyScalar(TERRAIN_SIDE_COLOR_BRIGHTNESS)
-        .offsetHSL(0, TERRAIN_SIDE_SATURATION_OFFSET, TERRAIN_SIDE_LIGHTNESS_OFFSET);
+        .offsetHSL(
+          0,
+          TERRAIN_SIDE_SATURATION_OFFSET,
+          TERRAIN_SIDE_LIGHTNESS_OFFSET - TERRAIN_SIDE_ALT_DARKEN * sideBandShade
+        );
+      const topGrid = ((cell.column + cell.row) & 1) === 0 ? 1 : -1;
+      const topStepNoise = Math.sin((cell.column + cell.detail * 8) * 0.85) * Math.cos((cell.row + cell.moisture * 8) * 0.9);
+      const topColorAccented = topColor
+        .clone()
+        .offsetHSL(
+          0,
+          TERRAIN_SIDE_ALT_STRIPE * topGrid,
+          TERRAIN_VOXEL_TOP_VARIATION * topStepNoise + TERRAIN_VOXEL_TOP_GRID_STRENGTH * topGrid * 0.5
+        );
       const x0 = cell.x - heightmap.cellWidth * 0.5;
       const x1 = cell.x + heightmap.cellWidth * 0.5;
       const z0 = cell.z - heightmap.cellDepth * 0.5;
@@ -238,7 +289,7 @@ export class ModelFactory {
         new THREE.Vector3(x1, topY, z1),
         new THREE.Vector3(x1, topY, z0),
         normalUp,
-        topColor,
+        topColorAccented,
         heightmap.cellWidth / TERRAIN_TEXTURE_REPEAT,
         heightmap.cellDepth / TERRAIN_TEXTURE_REPEAT
       );
@@ -499,8 +550,7 @@ export class ModelFactory {
         const x = pos.getX(i);
         const z = pos.getZ(i);
         const radial = Math.min(1, Math.sqrt((x / (width * 0.5)) ** 2 + (z / (depth * 0.5)) ** 2));
-        const ripple = Math.sin(x * 0.045 + z * 0.025) * 0.08 + Math.cos(z * 0.06 - x * 0.03) * 0.05;
-        pos.setY(i, -0.42 + ripple * 0.22);
+        pos.setY(i, -0.42);
         const deep = 1 - radial * 0.75;
         colors[i * 3] = 0.04 + deep * 0.06;
         colors[i * 3 + 1] = 0.18 + deep * 0.14;
@@ -512,28 +562,102 @@ export class ModelFactory {
     }
 
     const waterTexture = ModelFactory.getWaterTexture();
-    waterTexture.repeat.set(18, 18);
+    waterTexture.repeat.set(WATER_STYLE.textureRepeat, WATER_STYLE.textureRepeat);
     const mat = new THREE.MeshStandardMaterial({
-      color: 0xffffff,
+      color: 0x2a6f8f,
       vertexColors: true,
       map: waterTexture,
       transparent: true,
-      opacity: 0.9,
+      opacity: 0.95,
       emissive: new THREE.Color(0x0f4a63),
-      emissiveIntensity: 0.22,
-      roughness: 0.22,
-      metalness: 0.28
+      emissiveIntensity: 0.14,
+      roughness: 0.52,
+      metalness: 0.1
     });
     const mesh = new THREE.Mesh(geo, mat);
-    mesh.position.y = -3.5;
+    mesh.position.y = TERRAIN_SEA_LEVEL;
     mesh.receiveShadow = true;
     return mesh;
   }
 
-  static createTerrain(width: number, depth: number, divisions: number, seed: number = 1337): THREE.Mesh {
+  static createTerrainClutter(heightmap: TerrainHeightmap, seed: number = 1337): THREE.Group {
+    const group = new THREE.Group();
+    group.name = 'clutter';
+    const rng = () => {
+      seed = (seed * 16807) % 2147483647;
+      return (seed - 1) / 2147483646;
+    };
+    
+    // Tree instances
+    const treeCount = Math.floor((heightmap.columns * heightmap.rows) / 12);
+    const treeGeo = new THREE.ConeGeometry(0.3, 1.2, 5);
+    treeGeo.translate(0, 0.6, 0);
+    const treeMat = new THREE.MeshStandardMaterial({ color: 0x3e8446, roughness: 0.9, flatShading: true });
+    const treeInstanced = new THREE.InstancedMesh(treeGeo, treeMat, treeCount);
+    treeInstanced.castShadow = true;
+    treeInstanced.receiveShadow = true;
+    
+    // Snow instances
+    const snowCount = Math.floor((heightmap.columns * heightmap.rows) / 10);
+    const snowGeo = new THREE.CylinderGeometry(0.4, 0.4, 0.05, 6);
+    const snowMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, flatShading: true });
+    const snowInstanced = new THREE.InstancedMesh(snowGeo, snowMat, snowCount);
+    snowInstanced.castShadow = true;
+    snowInstanced.receiveShadow = true;
+
+    // Rock instances
+    const rockCount = Math.floor((heightmap.columns * heightmap.rows) / 18);
+    const rockGeo = new THREE.DodecahedronGeometry(0.25, 0);
+    rockGeo.translate(0, 0.2, 0);
+    const rockMat = new THREE.MeshStandardMaterial({ color: 0x8a8a8a, roughness: 0.8, flatShading: true });
+    const rockInstanced = new THREE.InstancedMesh(rockGeo, rockMat, rockCount);
+    rockInstanced.castShadow = true;
+    rockInstanced.receiveShadow = true;
+    
+    let treeIndex = 0;
+    let rockIndex = 0;
+    let snowIndex = 0;
+    const dummy = new THREE.Object3D();
+    
+    for (const cell of heightmap.cells) {
+      if (cell.quantizedHeight < 0.5 || cell.slope > 0.4) continue;
+      
+      if (cell.moisture > 0.6 && rng() > 0.6 && treeIndex < treeCount) {
+        dummy.position.set(cell.x + (rng() - 0.5) * heightmap.cellWidth, cell.quantizedHeight, cell.z + (rng() - 0.5) * heightmap.cellDepth);
+        dummy.scale.setScalar(0.7 + rng() * 0.6);
+        dummy.updateMatrix();
+        treeInstanced.setMatrixAt(treeIndex++, dummy.matrix);
+      } else if (cell.quantizedHeight > 4.0 && rng() > 0.7 && snowIndex < snowCount) {
+        dummy.position.set(cell.x + (rng() - 0.5) * heightmap.cellWidth, cell.quantizedHeight + 0.02, cell.z + (rng() - 0.5) * heightmap.cellDepth);
+        dummy.scale.set(1.0 + rng() * 1.0, 1.0, 1.0 + rng() * 1.0);
+        dummy.rotation.y = rng() * Math.PI * 2;
+        dummy.updateMatrix();
+        snowInstanced.setMatrixAt(snowIndex++, dummy.matrix);
+      } else if (rng() > 0.95 && rockIndex < rockCount) {
+        dummy.position.set(cell.x + (rng() - 0.5) * heightmap.cellWidth, cell.quantizedHeight, cell.z + (rng() - 0.5) * heightmap.cellDepth);
+        dummy.scale.setScalar(0.5 + rng() * 1.5);
+        dummy.rotation.y = rng() * Math.PI * 2;
+        dummy.updateMatrix();
+        rockInstanced.setMatrixAt(rockIndex++, dummy.matrix);
+      }
+    }
+    treeInstanced.count = treeIndex;
+    rockInstanced.count = rockIndex;
+    treeInstanced.instanceMatrix.needsUpdate = true;
+    rockInstanced.instanceMatrix.needsUpdate = true;
+    snowInstanced.instanceMatrix.needsUpdate = true;
+    snowInstanced.count = snowIndex;
+    
+    group.add(treeInstanced);
+    group.add(rockInstanced);
+    group.add(snowInstanced);
+    return group;
+  }
+
+  static createTerrain(width: number, depth: number, divisions: number, seed: number = 1337, voxelHeight: number = 0.10): THREE.Mesh {
     const columns = Math.max(divisions * 2, MIN_TERRAIN_COLUMNS);
     const rows = Math.max(Math.round((depth / width) * columns), MIN_TERRAIN_ROWS);
-    const heightmap = buildTerrainHeightmap(seed, width, depth, columns, rows, VOXEL_HEIGHT);
+    const heightmap = buildTerrainHeightmap(seed, width, depth, columns, rows, voxelHeight);
     const geo = ModelFactory.buildGeometryFromHeightmap(heightmap);
     const terrainTexture = ModelFactory.getTerrainTexture();
     terrainTexture.repeat.set(22, 22);

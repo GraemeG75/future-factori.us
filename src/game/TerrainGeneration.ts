@@ -1,4 +1,4 @@
-import { TERRAIN_HEIGHT_SCALE } from '../consts/terrain';
+import { TERRAIN_GEN, TERRAIN_HEIGHT_SCALE } from '../consts/terrain';
 
 export type { TerrainSample, HeightmapCell, TerrainHeightmap } from '../interfaces/terrain';
 import type { TerrainSample, HeightmapCell, TerrainHeightmap } from '../interfaces/terrain';
@@ -63,30 +63,120 @@ export function quantizeTerrainHeight(height: number, voxelHeight: number): numb
 }
 
 export function sampleTerrainHeight(seed: number, x: number, z: number, width: number = 200, depth: number = 200): number {
-  const warpX = x + (fbm(x * 0.025, z * 0.025, 3, seed + 91) - 0.5) * 24;
-  const warpZ = z + (fbm(x * 0.025 + 200, z * 0.025 + 200, 3, seed + 137) - 0.5) * 24;
+  const warpX = x + (fbm(x * TERRAIN_GEN.warp.frequency, z * TERRAIN_GEN.warp.frequency, TERRAIN_GEN.warp.octaves, seed + TERRAIN_GEN.warp.seedOffsetA) - 0.5) * TERRAIN_GEN.warp.strength;
+  const warpZ = z + (fbm(
+    x * TERRAIN_GEN.warp.frequency + TERRAIN_GEN.warp.domainOffsetB,
+    z * TERRAIN_GEN.warp.frequency + TERRAIN_GEN.warp.domainOffsetB,
+    TERRAIN_GEN.warp.octaves,
+    seed + TERRAIN_GEN.warp.seedOffsetB
+  ) - 0.5) * TERRAIN_GEN.warp.strength;
 
-  const continent = fbm(warpX * 0.008, warpZ * 0.008, 5, seed + 11);
-  const detail = fbm(warpX * 0.055, warpZ * 0.055, 4, seed + 23);
-  const erosionNoise = fbm(warpX * 0.028 + 400, warpZ * 0.028 + 400, 3, seed + 47);
-  const ridge = 1 - Math.abs(fbm(warpX * 0.02 + 800, warpZ * 0.02 + 800, 4, seed + 71) * 2 - 1);
+  const continent = fbm(warpX * TERRAIN_GEN.continent.frequency, warpZ * TERRAIN_GEN.continent.frequency, TERRAIN_GEN.continent.octaves, seed + TERRAIN_GEN.continent.seedOffset);
+  const detail = fbm(warpX * TERRAIN_GEN.detail.frequency, warpZ * TERRAIN_GEN.detail.frequency, TERRAIN_GEN.detail.octaves, seed + TERRAIN_GEN.detail.seedOffset);
+  const erosionNoise = fbm(
+    warpX * TERRAIN_GEN.erosion.frequency + TERRAIN_GEN.erosion.domainOffset,
+    warpZ * TERRAIN_GEN.erosion.frequency + TERRAIN_GEN.erosion.domainOffset,
+    TERRAIN_GEN.erosion.octaves,
+    seed + TERRAIN_GEN.erosion.seedOffset
+  );
+  const ridge = 1 - Math.abs(fbm(
+    warpX * TERRAIN_GEN.ridge.frequency + TERRAIN_GEN.ridge.domainOffset,
+    warpZ * TERRAIN_GEN.ridge.frequency + TERRAIN_GEN.ridge.domainOffset,
+    TERRAIN_GEN.ridge.octaves,
+    seed + TERRAIN_GEN.ridge.seedOffset
+  ) * 2 - 1);
 
-  const ridgeMask = smoothstep(0.42, 0.78, continent);
-  const macro = (continent - 0.5) * 2.3;
-  const micro = (detail - 0.5) * 0.68;
-  const ridges = Math.pow(ridge, 1.7) * 1.35 * ridgeMask;
-  const carved = (1 - erosionNoise) * 0.62 * ridgeMask;
+  const ridgeMask = smoothstep(TERRAIN_GEN.ridge.maskStart, TERRAIN_GEN.ridge.maskEnd, continent);
+  const macro = (continent - 0.5) * TERRAIN_GEN.macroScale;
+  const micro = (detail - 0.5) * TERRAIN_GEN.detail.amplitude;
+  const ridges = Math.pow(ridge, TERRAIN_GEN.ridge.power) * TERRAIN_GEN.ridge.strength * ridgeMask;
+  const carved = (1 - erosionNoise) * TERRAIN_GEN.erosion.strength * ridgeMask;
 
   let h = macro + micro + ridges - carved;
-  const dist = Math.sqrt((x / (width * 0.5)) ** 2 + (z / (depth * 0.5)) ** 2);
-  const edgeFalloff = smoothstep(0.86, 1.0, dist);
-  h *= 1 - edgeFalloff;
+
+  // Build a less uniform coastline by perturbing radial distance with broad noise.
+  const dist = Math.sqrt((warpX / (width * 0.5)) ** 2 + (warpZ / (depth * 0.5)) ** 2);
+  const angle = Math.atan2(warpZ, warpX);
+  const coastRadiusNoise = fbm(
+    Math.cos(angle) * TERRAIN_GEN.coastRadius.angularScale + TERRAIN_GEN.coastRadius.domainOffset,
+    Math.sin(angle) * TERRAIN_GEN.coastRadius.angularScale + TERRAIN_GEN.coastRadius.domainOffset,
+    TERRAIN_GEN.coastRadius.octaves,
+    seed + TERRAIN_GEN.coastRadius.seedOffset
+  );
+  const targetCoastRadius = TERRAIN_GEN.coastRadius.base + (coastRadiusNoise - 0.5) * TERRAIN_GEN.coastRadius.variation;
+  const coastNoise = (fbm(
+    warpX * TERRAIN_GEN.coastNoise.frequency + TERRAIN_GEN.coastNoise.domainOffset,
+    warpZ * TERRAIN_GEN.coastNoise.frequency + TERRAIN_GEN.coastNoise.domainOffset,
+    TERRAIN_GEN.coastNoise.octaves,
+    seed + TERRAIN_GEN.coastNoise.seedOffset
+  ) - 0.5) * TERRAIN_GEN.coastNoise.strength;
+  const coastDist = dist + coastNoise;
+  const edgeFalloff = smoothstep(
+    targetCoastRadius + TERRAIN_GEN.edgeFalloff.innerOffset,
+    targetCoastRadius + TERRAIN_GEN.edgeFalloff.outerOffset,
+    coastDist
+  );
+  h *= 1 - Math.pow(edgeFalloff, TERRAIN_GEN.edgeFalloff.power);
+
+  // Hard coastal cutoff: outside the coastline, blend toward ocean floor below sea level.
+  // Sea plane is around y=-3.5 in world space, so the normalized ocean floor target must be lower.
+  const oceanFloor = TERRAIN_GEN.oceanCutoff.floorHeight;
+  const oceanBlend = smoothstep(
+    targetCoastRadius + TERRAIN_GEN.oceanCutoff.innerOffset,
+    targetCoastRadius + TERRAIN_GEN.oceanCutoff.outerOffset,
+    coastDist
+  );
+  h = h * (1 - oceanBlend) + oceanFloor * oceanBlend;
+
+  // Scatter land into clusters so the map feels like an island chain, not one round blob.
+  const islandField = fbm(
+    warpX * TERRAIN_GEN.islandScatter.frequency + TERRAIN_GEN.islandScatter.domainOffset,
+    warpZ * TERRAIN_GEN.islandScatter.frequency + TERRAIN_GEN.islandScatter.domainOffset,
+    TERRAIN_GEN.islandScatter.octaves,
+    seed + TERRAIN_GEN.islandScatter.seedOffset
+  );
+  const islandMask = smoothstep(
+    TERRAIN_GEN.islandScatter.maskStart,
+    TERRAIN_GEN.islandScatter.maskEnd,
+    islandField + (1 - dist) * TERRAIN_GEN.islandScatter.centerBias
+  );
+  h *= TERRAIN_GEN.islandScatter.baseScale + islandMask * TERRAIN_GEN.islandScatter.maskScale;
+
+  // Carve narrow mid-distance sea channels to break up continuous coastlines.
+  const channelRidge = 1 - Math.abs(fbm(
+    warpX * TERRAIN_GEN.channels.frequency + TERRAIN_GEN.channels.domainOffset,
+    warpZ * TERRAIN_GEN.channels.frequency + TERRAIN_GEN.channels.domainOffset,
+    TERRAIN_GEN.channels.octaves,
+    seed + TERRAIN_GEN.channels.seedOffset
+  ) * 2 - 1);
+  const channelBand = smoothstep(TERRAIN_GEN.channels.bandInnerStart, TERRAIN_GEN.channels.bandInnerEnd, dist) *
+    (1 - smoothstep(TERRAIN_GEN.channels.bandOuterStart, TERRAIN_GEN.channels.bandOuterEnd, dist));
+  h -= Math.pow(channelRidge, TERRAIN_GEN.channels.ridgePower) * TERRAIN_GEN.channels.strength * channelBand;
+
+  // Keep the center land-connected, but with variation so it does not become a flat plateau.
+  const coreMask = 1 - smoothstep(TERRAIN_GEN.core.maskStart, TERRAIN_GEN.core.maskEnd, dist);
+  const coreRelief = (fbm(
+    warpX * TERRAIN_GEN.core.reliefFrequency + TERRAIN_GEN.core.reliefDomainOffset,
+    warpZ * TERRAIN_GEN.core.reliefFrequency + TERRAIN_GEN.core.reliefDomainOffset,
+    TERRAIN_GEN.core.reliefOctaves,
+    seed + TERRAIN_GEN.core.reliefSeedOffset
+  ) - 0.5) * TERRAIN_GEN.core.reliefStrength;
+  h += coreMask * (TERRAIN_GEN.core.baseLift + coreRelief);
+
+  // Prevent giant inland seas by gently lifting deep basins near the island core.
+  const inlandMask = 1 - smoothstep(TERRAIN_GEN.inland.maskStart, TERRAIN_GEN.inland.maskEnd, dist);
+  const minInlandHeight = TERRAIN_GEN.inland.minHeight;
+  const inlandLift = minInlandHeight - h;
+  if (inlandLift > 0) {
+    h += inlandLift * inlandMask * TERRAIN_GEN.inland.liftStrength;
+  }
+
   return h * TERRAIN_HEIGHT_SCALE;
 }
 
 export function sampleTerrain(seed: number, x: number, z: number, width: number = 200, depth: number = 200): TerrainSample {
   const h = sampleTerrainHeight(seed, x, z, width, depth);
-  const eps = 1.5;
+  const eps = TERRAIN_GEN.sample.normalEpsilon;
   const hx0 = sampleTerrainHeight(seed, x - eps, z, width, depth);
   const hx1 = sampleTerrainHeight(seed, x + eps, z, width, depth);
   const hz0 = sampleTerrainHeight(seed, x, z - eps, width, depth);
@@ -94,14 +184,24 @@ export function sampleTerrain(seed: number, x: number, z: number, width: number 
 
   const dx = (hx1 - hx0) / (2 * eps);
   const dz = (hz1 - hz0) / (2 * eps);
-  const slope = clamp01(Math.sqrt(dx * dx + dz * dz) * 1.35);
+  const slope = clamp01(Math.sqrt(dx * dx + dz * dz) * TERRAIN_GEN.sample.slopeScale);
 
   const avgNeighbor = (hx0 + hx1 + hz0 + hz1) * 0.25;
   const concavity = avgNeighbor - h;
-  const flow = clamp01(concavity * 1.8 + (1 - slope) * 0.25);
+  const flow = clamp01(concavity * TERRAIN_GEN.sample.flowConcavityScale + (1 - slope) * TERRAIN_GEN.sample.flowFlatBias);
 
-  const moisture = fbm(x * 0.03 + 1200, z * 0.03 + 1200, 3, seed + 211);
-  const detail = fbm(x * 0.38 + 2000, z * 0.38 + 2000, 2, seed + 317);
+  const moisture = fbm(
+    x * TERRAIN_GEN.sample.moistureFrequency + TERRAIN_GEN.sample.moistureDomainOffset,
+    z * TERRAIN_GEN.sample.moistureFrequency + TERRAIN_GEN.sample.moistureDomainOffset,
+    TERRAIN_GEN.sample.moistureOctaves,
+    seed + TERRAIN_GEN.sample.moistureSeedOffset
+  );
+  const detail = fbm(
+    x * TERRAIN_GEN.sample.detailFrequency + TERRAIN_GEN.sample.detailDomainOffset,
+    z * TERRAIN_GEN.sample.detailFrequency + TERRAIN_GEN.sample.detailDomainOffset,
+    TERRAIN_GEN.sample.detailOctaves,
+    seed + TERRAIN_GEN.sample.detailSeedOffset
+  );
 
   return {
     height: h,
