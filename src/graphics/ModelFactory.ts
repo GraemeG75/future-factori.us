@@ -330,6 +330,9 @@ export class ModelFactory {
     const normalSouth = new THREE.Vector3(0, 0, 1);
     const normalEast = new THREE.Vector3(1, 0, 0);
     const normalWest = new THREE.Vector3(-1, 0, 0);
+    // Keep terrain sides close to sea depth so coastlines blend into water
+    // instead of forming a deep square "box" around the map bounds.
+    const terrainSideBottom = Math.max(TERRAIN_BASE_HEIGHT, TERRAIN_SEA_LEVEL - 1.5);
     const getCell = (column: number, row: number): HeightmapCell | null => {
       if (column < 0 || row < 0 || column >= heightmap.columns || row >= heightmap.rows) {
         return null;
@@ -404,77 +407,81 @@ export class ModelFactory {
       );
 
       // North wall (faces -Z): a→b goes up, a→d goes +X → cross product = -Z ✓
-      const northHeight = getCell(cell.column, cell.row - 1)?.quantizedHeight ?? TERRAIN_BASE_HEIGHT;
-      if (topY > northHeight) {
+      const northCell = getCell(cell.column, cell.row - 1);
+      const northHeight = northCell?.quantizedHeight ?? terrainSideBottom;
+      if (northCell && topY > northHeight) {
         ModelFactory.pushQuad(
           positions,
           normals,
           colors,
           uvs,
-          new THREE.Vector3(x0, TERRAIN_BASE_HEIGHT, z0),
+          new THREE.Vector3(x0, terrainSideBottom, z0),
           new THREE.Vector3(x0, topY, z0),
           new THREE.Vector3(x1, topY, z0),
-          new THREE.Vector3(x1, TERRAIN_BASE_HEIGHT, z0),
+          new THREE.Vector3(x1, terrainSideBottom, z0),
           normalNorth,
           sideColor,
-          (topY - TERRAIN_BASE_HEIGHT) / TERRAIN_TEXTURE_REPEAT,
+          (topY - terrainSideBottom) / TERRAIN_TEXTURE_REPEAT,
           heightmap.cellWidth / TERRAIN_TEXTURE_REPEAT
         );
       }
 
       // South wall (faces +Z): a→b goes up, a→d goes -X → cross product = +Z ✓
-      const southHeight = getCell(cell.column, cell.row + 1)?.quantizedHeight ?? TERRAIN_BASE_HEIGHT;
-      if (topY > southHeight) {
+      const southCell = getCell(cell.column, cell.row + 1);
+      const southHeight = southCell?.quantizedHeight ?? terrainSideBottom;
+      if (southCell && topY > southHeight) {
         ModelFactory.pushQuad(
           positions,
           normals,
           colors,
           uvs,
-          new THREE.Vector3(x1, TERRAIN_BASE_HEIGHT, z1),
+          new THREE.Vector3(x1, terrainSideBottom, z1),
           new THREE.Vector3(x1, topY, z1),
           new THREE.Vector3(x0, topY, z1),
-          new THREE.Vector3(x0, TERRAIN_BASE_HEIGHT, z1),
+          new THREE.Vector3(x0, terrainSideBottom, z1),
           normalSouth,
           sideColor,
-          (topY - TERRAIN_BASE_HEIGHT) / TERRAIN_TEXTURE_REPEAT,
+          (topY - terrainSideBottom) / TERRAIN_TEXTURE_REPEAT,
           heightmap.cellWidth / TERRAIN_TEXTURE_REPEAT
         );
       }
 
       // East wall (faces +X): a→b goes up, a→d goes +Z → cross product = +X ✓
-      const eastHeight = getCell(cell.column + 1, cell.row)?.quantizedHeight ?? TERRAIN_BASE_HEIGHT;
-      if (topY > eastHeight) {
+      const eastCell = getCell(cell.column + 1, cell.row);
+      const eastHeight = eastCell?.quantizedHeight ?? terrainSideBottom;
+      if (eastCell && topY > eastHeight) {
         ModelFactory.pushQuad(
           positions,
           normals,
           colors,
           uvs,
-          new THREE.Vector3(x1, TERRAIN_BASE_HEIGHT, z0),
+          new THREE.Vector3(x1, terrainSideBottom, z0),
           new THREE.Vector3(x1, topY, z0),
           new THREE.Vector3(x1, topY, z1),
-          new THREE.Vector3(x1, TERRAIN_BASE_HEIGHT, z1),
+          new THREE.Vector3(x1, terrainSideBottom, z1),
           normalEast,
           sideColor,
-          (topY - TERRAIN_BASE_HEIGHT) / TERRAIN_TEXTURE_REPEAT,
+          (topY - terrainSideBottom) / TERRAIN_TEXTURE_REPEAT,
           heightmap.cellDepth / TERRAIN_TEXTURE_REPEAT
         );
       }
 
       // West wall (faces -X): a→b goes up, a→d goes -Z → cross product = -X ✓
-      const westHeight = getCell(cell.column - 1, cell.row)?.quantizedHeight ?? TERRAIN_BASE_HEIGHT;
-      if (topY > westHeight) {
+      const westCell = getCell(cell.column - 1, cell.row);
+      const westHeight = westCell?.quantizedHeight ?? terrainSideBottom;
+      if (westCell && topY > westHeight) {
         ModelFactory.pushQuad(
           positions,
           normals,
           colors,
           uvs,
-          new THREE.Vector3(x0, TERRAIN_BASE_HEIGHT, z1),
+          new THREE.Vector3(x0, terrainSideBottom, z1),
           new THREE.Vector3(x0, topY, z1),
           new THREE.Vector3(x0, topY, z0),
-          new THREE.Vector3(x0, TERRAIN_BASE_HEIGHT, z0),
+          new THREE.Vector3(x0, terrainSideBottom, z0),
           normalWest,
           sideColor,
-          (topY - TERRAIN_BASE_HEIGHT) / TERRAIN_TEXTURE_REPEAT,
+          (topY - terrainSideBottom) / TERRAIN_TEXTURE_REPEAT,
           heightmap.cellDepth / TERRAIN_TEXTURE_REPEAT
         );
       }
@@ -647,7 +654,7 @@ export class ModelFactory {
     return new THREE.Mesh(geo, mat);
   }
 
-  static createSeaPlane(width: number, depth: number): THREE.Mesh {
+  static createSeaPlane(width: number, depth: number, seed: number = 1337, terrainWidth: number = 500, terrainDepth: number = 500): THREE.Mesh {
     const segments = 72;
     const geo = new THREE.PlaneGeometry(width, depth, segments, segments);
     geo.rotateX(-Math.PI / 2);
@@ -661,9 +668,23 @@ export class ModelFactory {
         const radial = Math.min(1, Math.sqrt((x / (width * 0.5)) ** 2 + (z / (depth * 0.5)) ** 2));
         pos.setY(i, -0.42);
         const deep = 1 - radial * 0.75;
-        colors[i * 3] = 0.04 + deep * 0.06;
-        colors[i * 3 + 1] = 0.18 + deep * 0.14;
-        colors[i * 3 + 2] = 0.28 + deep * 0.24;
+
+        // Coast-aware shallow tint: brighter near terrain that approaches sea level.
+        const terrainH = sampleTerrainHeight(seed, x, z, terrainWidth, terrainDepth);
+        const waterDepth = TERRAIN_SEA_LEVEL - terrainH;
+        const shallow = THREE.MathUtils.clamp(1 - waterDepth / 2.4, 0, 1);
+
+        const deepR = 0.04 + deep * 0.06;
+        const deepG = 0.18 + deep * 0.14;
+        const deepB = 0.28 + deep * 0.24;
+
+        const shoreR = 0.10;
+        const shoreG = 0.38;
+        const shoreB = 0.46;
+
+        colors[i * 3] = THREE.MathUtils.lerp(deepR, shoreR, shallow * 0.75);
+        colors[i * 3 + 1] = THREE.MathUtils.lerp(deepG, shoreG, shallow * 0.75);
+        colors[i * 3 + 2] = THREE.MathUtils.lerp(deepB, shoreB, shallow * 0.75);
       }
       pos.needsUpdate = true;
       geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
@@ -677,9 +698,9 @@ export class ModelFactory {
       vertexColors: true,
       map: waterTexture,
       transparent: true,
-      opacity: 0.95,
+      opacity: 0.98,
       emissive: new THREE.Color(0x0f4a63),
-      emissiveIntensity: 0.14,
+      emissiveIntensity: 0.16,
       roughness: 0.52,
       metalness: 0.1
     });
@@ -763,13 +784,13 @@ export class ModelFactory {
     return group;
   }
 
-  static createTerrain(width: number, depth: number, divisions: number, seed: number = 1337, voxelHeight: number = 0.10): THREE.Mesh {
+  static createTerrain(width: number, depth: number, divisions: number, seed: number = 1337, voxelHeight: number = 0.10, textureRepeat: number = 22): THREE.Mesh {
     const columns = Math.max(divisions * 2, MIN_TERRAIN_COLUMNS);
     const rows = Math.max(Math.round((depth / width) * columns), MIN_TERRAIN_ROWS);
     const heightmap = buildTerrainHeightmap(seed, width, depth, columns, rows, voxelHeight);
     const geo = ModelFactory.buildGeometryFromHeightmap(heightmap);
     const terrainTexture = ModelFactory.getTerrainTexture();
-    terrainTexture.repeat.set(22, 22);
+    terrainTexture.repeat.set(textureRepeat, textureRepeat);
     const mat = new THREE.MeshStandardMaterial({
       color: 0xffffff,
       vertexColors: true,
@@ -784,7 +805,19 @@ export class ModelFactory {
     mesh.castShadow = true;
     mesh.receiveShadow = true;
     mesh.userData['heightmap'] = heightmap;
+    mesh.userData['terrainTextureRepeat'] = textureRepeat;
     return mesh;
+  }
+
+  static setTerrainTextureRepeat(terrainMesh: THREE.Mesh, textureRepeat: number): void {
+    const mat = terrainMesh.material;
+    if (!(mat instanceof THREE.MeshStandardMaterial) || !mat.map) {
+      return;
+    }
+    const clamped = Math.max(1, textureRepeat);
+    mat.map.repeat.set(clamped, clamped);
+    mat.map.needsUpdate = true;
+    terrainMesh.userData['terrainTextureRepeat'] = clamped;
   }
 
   static flattenTerrainAt(terrainMesh: THREE.Mesh, worldX: number, worldZ: number, radius: number = 5): void {

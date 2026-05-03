@@ -61,8 +61,8 @@ const BASE_TERRAIN_GEN = {
 	},
 	oceanCutoff: {
 		floorHeight: -0.38,
-		innerOffset: -0.01,
-		outerOffset: 0.14
+		innerOffset: -0.12,
+		outerOffset: 0.32
 	},
 	islandScatter: {
 		frequency: 0.0065,
@@ -310,20 +310,20 @@ export type TerrainPresetName = keyof typeof TERRAIN_PRESETS;
 export const ACTIVE_TERRAIN_PRESET: TerrainPresetName = 'rugged_highland';
 
 // ---------------------------------------------------------------------------
-// Terrain LOD — voxel density tiers driven by camera zoom radius.
+// Terrain LOD — texture detail tiers driven by camera zoom radius.
 // Each tier defines the maximum camera radius that triggers it (inclusive) and
-// the voxelsPerBlock used when that tier is active.
-// Higher voxelsPerBlock = tighter height quantisation = more visible voxel steps.
-// Reduce rebuildDebounce if you want snappier transitions (but it adds CPU cost).
+// the terrain texture repeat value used for that tier.
+// Higher textureRepeat = denser perceived detail when zoomed in.
+// Debounce avoids rapid texture updates while actively zooming.
 // ---------------------------------------------------------------------------
 export const TERRAIN_LOD = {
-  rebuildDebounce: 0.9,   // seconds to wait after last zoom change before rebuilding
+  rebuildDebounce: 0.35,  // seconds to wait after last zoom change before updating texture detail
   tiers: [
-		{ maxRadius: 18,  voxelsPerBlock: 22, terrainDivisions: 110 }, // very close — crisp + denser geometry
-		{ maxRadius: 45,  voxelsPerBlock: 15, terrainDivisions: 96  }, // close
-		{ maxRadius: 90,  voxelsPerBlock: 10, terrainDivisions: 84  }, // medium (default)
-		{ maxRadius: 145, voxelsPerBlock: 7,  terrainDivisions: 72  }, // far
-		{ maxRadius: 999, voxelsPerBlock: 5,  terrainDivisions: 60  }  // very far — smoother silhouette
+		{ maxRadius: 18,  textureRepeat: 36 }, // very close — highest detail
+		{ maxRadius: 45,  textureRepeat: 30 }, // close
+		{ maxRadius: 90,  textureRepeat: 24 }, // medium
+		{ maxRadius: 145, textureRepeat: 18 }, // far
+		{ maxRadius: 999, textureRepeat: 14 }, // very far
   ]
 } as const;
 

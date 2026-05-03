@@ -171,6 +171,12 @@ export function sampleTerrainHeight(seed: number, x: number, z: number, width: n
     h += inlandLift * inlandMask * TERRAIN_GEN.inland.liftStrength;
   }
 
+  // Final island envelope: guarantees open ocean toward map bounds so the
+  // playable landmass remains island-shaped instead of touching square edges.
+  const islandEnvelopeDist = Math.sqrt((x / (width * 0.5)) ** 2 + (z / (depth * 0.5)) ** 2);
+  const islandEnvelopeBlend = smoothstep(0.76, 0.96, islandEnvelopeDist);
+  h = h * (1 - islandEnvelopeBlend) + oceanFloor * islandEnvelopeBlend;
+
   return h * TERRAIN_HEIGHT_SCALE;
 }
 

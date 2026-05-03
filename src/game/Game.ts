@@ -44,6 +44,7 @@ export class Game {
   private deltaTime: number = 0;
   private lastAutosaveTick: number = 0;
   private terrainDivisions: number = 60;
+  private terrainTextureRepeat: number = 22;
   private lastLodTier: number = -1;
   private lodPendingTier: number = -1;
   private lodDebounceTimer: number = 0;
@@ -73,7 +74,7 @@ export class Game {
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
 
     this.scene.background = new THREE.Color(0x5e8ab8);
-    this.scene.fog = new THREE.FogExp2(0x607eb0, 0.0042);
+    this.scene.fog = new THREE.FogExp2(0x607eb0, 0.0048);
 
     this.camera.position.set(20, 30, 20);
     this.camera.lookAt(0, 0, 0);
@@ -248,13 +249,13 @@ export class Game {
   }
 
   rebuildTerrain(): void {
-    this.world.rebuildTerrain(this.state, this.terrainDivisions);
+    this.world.rebuildTerrain(this.state, this.terrainDivisions, this.terrainTextureRepeat);
   }
 
   startScenario(scenarioId: string): boolean {
     const ok = ScenarioSystem.startScenario(this.state, scenarioId);
     if (ok) {
-      this.world.init(this.state);
+      this.world.init(this.state, this.terrainDivisions, this.terrainTextureRepeat);
       if (this.onStateChange) {
         this.onStateChange(this.state);
       }
@@ -279,7 +280,7 @@ export class Game {
     this.selectionManager.reset();
     const initialLodTier = this.getTerrainLodTier(this.cameraController.getRadius());
     this.applyTerrainLodTier(initialLodTier, false);
-    this.world.init(this.state, this.terrainDivisions);
+    this.world.init(this.state, this.terrainDivisions, this.terrainTextureRepeat);
 
     for (const building of this.state.buildings) {
       const mesh = this.world.getBuildingMesh(building.id);
@@ -536,7 +537,7 @@ export class Game {
     return tierIdx === -1 ? TERRAIN_LOD.tiers.length - 1 : tierIdx;
   }
 
-  private applyTerrainLodTier(tier: number, rebuildTerrain: boolean): void {
+  private applyTerrainLodTier(tier: number, applyTextureUpdate: boolean): void {
     const tierConfig = TERRAIN_LOD.tiers[tier];
     if (!tierConfig) {
       return;
@@ -545,11 +546,10 @@ export class Game {
     this.lastLodTier = tier;
     this.lodPendingTier = -1;
     this.lodDebounceTimer = 0;
-    this.state.settings.voxelsPerBlock = tierConfig.voxelsPerBlock;
-    this.terrainDivisions = tierConfig.terrainDivisions;
+    this.terrainTextureRepeat = tierConfig.textureRepeat;
 
-    if (rebuildTerrain) {
-      this.world.rebuildTerrain(this.state, this.terrainDivisions);
+    if (applyTextureUpdate) {
+      this.world.setTerrainTextureRepeat(this.terrainTextureRepeat);
     }
   }
 

@@ -25,14 +25,14 @@ export class World {
     this.buildingAnimations = new BuildingAnimations(scene);
   }
 
-  init(gameState: GameState, terrainDivisions: number = 60): void {
+  init(gameState: GameState, terrainDivisions: number = 60, terrainTextureRepeat: number = 22): void {
     this.clearDynamicContent();
 
-    this.sea = ModelFactory.createSeaPlane(900, 900);
+    this.sea = ModelFactory.createSeaPlane(900, 900, gameState.worldSeed, 500, 500);
     this.scene.add(this.sea);
 
     const voxelHeight = gameState.settings.voxelsPerBlock > 0 ? 1.0 / gameState.settings.voxelsPerBlock : 0;
-    this.terrain = ModelFactory.createTerrain(500, 500, terrainDivisions, gameState.worldSeed, voxelHeight);
+    this.terrain = ModelFactory.createTerrain(500, 500, terrainDivisions, gameState.worldSeed, voxelHeight, terrainTextureRepeat);
     this.scene.add(this.terrain);
     this.clutter = ModelFactory.createTerrainClutter(this.terrain.userData['heightmap'], gameState.worldSeed);
     this.scene.add(this.clutter);
@@ -84,7 +84,7 @@ export class World {
     }
   }
 
-  rebuildTerrain(gameState: GameState, terrainDivisions: number = 60): void {
+  rebuildTerrain(gameState: GameState, terrainDivisions: number = 60, terrainTextureRepeat: number = 22): void {
     if (this.terrain) {
       this.scene.remove(this.terrain);
     }
@@ -93,7 +93,7 @@ export class World {
       this.clutter = null;
     }
     const voxelHeight = gameState.settings.voxelsPerBlock > 0 ? 1.0 / gameState.settings.voxelsPerBlock : 0;
-    this.terrain = ModelFactory.createTerrain(500, 500, terrainDivisions, gameState.worldSeed, voxelHeight);
+    this.terrain = ModelFactory.createTerrain(500, 500, terrainDivisions, gameState.worldSeed, voxelHeight, terrainTextureRepeat);
     this.scene.add(this.terrain);
     this.clutter = ModelFactory.createTerrainClutter(this.terrain.userData['heightmap'], gameState.worldSeed);
     this.scene.add(this.clutter);
@@ -116,6 +116,13 @@ export class World {
     this.buildingMeshes.set(instance.id, group);
     this.buildingAnimations.register(instance.id, group);
     return group;
+  }
+
+  setTerrainTextureRepeat(textureRepeat: number): void {
+    if (!(this.terrain instanceof THREE.Mesh)) {
+      return;
+    }
+    ModelFactory.setTerrainTextureRepeat(this.terrain, textureRepeat);
   }
 
   /** Creates and places a marker for every resource spot. */
